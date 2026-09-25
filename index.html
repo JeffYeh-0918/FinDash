@@ -848,13 +848,14 @@
                         try {
                             await fetch(gasApiUrl.value, {
                                 method: 'POST',
-                                mode: 'no-cors',
-                                headers: { 'Content-Type': 'application/json' },
+                                mode: 'no-cors', // 避開 CORS 限制
+                                headers: { 'Content-Type': 'text/plain' }, // 務必用 text/plain 避免 OPTIONS 被擋
                                 body: JSON.stringify({
                                     expenses: expenses.value,
                                     stockTrades: stockTrades.value
                                 })
                             });
+                            console.log('已自動同步至 Google Sheets');
                         } catch (e) {
                             console.warn('自動同步雲端失敗:', e);
                         }
