@@ -779,8 +779,8 @@
                 const categoriesList = ref(['固定支出', '變動支出', '投資', '儲蓄', '保險', '儲值', '墊付', '固定收入']);
                 const itemsList = ref(['交通費', '飲食費', '電話費', '剪頭髮', '保險費', '採買費', '每月費用', '出遊', '房租',
                                         '購物', '醫療', '額外交通費', '額外飲食費',
-                                        'ETF投資', 'ETF賣出', '薪資', '年終', '年度獎金', '股息']);
-                const paymentMethodsList = ref(['每月預付', '國泰信用卡', '玉山信用卡', '國泰帳戶', '付現', '悠遊卡儲值']);
+                                        'ETF投資', 'ETF賣出', '薪資', '福利獎金', '年終', '年度獎金', '股息']);
+                const paymentMethodsList = ref(['每月預付', '國泰信用卡', '玉山信用卡', '國泰帳戶', '玉山帳戶', '付現', '悠遊卡儲值', '待付', '已付']);
     
                 const showExpenseModal = ref(false);
                 const editingExpenseId = ref(null);
@@ -1050,10 +1050,10 @@
                         '內容': e.content, 
                         '金額': e.amount, 
                         '已付金額': e.paidAmount, 
+                        '備註': e.note,
                         '付款方式': e.paymentMethod,
                         '付款日': formatSlashDate(e.paymentDate), 
-                        '結算日': formatSlashDate(e.settlementDate),
-                        '備註': e.note
+                        '結算日': formatSlashDate(e.settlementDate)
                     }));
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expData), '日常收支紀錄');
     
