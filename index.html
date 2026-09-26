@@ -1038,16 +1038,42 @@
                         return;
                     }
                     const wb = XLSX.utils.book_new();
+                    
+                    // 日期格式化小工具：將 '2026-09-26' 轉換為 '2026/09/26'
+                    const formatSlashDate = (dateStr) => {
+                        if (!dateStr) return '';
+                        return String(dateStr).replace(/-/g, '/');
+                    };
+
+                    // 1. 日常收支紀錄：複製陣列，按日期由遠到近排序，並將日期轉換為斜線格式
+                    const sortedExpenses = [...expenses.value].sort((a, b) => new Date(a.date || 0)
                     const expData = expenses.value.map(e => ({
-                        '收支類型': e.type, '日期': e.date, '類別': e.category, '項目': e.item,
-                        '內容': e.content, '金額': e.amount, '已付金額': e.paidAmount, '付款方式': e.paymentMethod,
-                        '付款日': e.paymentDate, '結算日': e.settlementDate, '備註': e.note
+                        '收支類型': e.type, 
+                        '日期': formatSlashDate(e.date), 
+                        '類別': e.category, 
+                        '項目': e.item,
+                        '內容': e.content, 
+                        '金額': e.amount, 
+                        '已付金額': e.paidAmount, 
+                        '備註': e.note, 
+                        '付款方式': e.paymentMethod,
+                        '付款日': e.paymentDate, 
+                        '結算日': e.settlementDate
                     }));
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expData), '日常收支紀錄');
 
+                    // 2. ETF 股票交易歷史：複製陣列，按日期由遠到近排序，並將日期轉換為斜線格式
+                    const sortedStockTrades = [...stockTrades.value].sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
                     const stockData = stockTrades.value.map(s => ({
-                        '交易類型': s.action, '交易日期': s.date, '股票代碼': s.symbol, '標的名稱': s.name,
-                        '成交單價': s.price, '成交股數': s.shares, '手續費': s.fee, '交易稅': s.tax, '總金額': s.totalAmount
+                        '交易類型': s.action, 
+                        '交易日期': formatSlashDate(s.date), 
+                        '股票代碼': s.symbol, 
+                        '標的名稱': s.name,
+                        '成交單價': s.price, 
+                        '成交股數': s.shares, 
+                        '手續費': s.fee, 
+                        '交易稅': s.tax, 
+                        '總金額': s.totalAmount
                     }));
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stockData), 'ETF股票交易歷史');
 
