@@ -747,23 +747,22 @@
                 const STORAGE_KEY_STOCKS = 'findash_stocks_v2';
                 const STORAGE_KEY_PRICES = 'findash_stock_prices_v2';
                 const STORAGE_KEY_GAS_URL = 'findash_gas_api_url';
-
+                
                 const realNow = new Date();
                 const currentRealYear = realNow.getFullYear();
                 const currentRealMonth = realNow.getMonth() + 1;
                 const fileInputRef = ref(null);
                 const draggedIndex = ref(null);
-
-                // 新增：Google Apps Script API 連線狀態
+    
                 const gasApiUrl = ref(localStorage.getItem(STORAGE_KEY_GAS_URL) || '');
                 const inputApiUrl = ref(gasApiUrl.value);
                 const showApiConfigModal = ref(false);
                 const isSyncing = ref(false);
-
-                // 完全保留原本的自訂選項清單[cite: 9]
+    
                 const expenses = ref(JSON.parse(localStorage.getItem(STORAGE_KEY_EXPENSES)) || []);
                 const stockTrades = ref(JSON.parse(localStorage.getItem(STORAGE_KEY_STOCKS)) || []);
                 const livePricesMap = ref(JSON.parse(localStorage.getItem(STORAGE_KEY_PRICES)) || {});
+                
                 const activeTab = ref('expenses');
                 const selectedYear = ref(currentRealYear);
                 const selectedMonth = ref(currentRealMonth);
@@ -776,13 +775,13 @@
                 const selectedTypeFilter = ref('ALL');
                 const selectedExpenseIds = ref([]);
                 const selectedStockIds = ref([]);
-
+    
                 const categoriesList = ref(['固定支出', '變動支出', '投資', '儲蓄', '保險', '儲值', '墊付', '固定收入']);
                 const itemsList = ref(['交通費', '飲食費', '電話費', '剪頭髮', '保險費', '採買費', '每月費用', '出遊', '房租',
                                         '購物', '醫療', '額外交通費', '額外飲食費',
                                         'ETF投資', 'ETF賣出', '薪資', '年終', '年度獎金', '股息']);
                 const paymentMethodsList = ref(['每月預付', '國泰信用卡', '玉山信用卡', '國泰帳戶', '付現', '悠遊卡儲值']);
-
+    
                 const showExpenseModal = ref(false);
                 const editingExpenseId = ref(null);
                 const showStockModal = ref(false);
@@ -791,30 +790,32 @@
                 const showImportHelpModal = ref(false);
                 const batchDateType = ref('payment');
                 const targetBatchDate = ref(new Date().toISOString().split('T')[0]);
+    
                 const expenseForm = ref({ type: '支出', date: new Date().toISOString().split('T')[0], category: '變動支出', item: '飲食費', content: '', amount: null, paidAmount: null, note: '', paymentMethod: '國泰信用卡', paymentDate: '', settlementDate: '' });
                 const stockForm = ref({ action: '買進', date: new Date().toISOString().split('T')[0], symbol: '0050', name: '', price: null, shares: null, fee: 0, tax: 0 });
-
-                // 監聽變更：存入 LocalStorage 並同步自動發送至雲端 (Push)
+    
+                // 防止初始化自動發送的旗標
+                let isDataLoaded = false;
+    
                 watch(expenses, (val) => {
                     localStorage.setItem(STORAGE_KEY_EXPENSES, JSON.stringify(val));
-                    pushToCloud();
+                    if (isDataLoaded) pushToCloud();
                 }, { deep: true });
-
+    
                 watch(stockTrades, (val) => {
                     localStorage.setItem(STORAGE_KEY_STOCKS, JSON.stringify(val));
-                    pushToCloud();
+                    if (isDataLoaded) pushToCloud();
                 }, { deep: true });
-
+    
                 watch(livePricesMap, (val) => localStorage.setItem(STORAGE_KEY_PRICES, JSON.stringify(val)), { deep: true });
-
-                // API 設定與同步函式
+    
                 const saveApiUrl = () => {
                     gasApiUrl.value = inputApiUrl.value.trim();
                     localStorage.setItem(STORAGE_KEY_GAS_URL, gasApiUrl.value);
                     showApiConfigModal.value = false;
                     if (gasApiUrl.value) syncFromCloud();
                 };
-
+    
                 const syncFromCloud = async () => {
                     if (!gasApiUrl.value) {
                         alert('請先在右上角「API設定」輸入您的 Google Apps Script 網址！');
@@ -823,7 +824,7 @@
                     }
                     isSyncing.value = true;
                     try {
-                        const res = await fetch(gasApiUrl.value);
+                        const res = await fetch(gasApiUrl.value, { method: 'GET', redirect: 'follow' });
                         if (res.ok) {
                             const data = await res.json();
                             if (data.status === 'success') {
@@ -839,20 +840,19 @@
                         isSyncing.value = false;
                     }
                 };
-
+    
                 let pushTimer = null;
                 const pushToCloud = () => {
                     if (!gasApiUrl.value) return;
                     clearTimeout(pushTimer);
                     pushTimer = setTimeout(async () => {
                         try {
-                            // 將 JSON 打包為 Form 表單格式，避開 405 / OPTIONS 預檢阻擋
                             const payload = new URLSearchParams();
                             payload.append('postData', JSON.stringify({
                                 expenses: expenses.value,
                                 stockTrades: stockTrades.value
                             }));
-                
+    
                             await fetch(gasApiUrl.value, {
                                 method: 'POST',
                                 mode: 'no-cors',
@@ -867,13 +867,11 @@
                         }
                     }, 1000);
                 };
-
+    
                 const isCurrentMonthOrFuture = computed(() => (selectedYear.value > currentRealYear) || (selectedYear.value === currentRealYear && selectedMonth.value >= currentRealMonth));
-                
-                // 代碼清理：強效去除 .TW, .TWO 並轉為大寫，免手動改 Excel[cite: 9]
                 const cleanSymbol = (sym) => String(sym || '').replace(/\.(TW|TWO)$/i, '').trim().toUpperCase();
                 const roundTwo = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;
-
+    
                 const resetAllData = () => {
                     if (confirm('確定要清空系統中所有的歷史收支與股票紀錄？（若已連線 Google 雲端也會同步清空）')) {
                         expenses.value = [];
@@ -887,7 +885,7 @@
                         nextTick(() => renderCharts());
                     }
                 };
-
+    
                 const calculatedStockTotal = computed(() => {
                     const price = Number(stockForm.value.price || 0);
                     const shares = Number(stockForm.value.shares || 0);
@@ -895,7 +893,7 @@
                     const tax = Number(stockForm.value.tax || 0);
                     return stockForm.value.action === '買進' ? (price * shares) + fee : (price * shares) - fee - tax;
                 });
-
+    
                 const onDragStart = (e, index, type) => {
                     draggedIndex.value = index;
                     e.dataTransfer.effectAllowed = 'move';
@@ -917,12 +915,11 @@
                     draggedIndex.value = null;
                     nextTick(() => renderCharts());
                 };
-
+    
                 const fetchStockPrices = async () => {
                     const symbols = Array.from(new Set(stockTrades.value.map(t => cleanSymbol(t.symbol))));
                     if (symbols.length === 0) return;
                     isFetchingPrices.value = true;
-                    let success = 0;
                     const startDateObj = new Date();
                     startDateObj.setDate(startDateObj.getDate() - 10);
                     const startDateStr = startDateObj.toISOString().split('T')[0];
@@ -937,7 +934,6 @@
                                     const closePrice = Number(latest.close);
                                     if (!isNaN(closePrice) && closePrice > 0) {
                                         livePricesMap.value[sym] = { price: roundTwo(closePrice), isLive: true };
-                                        success++;
                                         continue;
                                     }
                                 }
@@ -951,17 +947,16 @@
                     lastPriceUpdate.value = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
                     nextTick(() => renderCharts());
                 };
-
+    
                 const monthlyExpensesFiltered = computed(() => {
                     const prefix = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`;
                     return expenses.value.filter(e => e.date && e.date.startsWith(prefix));
                 });
-
+    
                 const monthlyTotalIncome = computed(() => monthlyExpensesFiltered.value.filter(e => e.type === '收入').reduce((s, e) => s + Number(e.amount || 0), 0));
                 const monthlyTotalExpense = computed(() => monthlyExpensesFiltered.value.filter(e => e.type === '支出').reduce((s, e) => s + Number(e.amount || 0), 0));
                 const monthlySavingsRate = computed(() => monthlyTotalIncome.value === 0 ? 0 : Math.max(0, Math.round(((monthlyTotalIncome.value - monthlyTotalExpense.value) / monthlyTotalIncome.value) * 100)));
-
-                // 完全保留精確依照「日期由舊到新」順序計算移動加權平均成本算法
+    
                 const stockHoldings = computed(() => {
                     const map = {};
                     const sortedTrades = [...stockTrades.value].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -1005,7 +1000,7 @@
                         };
                     });
                 });
-
+    
                 const totalInvestmentMarketValue = computed(() => stockHoldings.value.reduce((s, h) => s + h.marketValue, 0));
                 const totalUnrealizedPL = computed(() => stockHoldings.value.reduce((s, h) => s + h.unrealizedPL, 0));
                 const totalUnrealizedPLRate = computed(() => {
@@ -1013,7 +1008,7 @@
                     return cost === 0 ? '0.00' : ((totalUnrealizedPL.value / cost) * 100).toFixed(2);
                 });
                 const totalRealizedPL = computed(() => 0);
-
+    
                 const filteredExpenses = computed(() => {
                     const prefix = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`;
                     return expenses.value.filter(e => {
@@ -1025,13 +1020,14 @@
                         return matchMonth && matchKw && matchCat && matchPay && matchType;
                     });
                 });
-
+    
                 const isAllExpensesSelected = computed(() => filteredExpenses.value.length > 0 && selectedExpenseIds.value.length === filteredExpenses.value.length);
                 const toggleSelectAllExpenses = (e) => { selectedExpenseIds.value = e.target.checked ? filteredExpenses.value.map(x => x.id) : []; };
-
+    
                 const isAllStocksSelected = computed(() => stockTrades.value.length > 0 && selectedStockIds.value.length === stockTrades.value.length);
                 const toggleSelectAllStocks = (e) => { selectedStockIds.value = e.target.checked ? stockTrades.value.map(s => s.id) : []; };
-
+    
+                // 修復後完整的 exportToExcel 函式
                 const exportToExcel = () => {
                     if (typeof XLSX === 'undefined') {
                         alert('XLSX 套件載入中，請稍後再試。');
@@ -1039,15 +1035,14 @@
                     }
                     const wb = XLSX.utils.book_new();
                     
-                    // 日期格式化小工具：將 '2026-09-26' 轉換為 '2026/09/26'
                     const formatSlashDate = (dateStr) => {
                         if (!dateStr) return '';
                         return String(dateStr).replace(/-/g, '/');
                     };
-
-                    // 1. 日常收支紀錄：複製陣列，按日期由遠到近排序，並將日期轉換為斜線格式
-                    const sortedExpenses = [...expenses.value].sort((a, b) => new Date(a.date || 0)
-                    const expData = expenses.value.map(e => ({
+    
+                    // 1. 日常收支紀錄：複製陣列，按日期由遠到近（舊 -> 新）排序，並轉換為斜線格式
+                    const sortedExpenses = [...expenses.value].sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+                    const expData = sortedExpenses.map(e => ({
                         '收支類型': e.type, 
                         '日期': formatSlashDate(e.date), 
                         '類別': e.category, 
@@ -1055,16 +1050,16 @@
                         '內容': e.content, 
                         '金額': e.amount, 
                         '已付金額': e.paidAmount, 
-                        '備註': e.note, 
                         '付款方式': e.paymentMethod,
-                        '付款日': e.paymentDate, 
-                        '結算日': e.settlementDate
+                        '付款日': formatSlashDate(e.paymentDate), 
+                        '結算日': formatSlashDate(e.settlementDate),
+                        '備註': e.note
                     }));
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expData), '日常收支紀錄');
-
-                    // 2. ETF 股票交易歷史：複製陣列，按日期由遠到近排序，並將日期轉換為斜線格式
+    
+                    // 2. ETF 股票交易歷史：複製陣列，按日期由遠到近（舊 -> 新）排序，並轉換為斜線格式
                     const sortedStockTrades = [...stockTrades.value].sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
-                    const stockData = stockTrades.value.map(s => ({
+                    const stockData = sortedStockTrades.map(s => ({
                         '交易類型': s.action, 
                         '交易日期': formatSlashDate(s.date), 
                         '股票代碼': s.symbol, 
@@ -1076,10 +1071,10 @@
                         '總金額': s.totalAmount
                     }));
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stockData), 'ETF股票交易歷史');
-
+    
                     XLSX.writeFile(wb, `FinDash_財務報表_${new Date().toISOString().split('T')[0]}.xlsx`);
                 };
-
+    
                 const handleFileUpload = (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
@@ -1096,15 +1091,15 @@
                                         expenses.value.unshift({
                                             id: Date.now() + Math.random(),
                                             type: row['收支類型'] || '支出',
-                                            date: row['日期'] || new Date().toISOString().split('T')[0],
+                                            date: row['日期'] ? String(row['日期']).replace(/\//g, '-') : new Date().toISOString().split('T')[0],
                                             category: row['類別'] || '變動支出',
                                             item: row['項目'] || '其他',
                                             content: row['內容'] || '',
                                             amount: Number(row['金額'] || 0),
                                             paidAmount: Number(row['已付金額'] || row['金額'] || 0),
                                             paymentMethod: row['付款方式'] || '付現',
-                                            paymentDate: row['付款日'] || '',
-                                            settlementDate: row['結算日'] || '',
+                                            paymentDate: row['付款日'] ? String(row['付款日']).replace(/\//g, '-') : '',
+                                            settlementDate: row['結算日'] ? String(row['結算日']).replace(/\//g, '-') : '',
                                             note: row['備註'] || ''
                                         });
                                         countExp++;
@@ -1123,7 +1118,8 @@
                                         const total = row['總金額'] ? Number(row['總金額']) : (action === '買進' ? (price * shares) + fee : (price * shares) - fee - tax);
                                         stockTrades.value.unshift({
                                             id: Date.now() + Math.random(),
-                                            action, date: row['交易日期'] || new Date().toISOString().split('T')[0],
+                                            action, 
+                                            date: row['交易日期'] ? String(row['交易日期']).replace(/\//g, '-') : new Date().toISOString().split('T')[0],
                                             symbol: cleanSymbol(row['股票代碼']),
                                             name: row['標的名稱'] || 'ETF標的',
                                             price, shares, fee, tax, totalAmount: total
@@ -1141,20 +1137,20 @@
                     reader.readAsArrayBuffer(file);
                     e.target.value = '';
                 };
-
+    
                 const downloadTemplateExcel = () => {
                     const wb = XLSX.utils.book_new();
                     const sampleExpenses = [
-                        { '收支類型': '支出', '日期': '2026-09-02', '類別': '變動支出', '項目': '飲食費', '內容': '全聯採買', '金額': 1850, '已付金額': 1850, '付款方式': '悠遊卡', '付款日': '2026-09-02', '結算日': '', '備註': '一週食材' }
+                        { '收支類型': '支出', '日期': '2026/09/02', '類別': '變動支出', '項目': '飲食費', '內容': '全聯採買', '金額': 1850, '已付金額': 1850, '付款方式': '悠遊卡', '付款日': '2026/09/02', '結算日': '', '備註': '一週食材' }
                     ];
                     const sampleStocks = [
-                        { '交易類型': '買進', '交易日期': '2026-03-15', '股票代碼': '0050', '標的名稱': '元大台灣50', '成交單價': 165.0, '成交股數': 2000, '手續費': 142, '交易稅': 0, '總金額': 330142 }
+                        { '交易類型': '買進', '交易日期': '2026/03/15', '股票代碼': '0050', '標的名稱': '元大台灣50', '成交單價': 165.0, '成交股數': 2000, '手續費': 142, '交易稅': 0, '總金額': 330142 }
                     ];
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sampleExpenses), '日常收支紀錄');
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sampleStocks), 'ETF股票交易歷史');
                     XLSX.writeFile(wb, 'FinDash_匯入範例檔.xlsx');
                 };
-
+    
                 const promptAddOption = (type) => {
                     const val = prompt(`請輸入新增名稱:`);
                     if (val && val.trim()) {
@@ -1164,7 +1160,7 @@
                         if (type === 'payment') paymentMethodsList.value.push(clean);
                     }
                 };
-
+    
                 const openExpenseModal = (item = null) => {
                     if (item) {
                         editingExpenseId.value = item.id;
@@ -1175,7 +1171,7 @@
                     }
                     showExpenseModal.value = true;
                 };
-
+    
                 const saveExpenseSubmit = () => {
                     const data = { ...expenseForm.value, amount: Number(expenseForm.value.amount || 0), paidAmount: Number(expenseForm.value.paidAmount || 0) };
                     if (editingExpenseId.value) {
@@ -1187,14 +1183,14 @@
                     showExpenseModal.value = false;
                     nextTick(() => renderCharts());
                 };
-
+    
                 const confirmDeleteExpense = (item) => {
                     if (confirm(`確定要刪除「${item.item}」這筆紀錄？`)) {
                         expenses.value = expenses.value.filter(e => e.id !== item.id);
                         nextTick(() => renderCharts());
                     }
                 };
-
+    
                 const confirmBatchDeleteExpenses = () => {
                     if (confirm(`確定要刪除勾選的 ${selectedExpenseIds.value.length} 筆收支紀錄？`)) {
                         expenses.value = expenses.value.filter(e => !selectedExpenseIds.value.includes(e.id));
@@ -1202,7 +1198,7 @@
                         nextTick(() => renderCharts());
                     }
                 };
-
+    
                 const openStockModal = (trade = null) => {
                     if (trade) {
                         editingStockId.value = trade.id;
@@ -1213,7 +1209,7 @@
                     }
                     showStockModal.value = true;
                 };
-
+    
                 const saveStockTradeSubmit = () => {
                     const data = { 
                         ...stockForm.value, 
@@ -1233,14 +1229,14 @@
                     showStockModal.value = false;
                     nextTick(() => renderCharts());
                 };
-
+    
                 const confirmDeleteStockTrade = (trade) => {
                     if (confirm(`確定要刪除「${trade.symbol} ${trade.name}」交易紀錄？`)) {
                         stockTrades.value = stockTrades.value.filter(t => t.id !== trade.id);
                         nextTick(() => renderCharts());
                     }
                 };
-
+    
                 const confirmBatchDeleteStockTrades = () => {
                     if (confirm(`確定要刪除勾選的 ${selectedStockIds.value.length} 筆股票紀錄？`)) {
                         stockTrades.value = stockTrades.value.filter(t => !selectedStockIds.value.includes(t.id));
@@ -1248,12 +1244,12 @@
                         nextTick(() => renderCharts());
                     }
                 };
-
+    
                 const openBatchDateModal = (type) => {
                     batchDateType.value = type;
                     showBatchDateModal.value = true;
                 };
-
+    
                 const applyBatchDate = () => {
                     expenses.value.forEach(e => {
                         if (selectedExpenseIds.value.includes(e.id)) {
@@ -1264,7 +1260,7 @@
                     showBatchDateModal.value = false;
                     selectedExpenseIds.value = [];
                 };
-
+    
                 const changeMonth = (delta) => {
                     let m = selectedMonth.value + delta;
                     let y = selectedYear.value;
@@ -1274,14 +1270,14 @@
                     selectedMonth.value = m;
                     nextTick(() => renderCharts());
                 };
-
+    
                 const formatCurrency = (val) => 'NT$ ' + Math.round(val || 0).toLocaleString('zh-TW');
-
+    
                 let categoryChartInstance = null;
                 let paymentChartInstance = null;
                 let stockPLChartInstance = null;
                 let stockAllocationChartInstance = null;
-
+    
                 const renderCharts = () => {
                     const categoryCtx = document.getElementById('categoryChart')?.getContext('2d');
                     if (categoryCtx) {
@@ -1299,7 +1295,7 @@
                             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }, cutout: '65%' }
                         });
                     }
-
+    
                     const paymentCtx = document.getElementById('paymentChart')?.getContext('2d');
                     if (paymentCtx) {
                         if (paymentChartInstance) paymentChartInstance.destroy();
@@ -1316,7 +1312,7 @@
                             options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
                         });
                     }
-
+    
                     const stockPLCtx = document.getElementById('stockPLChart')?.getContext('2d');
                     if (stockPLCtx) {
                         if (stockPLChartInstance) stockPLChartInstance.destroy();
@@ -1330,7 +1326,7 @@
                             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
                         });
                     }
-
+    
                     const stockAllocCtx = document.getElementById('stockAllocationChart')?.getContext('2d');
                     if (stockAllocCtx) {
                         if (stockAllocationChartInstance) stockAllocationChartInstance.destroy();
@@ -1345,13 +1341,16 @@
                         });
                     }
                 };
-
+    
                 onMounted(() => {
                     if (window.lucide) lucide.createIcons();
                     if (gasApiUrl.value) syncFromCloud();
                     fetchStockPrices();
+    
+                    // 延遲啟用 auto-push，避開頁面剛載入時的誤觸發
+                    setTimeout(() => { isDataLoaded = true; }, 1000);
                 });
-
+    
                 return {
                     expenses, stockTrades, activeTab, selectedYear, selectedMonth, isCurrentMonthOrFuture,
                     isFetchingPrices, lastPriceUpdate, expenseSearch, expenseMonthFilterScope,
