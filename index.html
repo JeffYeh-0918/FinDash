@@ -252,9 +252,14 @@
                     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-200">日常交易明細清單</h3>
-                            <p class="text-xs text-slate-400">點選可修改；<span class="text-emerald-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>；勾選可批次處理</p>
+                            <p class="text-xs text-slate-400">點選可修改；<span class="text-emerald-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>；勾選可批次複製、填日期或刪除</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                            <!-- 批次複製按鈕 -->
+                            <button @click="openBatchCopyModal" :disabled="selectedExpenseIds.length === 0" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 transition flex items-center space-x-1">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                <span>批次複製 ({{ selectedExpenseIds.length }})</span>
+                            </button>
                             <button @click="openBatchDateModal('payment')" :disabled="selectedExpenseIds.length === 0" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 transition">
                                 填付款日 ({{ selectedExpenseIds.length }})
                             </button>
@@ -277,8 +282,7 @@
                             <button @click="expenseMonthFilterScope = 'MONTH'" :class="expenseMonthFilterScope === 'MONTH' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">僅當月</button>
                             <button @click="expenseMonthFilterScope = 'ALL'" :class="expenseMonthFilterScope === 'ALL' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">全部歷史</button>
                         </div>
-
-                        <!-- 類別多選選單 -->
+                        
                         <div class="relative" @click.stop>
                             <button @click="toggleDropdown('category')" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 flex items-center justify-between focus:border-emerald-500 focus:outline-none">
                                 <span class="truncate">{{ categoryFilterLabel }}</span>
@@ -296,7 +300,6 @@
                             </div>
                         </div>
 
-                        <!-- 項目多選選單 -->
                         <div class="relative" @click.stop>
                             <button @click="toggleDropdown('item')" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 flex items-center justify-between focus:border-emerald-500 focus:outline-none">
                                 <span class="truncate">{{ itemFilterLabel }}</span>
@@ -314,7 +317,6 @@
                             </div>
                         </div>
 
-                        <!-- 付款方式多選選單 -->
                         <div class="relative" @click.stop>
                             <button @click="toggleDropdown('payment')" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 flex items-center justify-between focus:border-emerald-500 focus:outline-none">
                                 <span class="truncate">{{ paymentFilterLabel }}</span>
@@ -332,7 +334,6 @@
                             </div>
                         </div>
 
-                        <!-- 收支類型 -->
                         <div>
                             <select v-model="selectedTypeFilter" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
                                 <option value="ALL">全部收支類型</option>
@@ -814,7 +815,26 @@
             </div>
         </div>
 
-        <!-- MODAL 4: Import Help Documentation & Download Template -->
+        <!-- MODAL 4: Batch Copy Modal -->
+        <div v-if="showBatchCopyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+            <div class="glass-modal rounded-2xl w-full max-w-sm p-6 space-y-4 border border-slate-700/80">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 class="text-base font-bold text-slate-100">批次複製勾選的 {{ selectedExpenseIds.length }} 筆資料</h3>
+                    <button @click="showBatchCopyModal = false" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">請選擇複製後的目標日期</label>
+                    <input v-model="targetCopyDate" type="date" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
+                    <p class="text-[11px] text-slate-400 mt-1">複製產生的新項目將套用此日期，其餘金額與類別項目維持不變。</p>
+                </div>
+                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-800">
+                    <button type="button" @click="showBatchCopyModal = false" class="px-4 py-2 text-xs text-slate-400">取消</button>
+                    <button type="button" @click="applyBatchCopy" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">確認複製</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 5: Import Help Documentation & Download Template -->
         <div v-if="showImportHelpModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-2xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -827,12 +847,12 @@
                 <div class="space-y-3 text-xs text-slate-300">
                     <p>系統支援匯入含雙工作表 (Sheet) 的 Excel (.xlsx, .xls) 或 CSV 檔：</p>
                     <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                        <div class="font-bold text-emerald-400">工作表 1：日常收支紀錄 欄位標題名稱</div>
-                        <div class="text-slate-400">收支類型 | 日期 | 類別 | 項目 | 內容 | 金額 | 已付金額 | 備註 | 付款方式 | 付款日 | 結算日</div>
+                        <div class="font-bold text-emerald-400">工作表 1：日常收支紀錄 欄位標題名稱 (12欄)</div>
+                        <div class="text-slate-400">ID | 收支類型 | 日期 | 類別 | 項目 | 內容 | 金額 | 已付金額 | 付款方式 | 付款日 | 結算日 | 備註</div>
                     </div>
                     <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                        <div class="font-bold text-indigo-400">工作表 2：ETF股票交易歷史 欄位標題名稱</div>
-                        <div class="text-slate-400">交易類型 | 交易日期 | 股票代碼 | 標的名稱 | 成交單價 | 成交股數 | 手續費 | 交易稅</div>
+                        <div class="font-bold text-indigo-400">工作表 2：ETF股票交易歷史 欄位標題名稱 (10欄)</div>
+                        <div class="text-slate-400">ID | 交易類型 | 交易日期 | 股票代碼 | 標的名稱 | 成交單價 | 成交股數 | 手續費 | 交易稅 | 總金額</div>
                     </div>
                 </div>
                 <div class="pt-3 flex justify-between items-center border-t border-slate-800">
@@ -863,6 +883,7 @@
                 const realNow = new Date();
                 const currentRealYear = realNow.getFullYear();
                 const currentRealMonth = realNow.getMonth() + 1;
+
                 const fileInputRef = ref(null);
                 const draggedIndex = ref(null);
 
@@ -872,11 +893,10 @@
                 const showOptionManagerModal = ref(false);
                 const isSyncing = ref(false);
 
-                // 清理與整理代碼格式（轉換為字串）
+                // 清理代碼格式（轉換為字串，維持純字串）
                 const cleanSymbol = (sym) => {
                     return String(sym || '').replace(/^'/, '').replace(/\.(TW|TWO)$/i, '').trim().toUpperCase();
                 };
-
                 const parseSymbolFromCloud = (sym) => {
                     let str = String(sym || '').replace(/^'/, '').trim().toUpperCase();
                     return str;
@@ -890,23 +910,22 @@
                     ...s,
                     symbol: parseSymbolFromCloud(s.symbol)
                 })));
-
                 const livePricesMap = ref(JSON.parse(localStorage.getItem(STORAGE_KEY_PRICES)) || {});
-                
+
                 const activeTab = ref('expenses');
                 const selectedYear = ref(currentRealYear);
                 const selectedMonth = ref(currentRealMonth);
                 const isFetchingPrices = ref(false);
                 const lastPriceUpdate = ref('');
-                
+
                 const expenseSearch = ref('');
                 const expenseMonthFilterScope = ref('MONTH');
                 const selectedCategoryFilters = ref([]);
                 const selectedItemFilters = ref([]);
                 const selectedPaymentFilters = ref([]);
                 const selectedTypeFilter = ref('ALL');
-
                 const activeDropdown = ref(null);
+
                 const toggleDropdown = (name) => {
                     activeDropdown.value = activeDropdown.value === name ? null : name;
                 };
@@ -995,6 +1014,8 @@
                 const showStockModal = ref(false);
                 const editingStockId = ref(null);
                 const showBatchDateModal = ref(false);
+                const showBatchCopyModal = ref(false);
+                const targetCopyDate = ref(new Date().toISOString().split('T')[0]);
                 const showImportHelpModal = ref(false);
                 const batchDateType = ref('payment');
                 const targetBatchDate = ref(new Date().toISOString().split('T')[0]);
@@ -1004,7 +1025,7 @@
 
                 let isDataLoaded = false;
 
-                // 強制即時寫回後台 Google 試算表（在傳至雲端時，股票代碼開頭加上單引號 ' 強制試算表儲存為文字）
+                // 即時推送到雲端 GAS (強制保持股票代碼開頭加單引號 ')
                 let pushTimer = null;
                 const pushToCloud = () => {
                     if (!gasApiUrl.value) return;
@@ -1015,16 +1036,14 @@
                                 const cleanSym = cleanSymbol(s.symbol);
                                 return {
                                     ...s,
-                                    symbol: `'${cleanSym}` // 加單引號，強迫 Google 試算表存為純文字格式
+                                    symbol: `'${cleanSym}` // 加單引號，強迫存為純文字格式
                                 };
                             });
-
                             const payload = new URLSearchParams();
                             payload.append('postData', JSON.stringify({
-                                expenses: expenses.value,
+                                expenses: expenses.value, // 傳送完整的歷史主陣列，不受檢視篩選影響
                                 stockTrades: formattedStocks
                             }));
-
                             await fetch(gasApiUrl.value, {
                                 method: 'POST',
                                 mode: 'no-cors',
@@ -1033,7 +1052,7 @@
                                 },
                                 body: payload.toString()
                             });
-                            console.log('已即時同步更新至 Google 試算表！');
+                            console.log('已即時同步全量資料至 Google 試算表！');
                         } catch (e) {
                             console.warn('自動同步雲端失敗:', e);
                         }
@@ -1079,7 +1098,7 @@
                                     symbol: parseSymbolFromCloud(s.symbol)
                                 }));
                                 refreshDynamicOptions();
-                                alert('成功從 Google 試算表同步資料！');
+                                alert('成功從 Google 試算表同步全量歷史資料！');
                                 nextTick(() => renderCharts());
                             }
                         }
@@ -1234,21 +1253,17 @@
                 const filteredExpenses = computed(() => {
                     const prefix = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`;
                     const kw = (expenseSearch.value || '').trim().toLowerCase();
-
                     return expenses.value.filter(e => {
                         const matchMonth = expenseMonthFilterScope.value === 'ALL' || (e.date && e.date.startsWith(prefix));
-                        
                         const matchKw = !kw || 
                             (e.item && String(e.item).toLowerCase().includes(kw)) ||
                             (e.category && String(e.category).toLowerCase().includes(kw)) ||
                             (e.content && String(e.content).toLowerCase().includes(kw)) ||
                             (e.note && String(e.note).toLowerCase().includes(kw));
-
                         const matchCat = selectedCategoryFilters.value.length === 0 || selectedCategoryFilters.value.includes(e.category);
                         const matchItem = selectedItemFilters.value.length === 0 || selectedItemFilters.value.includes(e.item);
                         const matchPay = selectedPaymentFilters.value.length === 0 || selectedPaymentFilters.value.includes(e.paymentMethod);
                         const matchType = selectedTypeFilter.value === 'ALL' || e.type === selectedTypeFilter.value;
-
                         return matchMonth && matchKw && matchCat && matchItem && matchPay && matchType;
                     });
                 });
@@ -1263,9 +1278,37 @@
 
                 const isAllExpensesSelected = computed(() => filteredExpenses.value.length > 0 && selectedExpenseIds.value.length === filteredExpenses.value.length);
                 const toggleSelectAllExpenses = (e) => { selectedExpenseIds.value = e.target.checked ? filteredExpenses.value.map(x => x.id) : []; };
-
                 const isAllStocksSelected = computed(() => stockTrades.value.length > 0 && selectedStockIds.value.length === stockTrades.value.length);
                 const toggleSelectAllStocks = (e) => { selectedStockIds.value = e.target.checked ? stockTrades.value.map(s => s.id) : []; };
+
+                // 執行批次複製功能
+                const openBatchCopyModal = () => {
+                    if (selectedExpenseIds.value.length === 0) return;
+                    targetCopyDate.value = new Date().toISOString().split('T')[0];
+                    showBatchCopyModal.value = true;
+                };
+
+                const applyBatchCopy = () => {
+                    if (!targetCopyDate.value) {
+                        alert('請選擇目標複製日期！');
+                        return;
+                    }
+                    const targetItems = expenses.value.filter(e => selectedExpenseIds.value.includes(e.id));
+                    const newItems = targetItems.map(item => ({
+                        ...item,
+                        id: Date.now() + Math.floor(Math.random() * 10000),
+                        date: targetCopyDate.value,
+                        paymentDate: '',
+                        settlementDate: ''
+                    }));
+                    
+                    expenses.value.unshift(...newItems);
+                    showBatchCopyModal.value = false;
+                    selectedExpenseIds.value = [];
+                    pushToCloud();
+                    alert(`成功批次複製 ${newItems.length} 筆資料至 ${targetCopyDate.value}！`);
+                    nextTick(() => renderCharts());
+                };
 
                 const exportToExcel = () => {
                     if (typeof XLSX === 'undefined') {
@@ -1278,9 +1321,9 @@
                         if (!dateStr) return '';
                         return String(dateStr).replace(/-/g, '/');
                     };
-
                     const reversedExpenses = [...expenses.value].reverse();
                     const expData = reversedExpenses.map(e => ({
+                        'ID': e.id,
                         '收支類型': e.type, 
                         '日期': formatSlashDate(e.date), 
                         '類別': e.category, 
@@ -1288,15 +1331,16 @@
                         '內容': e.content, 
                         '金額': e.amount, 
                         '已付金額': e.paidAmount, 
-                        '備註': e.note,
                         '付款方式': e.paymentMethod,
                         '付款日': formatSlashDate(e.paymentDate), 
-                        '結算日': formatSlashDate(e.settlementDate)
+                        '結算日': formatSlashDate(e.settlementDate),
+                        '備註': e.note
                     }));
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expData), '日常收支紀錄');
 
                     const reversedStockTrades = [...stockTrades.value].reverse();
                     const stockData = reversedStockTrades.map(s => ({
+                        'ID': s.id,
                         '交易類型': s.action, 
                         '交易日期': formatSlashDate(s.date), 
                         '股票代碼': cleanSymbol(s.symbol), 
@@ -1326,7 +1370,7 @@
                                 parsed.forEach(row => {
                                     if (row['金額'] || row['項目']) {
                                         expenses.value.unshift({
-                                            id: Date.now() + Math.random(),
+                                            id: row['ID'] || (Date.now() + Math.random()),
                                             type: row['收支類型'] || '支出',
                                             date: row['日期'] ? String(row['日期']).replace(/\//g, '-') : new Date().toISOString().split('T')[0],
                                             category: row['類別'] || '變動支出',
@@ -1354,7 +1398,7 @@
                                         const tax = Number(row['交易稅'] || 0);
                                         const total = row['總金額'] ? Number(row['總金額']) : (action === '買進' ? (price * shares) + fee : (price * shares) - fee - tax);
                                         stockTrades.value.unshift({
-                                            id: Date.now() + Math.random(),
+                                            id: row['ID'] || (Date.now() + Math.random()),
                                             action, 
                                             date: row['交易日期'] ? String(row['交易日期']).replace(/\//g, '-') : new Date().toISOString().split('T')[0],
                                             symbol: cleanSymbol(row['股票代碼']),
@@ -1380,10 +1424,10 @@
                 const downloadTemplateExcel = () => {
                     const wb = XLSX.utils.book_new();
                     const sampleExpenses = [
-                        { '收支類型': '支出', '日期': '2026/09/02', '類別': '變動支出', '項目': '飲食費', '內容': '全聯採買', '金額': 1850, '已付金額': 1850, '備註': '一週食材', '付款方式': '悠遊卡', '付款日': '2026/09/02', '結算日': '' }
+                        { 'ID': Date.now(), '收支類型': '支出', '日期': '2026/09/02', '類別': '變動支出', '項目': '飲食費', '內容': '全聯採買', '金額': 1850, '已付金額': 1850, '付款方式': '悠遊卡', '付款日': '2026/09/02', '結算日': '', '備註': '一週食材' }
                     ];
                     const sampleStocks = [
-                        { '交易類型': '買進', '交易日期': '2026/03/15', '股票代碼': '0050', '標的名稱': '元大台灣50', '成交單價': 165.0, '成交股數': 2000, '手續費': 142, '交易稅': 0, '總金額': 330142 }
+                        { 'ID': Date.now() + 1000, '交易類型': '買進', '交易日期': '2026/03/15', '股票代碼': '0050', '標的名稱': '元大台灣50', '成交單價': 165.0, '成交股數': 2000, '手續費': 142, '交易稅': 0, '總金額': 330142 }
                     ];
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sampleExpenses), '日常收支紀錄');
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sampleStocks), 'ETF股票交易歷史');
@@ -1594,9 +1638,7 @@
                     if (window.lucide) lucide.createIcons();
                     if (gasApiUrl.value) syncFromCloud();
                     fetchStockPrices();
-
                     refreshDynamicOptions();
-
                     setTimeout(() => { isDataLoaded = true; }, 1000);
                 });
 
@@ -1607,6 +1649,7 @@
                     activeDropdown, toggleDropdown, closeAllDropdowns, categoryFilterLabel, itemFilterLabel, paymentFilterLabel,
                     selectedExpenseIds, selectedStockIds, categoriesList, itemsList, paymentMethodsList,
                     showExpenseModal, editingExpenseId, showStockModal, editingStockId, showBatchDateModal,
+                    showBatchCopyModal, targetCopyDate, openBatchCopyModal, applyBatchCopy,
                     showOptionManagerModal, editOptionName, deleteOptionItem,
                     showImportHelpModal, gasApiUrl, inputApiUrl, showApiConfigModal, isSyncing, saveApiUrl, syncFromCloud,
                     batchDateType, targetBatchDate, expenseForm, stockForm, calculatedStockTotal, fileInputRef,
