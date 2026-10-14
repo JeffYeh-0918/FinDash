@@ -83,7 +83,7 @@
                             </h1>
                             <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
                                 <span>日常收支與股票投資儀表板</span>
-                                <span v-if="gasApiUrl" class="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">雲端已連線</span>
+                                <span v-if="gasApiUrl && syncBadge.text" :class="syncBadge.cls" class="text-[10px] px-1.5 py-0.2 rounded border">{{ syncBadge.text }}</span>
                             </p>
                         </div>
                     </div>
@@ -101,12 +101,12 @@
                         </button>
                     </div>
                     <div class="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-800 space-x-1">
-                        <button @click="syncFromCloud" :disabled="isSyncing" class="flex items-center space-x-1.5 hover:bg-slate-800 text-emerald-400 px-2.5 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-50" title="同步 Google 雲端試算表">
+                        <button @click="syncFromCloud()" :disabled="isSyncing" class="flex items-center space-x-1.5 hover:bg-slate-800 text-emerald-400 px-2.5 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-50" title="同步 Google 雲端試算表">
                             <i data-lucide="cloud-download" :class="{'animate-bounce': isSyncing}" class="w-4 h-4"></i>
                             <span class="hidden sm:inline">{{ isSyncing ? '同步中' : '同步' }}</span>
                         </button>
                         <div class="h-4 w-[1px] bg-slate-800"></div>
-                        <button @click="fetchStockPrices" :disabled="isFetchingPrices" class="flex items-center space-x-1.5 hover:bg-slate-800 text-sky-400 px-2.5 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-50" title="更新即時股價">
+                        <button @click="fetchStockPrices()" :disabled="isFetchingPrices" class="flex items-center space-x-1.5 hover:bg-slate-800 text-sky-400 px-2.5 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-50" title="更新即時股價">
                             <i data-lucide="refresh-cw" :class="{'animate-spin': isFetchingPrices}" class="w-4 h-4"></i>
                             <span class="hidden sm:inline">更新市價</span>
                         </button>
@@ -252,14 +252,9 @@
                     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-200">日常交易明細清單</h3>
-                            <p class="text-xs text-slate-400">點選可修改；<span class="text-emerald-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>；勾選可批次複製、填日期或刪除</p>
+                            <p class="text-xs text-slate-400">點選可修改；<span class="text-emerald-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>；勾選可批次處理</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                            <!-- 批次複製按鈕 -->
-                            <button @click="openBatchCopyModal" :disabled="selectedExpenseIds.length === 0" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 transition flex items-center space-x-1">
-                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                                <span>批次複製 ({{ selectedExpenseIds.length }})</span>
-                            </button>
                             <button @click="openBatchDateModal('payment')" :disabled="selectedExpenseIds.length === 0" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 transition">
                                 填付款日 ({{ selectedExpenseIds.length }})
                             </button>
@@ -282,7 +277,8 @@
                             <button @click="expenseMonthFilterScope = 'MONTH'" :class="expenseMonthFilterScope === 'MONTH' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">僅當月</button>
                             <button @click="expenseMonthFilterScope = 'ALL'" :class="expenseMonthFilterScope === 'ALL' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">全部歷史</button>
                         </div>
-                        
+
+                        <!-- 類別多選選單 -->
                         <div class="relative" @click.stop>
                             <button @click="toggleDropdown('category')" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 flex items-center justify-between focus:border-emerald-500 focus:outline-none">
                                 <span class="truncate">{{ categoryFilterLabel }}</span>
@@ -300,6 +296,7 @@
                             </div>
                         </div>
 
+                        <!-- 項目多選選單 -->
                         <div class="relative" @click.stop>
                             <button @click="toggleDropdown('item')" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 flex items-center justify-between focus:border-emerald-500 focus:outline-none">
                                 <span class="truncate">{{ itemFilterLabel }}</span>
@@ -317,6 +314,7 @@
                             </div>
                         </div>
 
+                        <!-- 付款方式多選選單 -->
                         <div class="relative" @click.stop>
                             <button @click="toggleDropdown('payment')" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 flex items-center justify-between focus:border-emerald-500 focus:outline-none">
                                 <span class="truncate">{{ paymentFilterLabel }}</span>
@@ -334,6 +332,7 @@
                             </div>
                         </div>
 
+                        <!-- 收支類型 -->
                         <div>
                             <select v-model="selectedTypeFilter" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
                                 <option value="ALL">全部收支類型</option>
@@ -447,6 +446,7 @@
                                         <span class="w-1.5 h-1.5 rounded-full" :class="holding.isLive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
                                     </span>
                                     <span class="text-sm font-semibold text-slate-200">NT$ {{ holding.currentPrice.toFixed(2) }}</span>
+                                    <span class="block text-[10px] text-slate-500 mt-0.5">{{ holding.priceSource }}</span>
                                 </div>
                             </div>
                             <div class="grid grid-cols-2 gap-2 text-xs bg-slate-900/50 p-2.5 rounded-xl border border-slate-800">
@@ -815,26 +815,7 @@
             </div>
         </div>
 
-        <!-- MODAL 4: Batch Copy Modal -->
-        <div v-if="showBatchCopyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-            <div class="glass-modal rounded-2xl w-full max-w-sm p-6 space-y-4 border border-slate-700/80">
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <h3 class="text-base font-bold text-slate-100">批次複製勾選的 {{ selectedExpenseIds.length }} 筆資料</h3>
-                    <button @click="showBatchCopyModal = false" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">請選擇複製後的目標日期</label>
-                    <input v-model="targetCopyDate" type="date" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
-                    <p class="text-[11px] text-slate-400 mt-1">複製產生的新項目將套用此日期，其餘金額與類別項目維持不變。</p>
-                </div>
-                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-800">
-                    <button type="button" @click="showBatchCopyModal = false" class="px-4 py-2 text-xs text-slate-400">取消</button>
-                    <button type="button" @click="applyBatchCopy" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">確認複製</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODAL 5: Import Help Documentation & Download Template -->
+        <!-- MODAL 4: Import Help Documentation & Download Template -->
         <div v-if="showImportHelpModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-2xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -847,12 +828,12 @@
                 <div class="space-y-3 text-xs text-slate-300">
                     <p>系統支援匯入含雙工作表 (Sheet) 的 Excel (.xlsx, .xls) 或 CSV 檔：</p>
                     <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                        <div class="font-bold text-emerald-400">工作表 1：日常收支紀錄 欄位標題名稱 (12欄)</div>
-                        <div class="text-slate-400">ID | 收支類型 | 日期 | 類別 | 項目 | 內容 | 金額 | 已付金額 | 付款方式 | 付款日 | 結算日 | 備註</div>
+                        <div class="font-bold text-emerald-400">工作表 1：日常收支紀錄 欄位標題名稱</div>
+                        <div class="text-slate-400">收支類型 | 日期 | 類別 | 項目 | 內容 | 金額 | 已付金額 | 備註 | 付款方式 | 付款日 | 結算日</div>
                     </div>
                     <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-                        <div class="font-bold text-indigo-400">工作表 2：ETF股票交易歷史 欄位標題名稱 (10欄)</div>
-                        <div class="text-slate-400">ID | 交易類型 | 交易日期 | 股票代碼 | 標的名稱 | 成交單價 | 成交股數 | 手續費 | 交易稅 | 總金額</div>
+                        <div class="font-bold text-indigo-400">工作表 2：ETF股票交易歷史 欄位標題名稱</div>
+                        <div class="text-slate-400">交易類型 | 交易日期 | 股票代碼 | 標的名稱 | 成交單價 | 成交股數 | 手續費 | 交易稅</div>
                     </div>
                 </div>
                 <div class="pt-3 flex justify-between items-center border-t border-slate-800">
@@ -883,7 +864,17 @@
                 const realNow = new Date();
                 const currentRealYear = realNow.getFullYear();
                 const currentRealMonth = realNow.getMonth() + 1;
-
+                // 以「本地時間」取今天日期（toISOString 是 UTC，台灣凌晨 0~8 點會差一天）
+                const todayStr = () => {
+                    const d = new Date();
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                };
+                // 統一日期格式為 YYYY-MM-DD（避免 2026/10/3 這類格式讓「當月」篩選漏掉資料）
+                const normDate = (v) => {
+                    if (!v) return '';
+                    const m = String(v).trim().match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+                    return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : String(v).split('T')[0];
+                };
                 const fileInputRef = ref(null);
                 const draggedIndex = ref(null);
 
@@ -893,10 +884,11 @@
                 const showOptionManagerModal = ref(false);
                 const isSyncing = ref(false);
 
-                // 清理代碼格式（轉換為字串，維持純字串）
+                // 清理與整理代碼格式（轉換為字串）
                 const cleanSymbol = (sym) => {
                     return String(sym || '').replace(/^'/, '').replace(/\.(TW|TWO)$/i, '').trim().toUpperCase();
                 };
+
                 const parseSymbolFromCloud = (sym) => {
                     let str = String(sym || '').replace(/^'/, '').trim().toUpperCase();
                     return str;
@@ -910,22 +902,23 @@
                     ...s,
                     symbol: parseSymbolFromCloud(s.symbol)
                 })));
-                const livePricesMap = ref(JSON.parse(localStorage.getItem(STORAGE_KEY_PRICES)) || {});
 
+                const livePricesMap = ref(JSON.parse(localStorage.getItem(STORAGE_KEY_PRICES)) || {});
+                
                 const activeTab = ref('expenses');
                 const selectedYear = ref(currentRealYear);
                 const selectedMonth = ref(currentRealMonth);
                 const isFetchingPrices = ref(false);
                 const lastPriceUpdate = ref('');
-
+                
                 const expenseSearch = ref('');
                 const expenseMonthFilterScope = ref('MONTH');
                 const selectedCategoryFilters = ref([]);
                 const selectedItemFilters = ref([]);
                 const selectedPaymentFilters = ref([]);
                 const selectedTypeFilter = ref('ALL');
-                const activeDropdown = ref(null);
 
+                const activeDropdown = ref(null);
                 const toggleDropdown = (name) => {
                     activeDropdown.value = activeDropdown.value === name ? null : name;
                 };
@@ -1014,101 +1007,172 @@
                 const showStockModal = ref(false);
                 const editingStockId = ref(null);
                 const showBatchDateModal = ref(false);
-                const showBatchCopyModal = ref(false);
-                const targetCopyDate = ref(new Date().toISOString().split('T')[0]);
                 const showImportHelpModal = ref(false);
                 const batchDateType = ref('payment');
-                const targetBatchDate = ref(new Date().toISOString().split('T')[0]);
+                const targetBatchDate = ref(todayStr());
 
-                const expenseForm = ref({ type: '支出', date: new Date().toISOString().split('T')[0], category: '變動支出', item: '飲食費', content: '', amount: null, paidAmount: null, note: '', paymentMethod: '國泰信用卡', paymentDate: '', settlementDate: '' });
-                const stockForm = ref({ action: '買進', date: new Date().toISOString().split('T')[0], symbol: '0050', name: '', price: null, shares: null, fee: 0, tax: 0 });
+                const expenseForm = ref({ type: '支出', date: todayStr(), category: '變動支出', item: '飲食費', content: '', amount: null, paidAmount: null, note: '', paymentMethod: '國泰信用卡', paymentDate: '', settlementDate: '' });
+                const stockForm = ref({ action: '買進', date: todayStr(), symbol: '0050', name: '', price: null, shares: null, fee: 0, tax: 0 });
 
-                let isDataLoaded = false;
-
-                // 即時推送到雲端 GAS (強制保持股票代碼開頭加單引號 ')
+                // ================= 雲端同步（版本號 + 安全保護） =================
+                const STORAGE_KEY_REV = 'findash_cloud_rev_v1';
+                const STORAGE_KEY_DIRTY = 'findash_dirty_v1';
+                let cloudRev = localStorage.getItem(STORAGE_KEY_REV);   // 本機所依據的雲端版本；null = 從未成功同步過
+                let dirty = localStorage.getItem(STORAGE_KEY_DIRTY) === '1'; // 有尚未上傳的本機修改
+                let suppressDirty = false;  // 套用雲端資料時，不要把它當成「使用者修改」
                 let pushTimer = null;
+                let pushing = false;
+                let editSeq = 0;
+                const syncState = ref(gasApiUrl.value ? (dirty ? 'dirty' : 'idle') : 'local');
+                const syncBadge = computed(() => ({
+                    idle:     { text: '雲端已連線', cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+                    ok:       { text: '雲端已同步', cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+                    syncing:  { text: '同步中…',   cls: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
+                    dirty:    { text: '尚未同步',   cls: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+                    error:    { text: '離線／同步失敗', cls: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
+                    conflict: { text: '需處理衝突', cls: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
+                    local:    { text: '', cls: '' }
+                }[syncState.value] || { text: '', cls: '' }));
+                const setDirty = (v) => { dirty = v; localStorage.setItem(STORAGE_KEY_DIRTY, v ? '1' : '0'); };
+                const setRev = (r) => { cloudRev = (r === null || r === undefined) ? null : String(r); if (cloudRev === null) localStorage.removeItem(STORAGE_KEY_REV); else localStorage.setItem(STORAGE_KEY_REV, cloudRev); };
+                const cloudUrl = (query) => gasApiUrl.value + (gasApiUrl.value.includes('?') ? '&' : '?') + query + '&_=' + Date.now();
+
+                // 使用者有修改 → 標記未同步，並延遲 0.8 秒上傳（合併連續操作）
                 const pushToCloud = () => {
+                    if (suppressDirty) return;
+                    editSeq++;
+                    setDirty(true);
                     if (!gasApiUrl.value) return;
+                    syncState.value = 'dirty';
                     clearTimeout(pushTimer);
-                    pushTimer = setTimeout(async () => {
-                        try {
-                            const formattedStocks = stockTrades.value.map(s => {
-                                const cleanSym = cleanSymbol(s.symbol);
-                                return {
-                                    ...s,
-                                    symbol: `'${cleanSym}` // 加單引號，強迫存為純文字格式
-                                };
-                            });
-                            const payload = new URLSearchParams();
-                            payload.append('postData', JSON.stringify({
-                                expenses: expenses.value, // 傳送完整的歷史主陣列，不受檢視篩選影響
-                                stockTrades: formattedStocks
-                            }));
-                            await fetch(gasApiUrl.value, {
-                                method: 'POST',
-                                mode: 'no-cors',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded'
-                                },
-                                body: payload.toString()
-                            });
-                            console.log('已即時同步全量資料至 Google 試算表！');
-                        } catch (e) {
-                            console.warn('自動同步雲端失敗:', e);
-                        }
-                    }, 500);
+                    pushTimer = setTimeout(() => { pushNow(); }, 800);
                 };
 
-                watch(expenses, (val) => {
-                    localStorage.setItem(STORAGE_KEY_EXPENSES, JSON.stringify(val));
+                const applyCloudData = async (data) => {
+                    suppressDirty = true;
+                    expenses.value = (data.expenses || []).map(e => ({
+                        ...e, date: normDate(e.date), paymentDate: normDate(e.paymentDate), settlementDate: normDate(e.settlementDate)
+                    }));
+                    stockTrades.value = (data.stockTrades || []).map(t => ({ ...t, date: normDate(t.date), symbol: parseSymbolFromCloud(t.symbol) }));
+                    setRev(data.rev || 0);
+                    setDirty(false);
+                    await nextTick();
+                    suppressDirty = false;
                     refreshDynamicOptions();
-                    if (isDataLoaded) pushToCloud();
-                }, { deep: true });
-
-                watch(stockTrades, (val) => {
-                    localStorage.setItem(STORAGE_KEY_STOCKS, JSON.stringify(val));
-                    if (isDataLoaded) pushToCloud();
-                }, { deep: true });
-
-                watch(livePricesMap, (val) => localStorage.setItem(STORAGE_KEY_PRICES, JSON.stringify(val)), { deep: true });
-
-                const saveApiUrl = () => {
-                    gasApiUrl.value = inputApiUrl.value.trim();
-                    localStorage.setItem(STORAGE_KEY_GAS_URL, gasApiUrl.value);
-                    showApiConfigModal.value = false;
-                    if (gasApiUrl.value) syncFromCloud();
+                    nextTick(() => renderCharts());
                 };
 
-                const syncFromCloud = async () => {
+                const pushNow = async (force = false) => {
+                    if (!gasApiUrl.value || pushing) return false;
+                    if (cloudRev === null && !force) return false;  // 從未拉過雲端資料前，絕不上傳（避免空資料覆蓋雲端）
+                    pushing = true;
+                    const seq = editSeq;
+                    syncState.value = 'syncing';
+                    try {
+                        const res = await fetch(gasApiUrl.value, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 不觸發 CORS 預檢，且能讀回結果
+                            redirect: 'follow',
+                            body: JSON.stringify({
+                                baseRev: cloudRev === null ? null : Number(cloudRev),
+                                force: !!force,
+                                expenses: expenses.value,
+                                stockTrades: stockTrades.value.map(t => ({ ...t, symbol: cleanSymbol(t.symbol) }))
+                            })
+                        });
+                        const r = await res.json();
+                        if (r.status === 'success') {
+                            setRev(r.rev);
+                            if (seq === editSeq) { setDirty(false); syncState.value = 'ok'; }
+                            else { syncState.value = 'dirty'; clearTimeout(pushTimer); pushTimer = setTimeout(() => { pushNow(); }, 300); }
+                            return true;
+                        }
+                        if (r.status === 'conflict') {
+                            syncState.value = 'conflict';
+                            pushing = false;
+                            if (confirm('另一台裝置已更新過雲端資料。\n\n【確定】載入雲端最新資料（本機尚未同步的修改會被取代）\n【取消】先保留本機畫面，稍後再處理')) {
+                                const data = await (await fetch(cloudUrl('action=data'), { redirect: 'follow' })).json();
+                                if (data.status === 'success') { await applyCloudData(data); syncState.value = 'ok'; fetchStockPrices(true); }
+                            }
+                            return false;
+                        }
+                        if (r.status === 'shrink') {
+                            pushing = false;
+                            if (confirm(`⚠️ 雲端目前有 ${r.cloudCount} 筆紀錄，但這次只要上傳 ${r.newCount} 筆。\n這通常代表本機資料不完整。\n\n確定要用本機資料覆蓋雲端嗎？\n（建議按「取消」，改按「同步」載入雲端資料）`)) {
+                                return await pushNow(true);
+                            }
+                            syncState.value = 'dirty';
+                            return false;
+                        }
+                        throw new Error(r.message || '未知錯誤');
+                    } catch (e) {
+                        console.warn('上傳雲端失敗:', e);
+                        syncState.value = 'error';
+                        return false;
+                    } finally {
+                        pushing = false;
+                    }
+                };
+
+                const syncFromCloud = async (silent = false) => {
+                    silent = (silent === true);   // 避免 @click 傳入事件物件
                     if (!gasApiUrl.value) {
-                        alert('請先在右上角「API設定」輸入您的 Google Apps Script 網址！');
-                        showApiConfigModal.value = true;
+                        if (!silent) { alert('請先在右上角「工具 → API 設定」輸入您的 Google Apps Script 網址！'); showApiConfigModal.value = true; }
                         return;
                     }
+                    if (isSyncing.value) return;
                     isSyncing.value = true;
+                    syncState.value = 'syncing';
                     try {
-                        const res = await fetch(gasApiUrl.value, { method: 'GET', redirect: 'follow' });
-                        if (res.ok) {
-                            const data = await res.json();
-                            if (data.status === 'success') {
-                                expenses.value = data.expenses || [];
-                                const cloudStocks = data.stockTrades || [];
-                                stockTrades.value = cloudStocks.map(s => ({
-                                    ...s,
-                                    symbol: parseSymbolFromCloud(s.symbol)
-                                }));
-                                refreshDynamicOptions();
-                                alert('成功從 Google 試算表同步全量歷史資料！');
-                                nextTick(() => renderCharts());
+                        // 本機有尚未上傳的修改 → 先上傳，再拉取
+                        if (dirty && cloudRev !== null) {
+                            const ok = await pushNow();
+                            if (!ok) return;
+                        }
+                        const res = await fetch(cloudUrl('action=data'), { method: 'GET', redirect: 'follow' });
+                        const data = await res.json();
+                        if (data.status !== 'success') throw new Error(data.message || '雲端回傳格式錯誤');
+                        const cloudCount = (data.expenses || []).length + (data.stockTrades || []).length;
+                        const localCount = expenses.value.length + stockTrades.value.length;
+                        if (cloudCount === 0 && localCount > 0 && cloudRev === null) {
+                            if (confirm('雲端試算表目前是空的，但本機有資料。\n要把本機資料上傳到雲端嗎？')) {
+                                setRev(data.rev || 0);
+                                await pushNow();
+                                return;
                             }
                         }
+                        await applyCloudData(data);
+                        syncState.value = 'ok';
+                        fetchStockPrices(true);
+                        if (!silent) alert('成功從 Google 試算表同步資料！');
                     } catch (e) {
-                        alert('同步失敗，請確認 API 網址是否正確。');
+                        console.warn('同步失敗:', e);
+                        syncState.value = 'error';
+                        if (!silent) alert('同步失敗，請確認 API 網址是否正確，以及網路是否正常。');
                     } finally {
                         isSyncing.value = false;
                     }
                 };
 
+                watch(expenses, (val) => {
+                    localStorage.setItem(STORAGE_KEY_EXPENSES, JSON.stringify(val));
+                    refreshDynamicOptions();
+                    pushToCloud();
+                }, { deep: true });
+                watch(stockTrades, (val) => {
+                    localStorage.setItem(STORAGE_KEY_STOCKS, JSON.stringify(val));
+                    pushToCloud();
+                }, { deep: true });
+                watch(livePricesMap, (val) => localStorage.setItem(STORAGE_KEY_PRICES, JSON.stringify(val)), { deep: true });
+                const saveApiUrl = () => {
+                    const newUrl = inputApiUrl.value.trim();
+                    if (newUrl !== gasApiUrl.value) setRev(null);   // 換了雲端，舊版本號作廢
+                    gasApiUrl.value = newUrl;
+                    localStorage.setItem(STORAGE_KEY_GAS_URL, gasApiUrl.value);
+                    showApiConfigModal.value = false;
+                    syncState.value = gasApiUrl.value ? 'idle' : 'local';
+                    if (gasApiUrl.value) syncFromCloud();
+                };
                 const isCurrentMonthOrFuture = computed(() => (selectedYear.value > currentRealYear) || (selectedYear.value === currentRealYear && selectedMonth.value >= currentRealMonth));
                 const roundTwo = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;
 
@@ -1120,7 +1184,8 @@
                         localStorage.removeItem(STORAGE_KEY_EXPENSES);
                         localStorage.removeItem(STORAGE_KEY_STOCKS);
                         localStorage.removeItem(STORAGE_KEY_PRICES);
-                        pushToCloud();
+                        setDirty(true);
+                        pushNow(true);
                         alert('已成功清空所有紀錄！');
                         nextTick(() => renderCharts());
                     }
@@ -1142,10 +1207,18 @@
                 const onDrop = (e, targetIndex, type) => {
                     if (draggedIndex.value === null) return;
                     if (type === 'expense') {
-                        const targetList = [...filteredExpenses.value];
-                        const movedItem = targetList.splice(draggedIndex.value, 1)[0];
-                        targetList.splice(targetIndex, 0, movedItem);
-                        expenses.value = targetList;
+                        // 注意：畫面上的清單可能是「篩選後」的結果，絕對不能直接拿它覆蓋整份資料！
+                        // 這裡用 id 找到在完整清單中的位置，只調整順序，不增不減。
+                        const view = filteredExpenses.value;
+                        const moved = view[draggedIndex.value];
+                        const target = view[targetIndex];
+                        if (moved && target && moved.id !== target.id) {
+                            const full = [...expenses.value];
+                            full.splice(full.findIndex(x => x.id === moved.id), 1);
+                            const toIdx = full.findIndex(x => x.id === target.id);
+                            full.splice(draggedIndex.value < targetIndex ? toIdx + 1 : toIdx, 0, moved);
+                            expenses.value = full;
+                        }
                     } else if (type === 'stock') {
                         const targetList = [...stockTrades.value];
                         const movedItem = targetList.splice(draggedIndex.value, 1)[0];
@@ -1157,25 +1230,43 @@
                     nextTick(() => renderCharts());
                 };
 
-                const fetchStockPrices = async () => {
-                    const symbols = Array.from(new Set(stockTrades.value.map(t => cleanSymbol(t.symbol))));
-                    if (symbols.length === 0) return;
+                const fetchStockPrices = async (silent = false) => {
+                    const symbols = Array.from(new Set(stockTrades.value.map(t => cleanSymbol(t.symbol)).filter(Boolean)));
+                    if (symbols.length === 0 || isFetchingPrices.value) return;
                     isFetchingPrices.value = true;
+                    const got = {};
+                    // 1) 優先：經由自己的 GAS 取得「盤中即時價」（TWSE 即時 → Yahoo 備援）
+                    if (gasApiUrl.value) {
+                        try {
+                            const res = await fetch(cloudUrl('action=prices&symbols=' + encodeURIComponent(symbols.join(','))), { redirect: 'follow' });
+                            const data = await res.json();
+                            if (data.status === 'success' && data.prices) {
+                                Object.entries(data.prices).forEach(([sym, p]) => {
+                                    const price = Number(p && p.price);
+                                    if (price > 0) got[cleanSymbol(sym)] = {
+                                        price: roundTwo(price), isLive: !!p.isLive, source: p.source || '即時報價',
+                                        time: p.time || '', fetchedAt: Date.now()
+                                    };
+                                });
+                            }
+                        } catch (e) {
+                            console.warn('GAS 即時報價失敗', e);
+                        }
+                    }
+                    // 2) 備援：FinMind「收盤價」（只有收盤後的日資料，不是即時價）
                     const startDateObj = new Date();
                     startDateObj.setDate(startDateObj.getDate() - 10);
                     const startDateStr = startDateObj.toISOString().split('T')[0];
-                    for (const sym of symbols) {
+                    for (const sym of symbols.filter(x => !got[x])) {
                         try {
-                            const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${sym}&start_date=${startDateStr}`;
-                            const res = await fetch(url);
+                            const res = await fetch(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${sym}&start_date=${startDateStr}`);
                             if (res.ok) {
                                 const data = await res.json();
                                 if (data.data && data.data.length > 0) {
                                     const latest = data.data[data.data.length - 1];
                                     const closePrice = Number(latest.close);
                                     if (!isNaN(closePrice) && closePrice > 0) {
-                                        livePricesMap.value[sym] = { price: roundTwo(closePrice), isLive: true };
-                                        continue;
+                                        got[sym] = { price: roundTwo(closePrice), isLive: false, source: 'FinMind 收盤價', time: latest.date, fetchedAt: Date.now() };
                                     }
                                 }
                             }
@@ -1183,12 +1274,18 @@
                             console.warn(`抓取 ${sym} 股價失敗`, e);
                         }
                     }
+                    livePricesMap.value = { ...livePricesMap.value, ...got };
                     isFetchingPrices.value = false;
                     const now = new Date();
                     lastPriceUpdate.value = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
                     nextTick(() => renderCharts());
                 };
-
+                // 台股盤中（週一至週五 09:00–13:30，台北時間）才自動輪詢報價
+                const isMarketOpen = () => {
+                    const t = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+                    const mins = t.getHours() * 60 + t.getMinutes();
+                    return t.getDay() >= 1 && t.getDay() <= 5 && mins >= 540 && mins <= 815;
+                };
                 const monthlyExpensesFiltered = computed(() => {
                     const prefix = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`;
                     return expenses.value.filter(e => e.date && e.date.startsWith(prefix));
@@ -1226,7 +1323,8 @@
                         const avgCost = h.shares > 0 ? (h.totalCost / h.shares) : 0;
                         const liveInfo = livePricesMap.value[h.symbol];
                         const currentPrice = (liveInfo && liveInfo.price) ? liveInfo.price : avgCost;
-                        const isLive = liveInfo ? liveInfo.isLive : false;
+                        const isLive = !!(liveInfo && liveInfo.isLive && liveInfo.fetchedAt && (Date.now() - liveInfo.fetchedAt) < 30 * 60 * 1000);
+                        const priceSource = liveInfo ? ((liveInfo.source || '') + (liveInfo.time ? ' ' + liveInfo.time : '')) : '尚無市價（暫以平均成本估算）';
                         const marketValue = h.shares * currentPrice;
                         const unrealizedPL = marketValue - h.totalCost;
                         const unrealizedPLRate = h.totalCost > 0 ? ((unrealizedPL / h.totalCost) * 100).toFixed(2) : '0.00';
@@ -1237,7 +1335,8 @@
                             marketValue: roundTwo(marketValue),
                             unrealizedPL: roundTwo(unrealizedPL),
                             unrealizedPLRate,
-                            isLive
+                            isLive,
+                            priceSource
                         };
                     });
                 });
@@ -1253,17 +1352,21 @@
                 const filteredExpenses = computed(() => {
                     const prefix = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`;
                     const kw = (expenseSearch.value || '').trim().toLowerCase();
+
                     return expenses.value.filter(e => {
                         const matchMonth = expenseMonthFilterScope.value === 'ALL' || (e.date && e.date.startsWith(prefix));
+                        
                         const matchKw = !kw || 
                             (e.item && String(e.item).toLowerCase().includes(kw)) ||
                             (e.category && String(e.category).toLowerCase().includes(kw)) ||
                             (e.content && String(e.content).toLowerCase().includes(kw)) ||
                             (e.note && String(e.note).toLowerCase().includes(kw));
+
                         const matchCat = selectedCategoryFilters.value.length === 0 || selectedCategoryFilters.value.includes(e.category);
                         const matchItem = selectedItemFilters.value.length === 0 || selectedItemFilters.value.includes(e.item);
                         const matchPay = selectedPaymentFilters.value.length === 0 || selectedPaymentFilters.value.includes(e.paymentMethod);
                         const matchType = selectedTypeFilter.value === 'ALL' || e.type === selectedTypeFilter.value;
+
                         return matchMonth && matchKw && matchCat && matchItem && matchPay && matchType;
                     });
                 });
@@ -1278,37 +1381,9 @@
 
                 const isAllExpensesSelected = computed(() => filteredExpenses.value.length > 0 && selectedExpenseIds.value.length === filteredExpenses.value.length);
                 const toggleSelectAllExpenses = (e) => { selectedExpenseIds.value = e.target.checked ? filteredExpenses.value.map(x => x.id) : []; };
+
                 const isAllStocksSelected = computed(() => stockTrades.value.length > 0 && selectedStockIds.value.length === stockTrades.value.length);
                 const toggleSelectAllStocks = (e) => { selectedStockIds.value = e.target.checked ? stockTrades.value.map(s => s.id) : []; };
-
-                // 執行批次複製功能
-                const openBatchCopyModal = () => {
-                    if (selectedExpenseIds.value.length === 0) return;
-                    targetCopyDate.value = new Date().toISOString().split('T')[0];
-                    showBatchCopyModal.value = true;
-                };
-
-                const applyBatchCopy = () => {
-                    if (!targetCopyDate.value) {
-                        alert('請選擇目標複製日期！');
-                        return;
-                    }
-                    const targetItems = expenses.value.filter(e => selectedExpenseIds.value.includes(e.id));
-                    const newItems = targetItems.map(item => ({
-                        ...item,
-                        id: Date.now() + Math.floor(Math.random() * 10000),
-                        date: targetCopyDate.value,
-                        paymentDate: '',
-                        settlementDate: ''
-                    }));
-                    
-                    expenses.value.unshift(...newItems);
-                    showBatchCopyModal.value = false;
-                    selectedExpenseIds.value = [];
-                    pushToCloud();
-                    alert(`成功批次複製 ${newItems.length} 筆資料至 ${targetCopyDate.value}！`);
-                    nextTick(() => renderCharts());
-                };
 
                 const exportToExcel = () => {
                     if (typeof XLSX === 'undefined') {
@@ -1321,9 +1396,9 @@
                         if (!dateStr) return '';
                         return String(dateStr).replace(/-/g, '/');
                     };
+
                     const reversedExpenses = [...expenses.value].reverse();
                     const expData = reversedExpenses.map(e => ({
-                        'ID': e.id,
                         '收支類型': e.type, 
                         '日期': formatSlashDate(e.date), 
                         '類別': e.category, 
@@ -1331,16 +1406,15 @@
                         '內容': e.content, 
                         '金額': e.amount, 
                         '已付金額': e.paidAmount, 
+                        '備註': e.note,
                         '付款方式': e.paymentMethod,
                         '付款日': formatSlashDate(e.paymentDate), 
-                        '結算日': formatSlashDate(e.settlementDate),
-                        '備註': e.note
+                        '結算日': formatSlashDate(e.settlementDate)
                     }));
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expData), '日常收支紀錄');
 
                     const reversedStockTrades = [...stockTrades.value].reverse();
                     const stockData = reversedStockTrades.map(s => ({
-                        'ID': s.id,
                         '交易類型': s.action, 
                         '交易日期': formatSlashDate(s.date), 
                         '股票代碼': cleanSymbol(s.symbol), 
@@ -1353,7 +1427,7 @@
                     }));
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stockData), 'ETF股票交易歷史');
 
-                    XLSX.writeFile(wb, `FinDash_財務報表_${new Date().toISOString().split('T')[0]}.xlsx`);
+                    XLSX.writeFile(wb, `FinDash_財務報表_${todayStr()}.xlsx`);
                 };
 
                 const handleFileUpload = (e) => {
@@ -1370,9 +1444,9 @@
                                 parsed.forEach(row => {
                                     if (row['金額'] || row['項目']) {
                                         expenses.value.unshift({
-                                            id: row['ID'] || (Date.now() + Math.random()),
+                                            id: Date.now() + Math.random(),
                                             type: row['收支類型'] || '支出',
-                                            date: row['日期'] ? String(row['日期']).replace(/\//g, '-') : new Date().toISOString().split('T')[0],
+                                            date: row['日期'] ? String(row['日期']).replace(/\//g, '-') : todayStr(),
                                             category: row['類別'] || '變動支出',
                                             item: row['項目'] || '其他',
                                             content: row['內容'] || '',
@@ -1398,9 +1472,9 @@
                                         const tax = Number(row['交易稅'] || 0);
                                         const total = row['總金額'] ? Number(row['總金額']) : (action === '買進' ? (price * shares) + fee : (price * shares) - fee - tax);
                                         stockTrades.value.unshift({
-                                            id: row['ID'] || (Date.now() + Math.random()),
+                                            id: Date.now() + Math.random(),
                                             action, 
-                                            date: row['交易日期'] ? String(row['交易日期']).replace(/\//g, '-') : new Date().toISOString().split('T')[0],
+                                            date: row['交易日期'] ? String(row['交易日期']).replace(/\//g, '-') : todayStr(),
                                             symbol: cleanSymbol(row['股票代碼']),
                                             name: row['標的名稱'] || 'ETF標的',
                                             price, shares, fee, tax, totalAmount: total
@@ -1424,10 +1498,10 @@
                 const downloadTemplateExcel = () => {
                     const wb = XLSX.utils.book_new();
                     const sampleExpenses = [
-                        { 'ID': Date.now(), '收支類型': '支出', '日期': '2026/09/02', '類別': '變動支出', '項目': '飲食費', '內容': '全聯採買', '金額': 1850, '已付金額': 1850, '付款方式': '悠遊卡', '付款日': '2026/09/02', '結算日': '', '備註': '一週食材' }
+                        { '收支類型': '支出', '日期': '2026/09/02', '類別': '變動支出', '項目': '飲食費', '內容': '全聯採買', '金額': 1850, '已付金額': 1850, '備註': '一週食材', '付款方式': '悠遊卡', '付款日': '2026/09/02', '結算日': '' }
                     ];
                     const sampleStocks = [
-                        { 'ID': Date.now() + 1000, '交易類型': '買進', '交易日期': '2026/03/15', '股票代碼': '0050', '標的名稱': '元大台灣50', '成交單價': 165.0, '成交股數': 2000, '手續費': 142, '交易稅': 0, '總金額': 330142 }
+                        { '交易類型': '買進', '交易日期': '2026/03/15', '股票代碼': '0050', '標的名稱': '元大台灣50', '成交單價': 165.0, '成交股數': 2000, '手續費': 142, '交易稅': 0, '總金額': 330142 }
                     ];
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sampleExpenses), '日常收支紀錄');
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sampleStocks), 'ETF股票交易歷史');
@@ -1452,7 +1526,7 @@
                         expenseForm.value = { ...item };
                     } else {
                         editingExpenseId.value = null;
-                        expenseForm.value = { type: '支出', date: new Date().toISOString().split('T')[0], category: categoriesList.value[0], item: itemsList.value[0], content: '', amount: null, paidAmount: null, note: '', paymentMethod: paymentMethodsList.value[0], paymentDate: '', settlementDate: '' };
+                        expenseForm.value = { type: '支出', date: todayStr(), category: categoriesList.value[0], item: itemsList.value[0], content: '', amount: null, paidAmount: null, note: '', paymentMethod: paymentMethodsList.value[0], paymentDate: '', settlementDate: '' };
                     }
                     showExpenseModal.value = true;
                 };
@@ -1493,7 +1567,7 @@
                         stockForm.value = { ...trade, symbol: cleanSymbol(trade.symbol) };
                     } else {
                         editingStockId.value = null;
-                        stockForm.value = { action: '買進', date: new Date().toISOString().split('T')[0], symbol: '0050', name: '元大台灣50', price: null, shares: null, fee: 0, tax: 0 };
+                        stockForm.value = { action: '買進', date: todayStr(), symbol: '0050', name: '元大台灣50', price: null, shares: null, fee: 0, tax: 0 };
                     }
                     showStockModal.value = true;
                 };
@@ -1636,10 +1710,17 @@
 
                 onMounted(() => {
                     if (window.lucide) lucide.createIcons();
-                    if (gasApiUrl.value) syncFromCloud();
-                    fetchStockPrices();
+                    if (gasApiUrl.value) syncFromCloud(true); else fetchStockPrices(true);
                     refreshDynamicOptions();
-                    setTimeout(() => { isDataLoaded = true; }, 1000);
+                    // 切回 App／網頁時自動同步，換裝置後不必手動按同步
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.visibilityState === 'visible') {
+                            if (gasApiUrl.value) syncFromCloud(true); else fetchStockPrices(true);
+                        }
+                    });
+                    window.addEventListener('online', () => { if (gasApiUrl.value) syncFromCloud(true); });
+                    // 盤中每 60 秒自動更新市價
+                    setInterval(() => { if (document.visibilityState === 'visible' && isMarketOpen()) fetchStockPrices(true); }, 60000);
                 });
 
                 return {
@@ -1649,9 +1730,8 @@
                     activeDropdown, toggleDropdown, closeAllDropdowns, categoryFilterLabel, itemFilterLabel, paymentFilterLabel,
                     selectedExpenseIds, selectedStockIds, categoriesList, itemsList, paymentMethodsList,
                     showExpenseModal, editingExpenseId, showStockModal, editingStockId, showBatchDateModal,
-                    showBatchCopyModal, targetCopyDate, openBatchCopyModal, applyBatchCopy,
                     showOptionManagerModal, editOptionName, deleteOptionItem,
-                    showImportHelpModal, gasApiUrl, inputApiUrl, showApiConfigModal, isSyncing, saveApiUrl, syncFromCloud,
+                    showImportHelpModal, syncState, syncBadge, gasApiUrl, inputApiUrl, showApiConfigModal, isSyncing, saveApiUrl, syncFromCloud,
                     batchDateType, targetBatchDate, expenseForm, stockForm, calculatedStockTotal, fileInputRef,
                     monthlyTotalIncome, monthlyTotalExpense, monthlySavingsRate, stockHoldings,
                     totalInvestmentMarketValue, totalUnrealizedPL, totalUnrealizedPLRate, totalRealizedPL,
