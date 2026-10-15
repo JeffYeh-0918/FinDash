@@ -203,7 +203,7 @@
                         </p>
                     </div>
                 </div>
-                <div class="glass-card rounded-2xl p-5">
+                <div @click="showRealizedModal = true" class="glass-card rounded-2xl p-5 cursor-pointer hover:border-amber-500/40 transition">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-medium text-slate-400">累積已實現損益</span>
                         <div class="p-2 bg-amber-500/10 rounded-lg text-amber-400"><i data-lucide="coins" class="w-5 h-5"></i></div>
@@ -214,6 +214,7 @@
                         </div>
                         <p class="text-xs text-slate-400 mt-1">賣出後落袋的損益（移動平均成本，已扣手續費與稅）</p>
                         <p class="text-[11px] text-slate-500 mt-0.5">累積股息收入 {{ formatCurrency(totalDividend) }}</p>
+                        <p class="text-[11px] text-amber-400/80 mt-0.5">點擊查看計算明細</p>
                     </div>
                 </div>
             </section>
@@ -687,18 +688,62 @@
                 <div class="overflow-x-auto max-h-[60vh] overflow-y-auto rounded-lg border border-slate-800">
                     <table class="w-full text-left text-xs sm:text-sm">
                         <thead class="bg-slate-800/90 text-slate-400 sticky top-0">
-                            <tr><th class="py-2 px-3">日期</th><th class="py-2 px-3">類別 / 項目</th><th class="py-2 px-3">內容</th><th class="py-2 px-3">備註</th><th class="py-2 px-3 text-right">金額</th><th class="py-2 px-3">結算日</th></tr>
+                            <tr><th class="py-2 px-3">日期</th><th class="py-2 px-3">項目 / 類別</th><th class="py-2 px-3">內容</th><th class="py-2 px-3">備註</th><th class="py-2 px-3 text-right">金額</th><th class="py-2 px-3">結算日</th></tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60">
                             <tr v-for="r in cardDetail.rows" :key="r.id">
                                 <td class="py-2 px-3 whitespace-nowrap">{{ r.date }}</td>
-                                <td class="py-2 px-3">{{ r.category }}<span class="block text-[11px] text-slate-500">{{ r.item }}</span></td>
+                                <td class="py-2 px-3">{{ r.item }}<span class="block text-[11px] text-slate-500">{{ r.category }}</span></td>
                                 <td class="py-2 px-3">{{ r.content }}</td>
                                 <td class="py-2 px-3 text-slate-400">{{ r.note }}</td>
                                 <td class="py-2 px-3 text-right text-rose-300 whitespace-nowrap">{{ formatCurrency(r.amount) }}</td>
                                 <td class="py-2 px-3 text-slate-400 whitespace-nowrap">{{ r.settlementDate || '未填' }}</td>
                             </tr>
                             <tr v-if="cardDetail.rows.length === 0"><td colspan="6" class="py-6 text-center text-slate-500">這個帳期沒有消費紀錄</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 已實現損益計算明細 -->
+        <div v-if="showRealizedModal" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
+            <div class="glass-modal rounded-2xl w-full max-w-4xl p-6 space-y-4 border border-slate-700/80 my-8">
+                <div class="flex justify-between items-start border-b border-slate-800 pb-3">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-100">已實現損益計算明細</h3>
+                        <p class="text-xs text-slate-400 mt-1">合計 <span class="font-bold" :class="realizedInfo.total >= 0 ? 'text-emerald-400' : 'text-rose-400'">{{ realizedInfo.total >= 0 ? '+' : '' }}{{ formatCurrency(Math.round(realizedInfo.total)) }}</span>・共 {{ realizedInfo.rows.length }} 筆賣出</p>
+                    </div>
+                    <button @click="showRealizedModal = false" class="text-slate-400 hover:text-white text-lg leading-none">✕</button>
+                </div>
+                <div class="text-xs text-slate-400 bg-slate-900/60 border border-slate-800 rounded-lg p-3 space-y-1">
+                    <p>計算方式（移動平均成本法）：每筆賣出的損益 = 賣出淨收入（成交金額 − 手續費 − 交易稅）−（賣出當下的平均成本 × 賣出股數）。</p>
+                    <p>平均成本 = 賣出前持有部分的總成本（含買進手續費）÷ 持有股數；每次賣出會依平均成本等比例減少持有成本。同一天的交易先算買進、再算賣出。</p>
+                    <p>驗證方法：挑一筆賣出，用「淨收入 − 成本」自己算一次，再和該列的損益比對；也可以和券商 App 的已實現損益比較（券商若採先進先出，數字會略有差異）。</p>
+                </div>
+                <div v-if="realizedInfo.ignored.length" class="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 space-y-1">
+                    <p class="font-bold">以下賣出紀錄沒有被完整計入：</p>
+                    <p v-for="(g, i) in realizedInfo.ignored" :key="i">{{ g.date }} {{ g.symbol }} {{ g.shares }} 股：{{ g.reason }}</p>
+                </div>
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <span v-for="b in realizedBySymbolList" :key="b.symbol" class="px-2 py-1 rounded bg-slate-800 border border-slate-700" :class="b.gain >= 0 ? 'text-emerald-400' : 'text-rose-400'">{{ b.symbol }}：{{ b.gain >= 0 ? '+' : '' }}{{ formatCurrency(Math.round(b.gain)) }}</span>
+                </div>
+                <div class="overflow-x-auto max-h-[50vh] overflow-y-auto rounded-lg border border-slate-800">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead class="bg-slate-800/90 text-slate-400 sticky top-0">
+                            <tr><th class="py-2 px-3">賣出日</th><th class="py-2 px-3">標的</th><th class="py-2 px-3 text-right">股數</th><th class="py-2 px-3 text-right">賣出時平均成本</th><th class="py-2 px-3 text-right">成本</th><th class="py-2 px-3 text-right">淨收入</th><th class="py-2 px-3 text-right">損益</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60">
+                            <tr v-for="(r, i) in realizedRowsDesc" :key="i">
+                                <td class="py-2 px-3 whitespace-nowrap">{{ r.date }}</td>
+                                <td class="py-2 px-3 whitespace-nowrap">{{ r.symbol }}<span class="block text-[11px] text-slate-500">{{ r.name }}</span></td>
+                                <td class="py-2 px-3 text-right">{{ r.shares.toLocaleString() }}</td>
+                                <td class="py-2 px-3 text-right">{{ r.avgCost.toFixed(2) }}</td>
+                                <td class="py-2 px-3 text-right">{{ Math.round(r.cost).toLocaleString() }}</td>
+                                <td class="py-2 px-3 text-right">{{ Math.round(r.proceeds).toLocaleString() }}</td>
+                                <td class="py-2 px-3 text-right font-bold whitespace-nowrap" :class="r.gain >= 0 ? 'text-emerald-400' : 'text-rose-400'">{{ r.gain >= 0 ? '+' : '' }}{{ Math.round(r.gain).toLocaleString() }}</td>
+                            </tr>
+                            <tr v-if="realizedInfo.rows.length === 0"><td colspan="7" class="py-6 text-center text-slate-500">目前沒有可計算的賣出紀錄</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -987,7 +1032,7 @@
     </div>
 
     <script>
-        const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
+        const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick } = Vue;
         createApp({
             setup() {
                 const STORAGE_KEY_EXPENSES = 'findash_expenses_v2';
@@ -1495,6 +1540,9 @@
                 });
                 const realizedInfo = computed(() => calcRealized(stockTrades.value));
                 const totalRealizedPL = computed(() => roundTwo(realizedInfo.value.total));
+                const showRealizedModal = ref(false);
+                const realizedRowsDesc = computed(() => [...realizedInfo.value.rows].reverse());
+                const realizedBySymbolList = computed(() => Object.entries(realizedInfo.value.by).map(([symbol, gain]) => ({ symbol, gain })));
                 const dividendBySymbol = computed(() => calcDividends(expenses.value));
                 const totalDividend = computed(() => roundTwo(Object.values(dividendBySymbol.value).reduce((a, b) => a + b, 0)));
 
@@ -1506,29 +1554,33 @@
                 });
                 // 已實現損益（移動平均成本法）：賣出淨收入 −（賣出當下平均成本 × 賣出股數）
                 const calcRealized = (trades) => {
-                    const pos = {}; const by = {}; let total = 0;
+                    const pos = {}; const by = {}; const rows = []; const ignored = []; let total = 0;
                     sortTrades(trades).forEach(t => {
                         const sym = cleanSymbol(t.symbol);
                         if (!sym) return;
                         const p = pos[sym] || (pos[sym] = { shares: 0, cost: 0 });
                         const shares = Number(t.shares || 0), amt = Number(t.totalAmount || 0);
                         if (t.action === '買進') { p.shares += shares; p.cost += amt; }
-                        else if (t.action === '賣出' && p.shares > 0 && shares > 0) {
+                        else if (t.action === '賣出' && shares > 0) {
+                            if (p.shares <= 0) { ignored.push({ date: t.date, symbol: sym, shares, reason: '沒有對應的買進紀錄' }); return; }
                             const sell = Math.min(shares, p.shares);
+                            if (sell < shares) ignored.push({ date: t.date, symbol: sym, shares: shares - sell, reason: '賣出股數超過持有，超出部分未計入' });
                             const avg = p.cost / p.shares;
-                            const gain = amt * (sell / shares) - avg * sell;
+                            const proceeds = amt * (sell / shares);
+                            const gain = proceeds - avg * sell;
+                            rows.push({ date: t.date, symbol: sym, name: t.name || '', shares: sell, avgCost: avg, proceeds, cost: avg * sell, gain });
                             p.shares -= sell; p.cost -= avg * sell;
                             if (p.shares <= 0) { p.shares = 0; p.cost = 0; }
                             by[sym] = (by[sym] || 0) + gain; total += gain;
                         }
                     });
-                    return { total, by };
+                    return { total, by, rows, ignored };
                 };
                 // 股息：類別為「股息」，內容為股票代碼
                 const calcDividends = (list) => {
                     const m = {};
                     list.forEach(e => {
-                        if (e.category !== '股息') return;
+                        if (e.item !== '股息' && e.category !== '股息') return;  // 項目或類別為「股息」皆可
                         const sym = cleanSymbol(e.content);
                         if (!sym) return;
                         const amt = Number(e.amount || 0);
@@ -1767,7 +1819,7 @@
                                             item: row['項目'] || '其他',
                                             content: row['內容'] || '',
                                             amount: Number(row['金額'] || 0),
-                                            paidAmount: Number(row['已付金額'] || row['金額'] || 0),
+                                            paidAmount: Number(row['已付金額'] || 0),  // 未填就是 0，不再用「金額」補值
                                             paymentMethod: row['付款方式'] || '付現',
                                             paymentDate: row['付款日'] ? String(row['付款日']).replace(/\//g, '-') : '',
                                             settlementDate: row['結算日'] ? String(row['結算日']).replace(/\//g, '-') : '',
@@ -1814,7 +1866,7 @@
                 const downloadTemplateExcel = () => {
                     const wb = XLSX.utils.book_new();
                     const sampleExpenses = [
-                        { 'ID': Date.now(), '收支類型': '支出', '日期': '2026/09/02', '類別': '變動支出', '項目': '飲食費', '內容': '全聯採買', '金額': 1850, '已付金額': 1850, '付款方式': '悠遊卡', '付款日': '2026/09/02', '結算日': '', '備註': '一週食材' }
+                        { 'ID': Date.now(), '收支類型': '支出', '日期': '2026/09/02', '類別': '變動支出', '項目': '飲食費', '內容': '全聯採買', '金額': 1850, '已付金額': 0, '付款方式': '國泰信用卡', '付款日': '2026/09/02', '結算日': '', '備註': '一週食材' }
                     ];
                     const sampleStocks = [
                         { 'ID': Date.now() + 1000, '交易類型': '買進', '交易日期': '2026/03/15', '股票代碼': '0050', '標的名稱': '元大台灣50', '成交單價': 165.0, '成交股數': 2000, '手續費': 142, '交易稅': 0, '總金額': 330142 }
@@ -2027,6 +2079,14 @@
                     }
                 };
 
+                // 新增明細、載入更多、開啟彈窗後，補建新出現的圖示（不用再重新整理）
+                let iconRaf = 0;
+                onUpdated(() => {
+                    if (!window.lucide) return;
+                    cancelAnimationFrame(iconRaf);
+                    iconRaf = requestAnimationFrame(() => { try { lucide.createIcons(); } catch (e) { console.warn('icons', e); } });
+                });
+
                 onMounted(() => {
                     if (window.lucide) lucide.createIcons();
                     if (gasApiUrl.value) syncFromCloud(true); else fetchStockPrices(true);
@@ -2044,6 +2104,7 @@
 
                 return {
                     appSettings, showCardSettingsModal, isCard, getCardDay, toggleCard, setCardDay, cardOffset, cardStatements, cardDetail, openCardDetail,
+                    showRealizedModal, realizedInfo, realizedRowsDesc, realizedBySymbolList,
                     undoToast, undoLast, displayedExpenses, loadMoreExpenses, onExpenseScroll, totalDividend,
                     expenses, stockTrades, activeTab, selectedYear, selectedMonth, isCurrentMonthOrFuture,
                     isFetchingPrices, lastPriceUpdate, expenseSearch, expenseMonthFilterScope,
