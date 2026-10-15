@@ -121,6 +121,10 @@
                                 <i data-lucide="settings" class="w-3.5 h-3.5"></i>
                                 <span>API 設定</span>
                             </button>
+                            <button @click="showCardSettingsModal = true" class="w-full text-left px-3 py-2 text-xs text-sky-300 hover:bg-slate-800/80 flex items-center space-x-2">
+                                <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
+                                <span>信用卡設定</span>
+                            </button>
                             <button @click="showOptionManagerModal = true" class="w-full text-left px-3 py-2 text-xs text-indigo-300 hover:bg-slate-800/80 flex items-center space-x-2">
                                 <i data-lucide="list-checks" class="w-3.5 h-3.5"></i>
                                 <span>選單項目管理</span>
@@ -208,12 +212,13 @@
                         <div class="text-2xl font-bold" :class="totalRealizedPL >= 0 ? 'text-emerald-400' : 'text-rose-400'">
                             {{ totalRealizedPL >= 0 ? '+' : '' }}{{ formatCurrency(totalRealizedPL) }}
                         </div>
-                        <p class="text-xs text-slate-400 mt-1">已出場標的歷史總損益</p>
+                        <p class="text-xs text-slate-400 mt-1">賣出後落袋的損益（移動平均成本，已扣手續費與稅）</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">累積股息收入 {{ formatCurrency(totalDividend) }}</p>
                     </div>
                 </div>
             </section>
 
-            <div class="flex border-b border-slate-800/80 space-x-6">
+            <div class="flex border-b border-slate-800/80 space-x-6 overflow-x-auto whitespace-nowrap">
                 <button @click="activeTab = 'expenses'" :class="activeTab === 'expenses' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 flex items-center space-x-2 text-sm sm:text-base transition">
                     <i data-lucide="receipt" class="w-4 h-4"></i>
                     <span>日常收支與對帳管理</span>
@@ -221,6 +226,10 @@
                 <button @click="activeTab = 'investments'" :class="activeTab === 'investments' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 flex items-center space-x-2 text-sm sm:text-base transition">
                     <i data-lucide="line-chart" class="w-4 h-4"></i>
                     <span>ETF & 股票投資儀表板</span>
+                </button>
+                <button @click="activeTab = 'cards'" :class="activeTab === 'cards' ? 'border-sky-500 text-sky-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 flex items-center space-x-2 text-sm sm:text-base transition">
+                    <i data-lucide="credit-card" class="w-4 h-4"></i>
+                    <span>信用卡待結算</span>
                 </button>
             </div>
 
@@ -344,7 +353,7 @@
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800">
+                    <div @scroll="onExpenseScroll" class="overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800">
                         <table class="w-full text-left text-xs sm:text-sm">
                             <thead class="bg-slate-800/90 text-slate-400 border-b border-slate-700/60 uppercase sticky top-0 z-10 backdrop-blur-md">
                                 <tr>
@@ -364,7 +373,7 @@
                             </thead>
                             <tbody class="divide-y divide-slate-800/60">
                                 <tr 
-                                    v-for="(item, index) in filteredExpenses" 
+                                    v-for="(item, index) in displayedExpenses" 
                                     :key="item.id" 
                                     draggable="true"
                                     @dragstart="onDragStart($event, index, 'expense')"
@@ -414,10 +423,47 @@
                             </tbody>
                         </table>
                     </div>
+                    <div v-if="filteredExpenses.length > displayedExpenses.length" class="text-center text-xs text-slate-400 py-1">
+                        已顯示 {{ displayedExpenses.length }} / 共 {{ filteredExpenses.length }} 筆，捲到底會自動載入更多
+                        <button @click="loadMoreExpenses" class="ml-2 text-emerald-400 underline">立即載入更多</button>
+                    </div>
                 </div>
             </div>
 
             <!-- TAB 2: ETF & 股票投資儀表板 -->
+            <div v-show="activeTab === 'cards'" class="space-y-6">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100">信用卡待結算</h2>
+                        <p class="text-xs text-slate-400">依各卡結帳日推算帳期，金額為該帳期內「金額」欄的合計（記在「已付金額」欄的儲值／預付消費不重複計算）</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="cardOffset++" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">◀ 更早一期</button>
+                        <button @click="cardOffset = Math.max(0, cardOffset - 1)" :disabled="cardOffset === 0" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 disabled:opacity-40">較新一期 ▶</button>
+                        <button @click="showCardSettingsModal = true" class="px-3 py-1.5 rounded-lg text-xs bg-sky-700 hover:bg-sky-600 text-white">信用卡設定</button>
+                    </div>
+                </div>
+                <div v-if="cardStatements.length === 0" class="glass-card rounded-2xl p-6 text-sm text-slate-400">
+                    尚未設定信用卡。請按右上角「信用卡設定」，勾選屬於信用卡的付款方式並填入每月結帳日。
+                </div>
+                <div v-for="card in cardStatements" :key="card.name" class="glass-card rounded-2xl p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-base font-bold text-slate-100">{{ card.name }}</h3>
+                        <span class="text-[11px] text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">每月 {{ card.closingDay }} 日結帳</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button v-for="p in card.periods" :key="p.key" @click="openCardDetail(card, p)" class="text-left bg-slate-900/60 border border-slate-800 hover:border-sky-500/60 rounded-xl p-4 transition">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-slate-400">{{ p.title }}</span>
+                                <span class="text-[10px] px-1.5 rounded border" :class="p.closed ? 'text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-sky-300 border-sky-500/30 bg-sky-500/10'">{{ p.closed ? '已出帳' : '尚未出帳' }}</span>
+                            </div>
+                            <div class="text-2xl font-bold text-rose-300 mt-2">{{ formatCurrency(p.total) }}</div>
+                            <div class="text-[11px] text-slate-500 mt-1">{{ p.start }} ～ {{ p.end }}・{{ p.count }} 筆（點擊看明細）</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div v-show="activeTab === 'investments'" class="space-y-6">
                 <div>
                     <div class="flex items-center justify-between mb-4">
@@ -477,6 +523,15 @@
                                     <span class="text-xs block font-semibold">
                                         ({{ holding.unrealizedPL >= 0 ? '+' : '' }}{{ holding.unrealizedPLRate }}%)
                                     </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-slate-400">含息損益
+                                    <span class="block text-[10px] text-slate-500">已領股息 {{ formatCurrency(holding.dividends) }}</span>
+                                </span>
+                                <div class="text-right" :class="holding.totalPL >= 0 ? 'text-emerald-400' : 'text-rose-400'">
+                                    <span class="text-sm font-bold">{{ holding.totalPL >= 0 ? '+' : '' }}{{ formatCurrency(holding.totalPL) }}</span>
+                                    <span class="text-xs block font-semibold">({{ holding.totalPL >= 0 ? '+' : '' }}{{ holding.totalPLRate }}%)</span>
                                 </div>
                             </div>
                         </div>
@@ -590,6 +645,70 @@
                     <button type="button" @click="saveApiUrl" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold">儲存並連結</button>
                 </div>
             </div>
+        </div>
+
+        <!-- 信用卡設定 -->
+        <div v-if="showCardSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
+            <div class="glass-modal rounded-2xl w-full max-w-lg p-6 space-y-4 border border-slate-700/80 my-8">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 class="text-base font-bold text-slate-100">信用卡設定</h3>
+                    <button @click="showCardSettingsModal = false" class="text-slate-400 hover:text-white text-lg leading-none">✕</button>
+                </div>
+                <p class="text-xs text-slate-400">勾選屬於信用卡的付款方式，並填入每月結帳日。結帳日是 29～31 日時，遇到較短的月份會自動取該月最後一天。</p>
+                <div class="space-y-2 max-h-80 overflow-y-auto">
+                    <div v-for="pm in paymentMethodsList" :key="pm" class="flex items-center justify-between bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
+                        <label class="flex items-center space-x-2 text-sm text-slate-200">
+                            <input type="checkbox" :checked="isCard(pm)" @change="toggleCard(pm)" class="rounded bg-slate-900 border-slate-700">
+                            <span>{{ pm }}</span>
+                        </label>
+                        <div v-if="isCard(pm)" class="flex items-center space-x-1 text-xs text-slate-400">
+                            <span>每月</span>
+                            <input type="number" min="1" max="31" :value="getCardDay(pm)" @input="setCardDay(pm, $event.target.value)" class="w-16 bg-slate-900 border border-slate-700 rounded p-1 text-center text-slate-200">
+                            <span>日結帳</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 flex justify-end border-t border-slate-800">
+                    <button @click="showCardSettingsModal = false" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">完成</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 信用卡帳期明細 -->
+        <div v-if="cardDetail" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
+            <div class="glass-modal rounded-2xl w-full max-w-3xl p-6 space-y-4 border border-slate-700/80 my-8">
+                <div class="flex justify-between items-start border-b border-slate-800 pb-3">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-100">{{ cardDetail.name }}・{{ cardDetail.title }}</h3>
+                        <p class="text-xs text-slate-400 mt-1">{{ cardDetail.start }} ～ {{ cardDetail.end }}・{{ cardDetail.rows.length }} 筆・合計 <span class="text-rose-300 font-bold">{{ formatCurrency(cardDetail.total) }}</span></p>
+                    </div>
+                    <button @click="cardDetail = null" class="text-slate-400 hover:text-white text-lg leading-none">✕</button>
+                </div>
+                <div class="overflow-x-auto max-h-[60vh] overflow-y-auto rounded-lg border border-slate-800">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead class="bg-slate-800/90 text-slate-400 sticky top-0">
+                            <tr><th class="py-2 px-3">日期</th><th class="py-2 px-3">類別 / 項目</th><th class="py-2 px-3">內容</th><th class="py-2 px-3">備註</th><th class="py-2 px-3 text-right">金額</th><th class="py-2 px-3">結算日</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60">
+                            <tr v-for="r in cardDetail.rows" :key="r.id">
+                                <td class="py-2 px-3 whitespace-nowrap">{{ r.date }}</td>
+                                <td class="py-2 px-3">{{ r.category }}<span class="block text-[11px] text-slate-500">{{ r.item }}</span></td>
+                                <td class="py-2 px-3">{{ r.content }}</td>
+                                <td class="py-2 px-3 text-slate-400">{{ r.note }}</td>
+                                <td class="py-2 px-3 text-right text-rose-300 whitespace-nowrap">{{ formatCurrency(r.amount) }}</td>
+                                <td class="py-2 px-3 text-slate-400 whitespace-nowrap">{{ r.settlementDate || '未填' }}</td>
+                            </tr>
+                            <tr v-if="cardDetail.rows.length === 0"><td colspan="6" class="py-6 text-center text-slate-500">這個帳期沒有消費紀錄</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 復原提示 -->
+        <div v-if="undoToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center space-x-4 bg-slate-800 border border-slate-600 text-slate-100 text-sm rounded-xl shadow-2xl px-4 py-3">
+            <span>{{ undoToast }}</span>
+            <button @click="undoLast" class="font-bold text-emerald-400 hover:text-emerald-300">復原</button>
         </div>
 
         <!-- MODAL: 選單項目管理視窗 -->
@@ -1077,6 +1196,8 @@
                     stockTrades.value = (data.stockTrades || []).map(t => ({ ...t, date: normDate(t.date), symbol: parseSymbolFromCloud(t.symbol) }));
                     setRev(data.rev || 0);
                     setDirty(false);
+                    if (data.settings && Array.isArray(data.settings.creditCards)) appSettings.value = data.settings;
+                    clearUndo();
                     await nextTick();
                     suppressDirty = false;
                     refreshDynamicOptions();
@@ -1098,6 +1219,7 @@
                                 baseRev: cloudRev === null ? null : Number(cloudRev),
                                 force: !!force,
                                 expenses: expenses.value,
+                                settings: appSettings.value,
                                 stockTrades: stockTrades.value.map(t => ({ ...t, symbol: cleanSymbol(t.symbol) }))
                             })
                         });
@@ -1318,7 +1440,7 @@
 
                 const stockHoldings = computed(() => {
                     const map = {};
-                    const sortedTrades = [...stockTrades.value].sort((a, b) => new Date(a.date) - new Date(b.date));
+                    const sortedTrades = sortTrades(stockTrades.value);
                     sortedTrades.forEach(t => {
                         const sym = cleanSymbol(t.symbol);
                         if (!map[sym]) map[sym] = { symbol: sym, name: t.name, shares: 0, totalCost: 0 };
@@ -1355,6 +1477,9 @@
                             avgCost: roundTwo(avgCost),
                             marketValue: roundTwo(marketValue),
                             unrealizedPL: roundTwo(unrealizedPL),
+                            dividends: roundTwo(dividendBySymbol.value[h.symbol] || 0),
+                            totalPL: roundTwo(unrealizedPL + (dividendBySymbol.value[h.symbol] || 0)),
+                            totalPLRate: h.totalCost > 0 ? (((unrealizedPL + (dividendBySymbol.value[h.symbol] || 0)) / h.totalCost) * 100).toFixed(2) : '0.00',
                             unrealizedPLRate,
                             isLive,
                             priceSource
@@ -1368,7 +1493,143 @@
                     const cost = stockHoldings.value.reduce((s, h) => s + h.totalCost, 0);
                     return cost === 0 ? '0.00' : ((totalUnrealizedPL.value / cost) * 100).toFixed(2);
                 });
-                const totalRealizedPL = computed(() => 0);
+                const realizedInfo = computed(() => calcRealized(stockTrades.value));
+                const totalRealizedPL = computed(() => roundTwo(realizedInfo.value.total));
+                const dividendBySymbol = computed(() => calcDividends(expenses.value));
+                const totalDividend = computed(() => roundTwo(Object.values(dividendBySymbol.value).reduce((a, b) => a + b, 0)));
+
+                // <<PURE-START>>
+                const sortTrades = (list) => [...list].sort((a, b) => {
+                    const d = String(a.date || '').localeCompare(String(b.date || ''));
+                    if (d !== 0) return d;
+                    return (a.action === '賣出' ? 1 : 0) - (b.action === '賣出' ? 1 : 0);  // 同一天先算買進、再算賣出
+                });
+                // 已實現損益（移動平均成本法）：賣出淨收入 −（賣出當下平均成本 × 賣出股數）
+                const calcRealized = (trades) => {
+                    const pos = {}; const by = {}; let total = 0;
+                    sortTrades(trades).forEach(t => {
+                        const sym = cleanSymbol(t.symbol);
+                        if (!sym) return;
+                        const p = pos[sym] || (pos[sym] = { shares: 0, cost: 0 });
+                        const shares = Number(t.shares || 0), amt = Number(t.totalAmount || 0);
+                        if (t.action === '買進') { p.shares += shares; p.cost += amt; }
+                        else if (t.action === '賣出' && p.shares > 0 && shares > 0) {
+                            const sell = Math.min(shares, p.shares);
+                            const avg = p.cost / p.shares;
+                            const gain = amt * (sell / shares) - avg * sell;
+                            p.shares -= sell; p.cost -= avg * sell;
+                            if (p.shares <= 0) { p.shares = 0; p.cost = 0; }
+                            by[sym] = (by[sym] || 0) + gain; total += gain;
+                        }
+                    });
+                    return { total, by };
+                };
+                // 股息：類別為「股息」，內容為股票代碼
+                const calcDividends = (list) => {
+                    const m = {};
+                    list.forEach(e => {
+                        if (e.category !== '股息') return;
+                        const sym = cleanSymbol(e.content);
+                        if (!sym) return;
+                        const amt = Number(e.amount || 0);
+                        m[sym] = (m[sym] || 0) + (e.type === '支出' ? -amt : amt);
+                    });
+                    return m;
+                };
+                // 信用卡帳期：k=0 為包含今天的那一期，k=1 為上一期…；結帳日 29~31 遇短月自動取月底
+                const lastDayOf = (y, m) => new Date(y, m + 1, 0).getDate();
+                const closingOf = (y, m, day) => new Date(y, m, Math.min(day, lastDayOf(y, m)));
+                const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const cardPeriod = (closingDay, k, today) => {
+                    const y = today.getFullYear();
+                    let m = today.getMonth();
+                    if (today.getDate() > Math.min(closingDay, lastDayOf(y, m))) m += 1;
+                    m -= k;
+                    const end = closingOf(y, m, closingDay);
+                    const prevEnd = closingOf(y, m - 1, closingDay);
+                    const start = new Date(prevEnd.getFullYear(), prevEnd.getMonth(), prevEnd.getDate() + 1);
+                    return { start: ymd(start), end: ymd(end) };
+                };
+                // <<PURE-END>>
+
+                // ---------- 設定（信用卡結帳日），會同步到雲端 ----------
+                const appSettings = ref((() => { try { const v = JSON.parse(localStorage.getItem('findash_settings_v1')); return (v && Array.isArray(v.creditCards)) ? v : { creditCards: [] }; } catch (e) { return { creditCards: [] }; } })());
+                watch(appSettings, (v) => { localStorage.setItem('findash_settings_v1', JSON.stringify(v)); pushToCloud(); }, { deep: true });
+                const showCardSettingsModal = ref(false);
+                const isCard = (name) => appSettings.value.creditCards.some(c => c.name === name);
+                const getCardDay = (name) => (appSettings.value.creditCards.find(c => c.name === name) || {}).closingDay || '';
+                const toggleCard = (name) => {
+                    const list = appSettings.value.creditCards;
+                    const i = list.findIndex(c => c.name === name);
+                    if (i >= 0) list.splice(i, 1); else list.push({ name, closingDay: 1 });
+                };
+                const setCardDay = (name, v) => {
+                    const d = parseInt(v, 10);
+                    const c = appSettings.value.creditCards.find(x => x.name === name);
+                    if (c && d) c.closingDay = Math.min(31, Math.max(1, d));
+                };
+
+                // ---------- 信用卡待結算 ----------
+                const cardOffset = ref(0);
+                const cardDetail = ref(null);
+                const cardRows = (name, p) => expenses.value
+                    .filter(e => e.type === '支出' && e.paymentMethod === name && e.date >= p.start && e.date <= p.end && Number(e.amount || 0) !== 0)
+                    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+                const cardStatements = computed(() => {
+                    const today = new Date(), todayText = ymd(today);
+                    return appSettings.value.creditCards.map(c => {
+                        const periods = [0, 1].map(i => {
+                            const k = cardOffset.value + i;
+                            const p = cardPeriod(c.closingDay, k, today);
+                            const rows = cardRows(c.name, p);
+                            const total = rows.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+                            return {
+                                key: k, ...p, count: rows.length, total,
+                                closed: p.end < todayText,
+                                title: cardOffset.value === 0 ? (i === 0 ? '本期累計' : '上期帳單') : `${p.end.slice(0, 7)} 帳單`
+                            };
+                        });
+                        return { name: c.name, closingDay: c.closingDay, periods };
+                    });
+                });
+                const openCardDetail = (card, p) => {
+                    const rows = cardRows(card.name, p);
+                    cardDetail.value = { name: card.name, title: p.title, start: p.start, end: p.end, rows, total: rows.reduce((s, e) => s + Number(e.amount || 0), 0) };
+                };
+
+                // ---------- 復原 ----------
+                let undoSnap = null, undoTimer = null;
+                const undoToast = ref(null);
+                const captureUndo = () => { undoSnap = { e: JSON.stringify(expenses.value), s: JSON.stringify(stockTrades.value) }; };
+                const armUndo = (msg) => {
+                    if (!undoSnap) return;
+                    undoToast.value = msg;
+                    clearTimeout(undoTimer);
+                    undoTimer = setTimeout(() => { undoToast.value = null; undoSnap = null; }, 10000);
+                };
+                const clearUndo = () => { clearTimeout(undoTimer); undoToast.value = null; undoSnap = null; };
+                const withUndo = (msg, fn) => { captureUndo(); fn(); armUndo(msg); };
+                const undoLast = () => {
+                    if (!undoSnap) return;
+                    const snap = undoSnap;
+                    clearUndo();
+                    expenses.value = JSON.parse(snap.e);
+                    stockTrades.value = JSON.parse(snap.s);
+                    selectedExpenseIds.value = [];
+                    selectedStockIds.value = [];
+                    pushToCloud();
+                    nextTick(() => renderCharts());
+                };
+
+                // ---------- 分頁（預設 100 筆，捲到底再載入） ----------
+                const PAGE_SIZE = 100;
+                const visibleCount = ref(PAGE_SIZE);
+                const loadMoreExpenses = () => { visibleCount.value += PAGE_SIZE; };
+                const onExpenseScroll = (ev) => {
+                    const el = ev.target;
+                    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80 && visibleCount.value < filteredExpenses.value.length) loadMoreExpenses();
+                };
+                watch([expenseSearch, selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilter, selectedYear, selectedMonth, expenseMonthFilterScope], () => { visibleCount.value = PAGE_SIZE; }, { deep: true });
 
                 const filteredExpenses = computed(() => {
                     const prefix = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`;
@@ -1387,6 +1648,8 @@
                         return matchMonth && matchKw && matchCat && matchItem && matchPay && matchType;
                     });
                 });
+
+                const displayedExpenses = computed(() => filteredExpenses.value.slice(0, visibleCount.value));
 
                 const resetFilters = () => {
                     expenseSearch.value = '';
@@ -1413,6 +1676,7 @@
                         alert('請選擇目標複製日期！');
                         return;
                     }
+                    captureUndo();
                     const targetItems = expenses.value.filter(e => selectedExpenseIds.value.includes(e.id));
                     const usedIds = new Set(expenses.value.map(e => e.id));
                     const newItems = targetItems.map(item => {
@@ -1432,7 +1696,7 @@
                     showBatchCopyModal.value = false;
                     selectedExpenseIds.value = [];
                     pushToCloud();
-                    alert(`成功批次複製 ${newItems.length} 筆資料至 ${targetCopyDate.value}！`);
+                    armUndo(`已複製 ${newItems.length} 筆資料至 ${targetCopyDate.value}`);
                     nextTick(() => renderCharts());
                 };
 
@@ -1598,7 +1862,7 @@
 
                 const confirmDeleteExpense = (item) => {
                     if (confirm(`確定要刪除「${item.item}」這筆紀錄？`)) {
-                        expenses.value = expenses.value.filter(e => e.id !== item.id);
+                        withUndo('已刪除 1 筆收支紀錄', () => { expenses.value = expenses.value.filter(e => e.id !== item.id); });
                         pushToCloud();
                         nextTick(() => renderCharts());
                     }
@@ -1606,7 +1870,7 @@
 
                 const confirmBatchDeleteExpenses = () => {
                     if (confirm(`確定要刪除勾選的 ${selectedExpenseIds.value.length} 筆收支紀錄？`)) {
-                        expenses.value = expenses.value.filter(e => !selectedExpenseIds.value.includes(e.id));
+                        withUndo(`已刪除 ${selectedExpenseIds.value.length} 筆收支紀錄`, () => { expenses.value = expenses.value.filter(e => !selectedExpenseIds.value.includes(e.id)); });
                         selectedExpenseIds.value = [];
                         pushToCloud();
                         nextTick(() => renderCharts());
@@ -1647,7 +1911,7 @@
 
                 const confirmDeleteStockTrade = (trade) => {
                     if (confirm(`確定要刪除「${trade.symbol} ${trade.name}」交易紀錄？`)) {
-                        stockTrades.value = stockTrades.value.filter(t => t.id !== trade.id);
+                        withUndo('已刪除 1 筆股票交易', () => { stockTrades.value = stockTrades.value.filter(t => t.id !== trade.id); });
                         pushToCloud();
                         nextTick(() => renderCharts());
                     }
@@ -1655,7 +1919,7 @@
 
                 const confirmBatchDeleteStockTrades = () => {
                     if (confirm(`確定要刪除勾選的 ${selectedStockIds.value.length} 筆股票紀錄？`)) {
-                        stockTrades.value = stockTrades.value.filter(t => !selectedStockIds.value.includes(t.id));
+                        withUndo(`已刪除 ${selectedStockIds.value.length} 筆股票交易`, () => { stockTrades.value = stockTrades.value.filter(t => !selectedStockIds.value.includes(t.id)); });
                         selectedStockIds.value = [];
                         pushToCloud();
                         nextTick(() => renderCharts());
@@ -1668,6 +1932,8 @@
                 };
 
                 const applyBatchDate = () => {
+                    captureUndo();
+                    const undoN = selectedExpenseIds.value.length;
                     expenses.value.forEach(e => {
                         if (selectedExpenseIds.value.includes(e.id)) {
                             if (batchDateType.value === 'payment') e.paymentDate = targetBatchDate.value;
@@ -1677,6 +1943,7 @@
                     showBatchDateModal.value = false;
                     selectedExpenseIds.value = [];
                     pushToCloud();
+                    armUndo(`已更新 ${undoN} 筆的${batchDateType.value === 'payment' ? '付款日' : '結算日'}`);
                 };
 
                 const changeMonth = (delta) => {
@@ -1776,6 +2043,8 @@
                 });
 
                 return {
+                    appSettings, showCardSettingsModal, isCard, getCardDay, toggleCard, setCardDay, cardOffset, cardStatements, cardDetail, openCardDetail,
+                    undoToast, undoLast, displayedExpenses, loadMoreExpenses, onExpenseScroll, totalDividend,
                     expenses, stockTrades, activeTab, selectedYear, selectedMonth, isCurrentMonthOrFuture,
                     isFetchingPrices, lastPriceUpdate, expenseSearch, expenseMonthFilterScope,
                     selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilter, resetFilters,
