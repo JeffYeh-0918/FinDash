@@ -356,6 +356,20 @@
                             </select>
                             <button @click="resetFilters" class="mt-1 w-full text-[10px] text-slate-400 hover:text-emerald-400 underline text-right block">重設篩選器</button>
                         </div>
+
+                        <div>
+                            <select v-model="filterYear" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
+                                <option value="">交易日：全部年份</option>
+                                <option v-for="y in expenseYearOptions" :key="y" :value="y">{{ y }} 年</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <select v-model="filterMonth" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
+                                <option value="">交易日：全部月份</option>
+                                <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div @scroll="onExpenseScroll" class="overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800">
@@ -854,20 +868,6 @@
                             <select v-model="expenseForm.type" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                                 <option value="支出">支出 (-)</option>
                                 <option value="收入">收入 (+)</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <select v-model="filterYear" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
-                                <option value="">交易日：全部年份</option>
-                                <option v-for="y in expenseYearOptions" :key="y" :value="y">{{ y }} 年</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <select v-model="filterMonth" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
-                                <option value="">交易日：全部月份</option>
-                                <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
                             </select>
                         </div>
                         <div>
@@ -2121,29 +2121,67 @@
                     }
                 };
 
-                // 工具：把「還沒有連動收支」的既有股票交易補齊（找得到相符的既有收支就連結，找不到才新增）
+                // 工具：檢查並補齊「股票交易 ↔ 收支」的連動（不只看連動記號，還會核對實際內容）
+                //   ① 股票交易 ID 重複 → 重新編號
+                //   ② 連動記號指向「完全不相干」的收支（日期、代碼、金額都對不上，疑似 ID 衝突）→ 該交易重新編號，並補建／連結自己的收支
+                //   ③ 沒有收支 → 找得到相符的既有收支就連結，否則新增
+                //   ④ 已連動、但類別／項目／備註等與股票交易不一致 → 統一成標準格式（付款方式、已付金額、付款日、結算日不動）
+                const stockDiffers = (e, std) => e.type !== std.type || e.date !== std.date || e.category !== std.category || e.item !== std.item
+                    || cleanSymbol(e.content) !== std.content || Math.abs(Number(e.amount || 0) - std.amount) > 1 || String(e.note || '') !== std.note;
+                const looksSimilar = (e, std) => cleanSymbol(e.content) === std.content || e.date === std.date || Math.abs(Number(e.amount || 0) - std.amount) <= 1;
                 const syncLegacyStockExpenses = () => {
+                    const seenIds = new Set();
+                    const dupTrades = [];
+                    stockTrades.value.forEach(t => { const k = String(t.id); if (seenIds.has(k)) dupTrades.push(t); else seenIds.add(k); });
+                    const reid = new Set(dupTrades);   // 需要重新編號的交易
+                    const badLinks = [];
                     const taken = new Set();
-                    const plan = [];
+                    const plan = [];       // 需要新增或連結
+                    const fixes = [];      // 已連動但格式不一致
+                    let okN = 0;
                     stockTrades.value.forEach(t => {
-                        if (findLinkedExpense(t.id)) return;
+                        const std = stockExpenseFields(t);
+                        let linked = reid.has(t) ? null : findLinkedExpense(t.id);
+                        if (linked && !looksSimilar(linked, std)) { badLinks.push(t); reid.add(t); linked = null; }
+                        if (linked) {
+                            if (stockDiffers(linked, std)) fixes.push({ t, e: linked }); else okN++;
+                            return;
+                        }
                         const m = findMatchingExpense(t, taken);
                         if (m) taken.add(m.id);
                         plan.push({ t, m });
                     });
-                    if (plan.length === 0) { alert('所有股票交易都已有對應的收支紀錄。'); return; }
                     const linkN = plan.filter(p => p.m).length;
                     const newN = plan.length - linkN;
-                    if (!confirm(`有 ${plan.length} 筆股票交易還沒有連動的收支紀錄：\n・找到相符的既有收支，直接連結：${linkN} 筆\n・找不到相符的，會新增收支（付款方式「國泰帳戶」）：${newN} 筆\n\n要執行嗎？（執行後 10 秒內可復原）`)) return;
+                    if (plan.length === 0 && fixes.length === 0 && reid.size === 0) {
+                        alert(`檢查完成：${stockTrades.value.length} 筆股票交易都有對應的收支紀錄，內容也一致。\n\n如果某筆收支看不到，請確認「日常收支」的類別篩選（標準類別為「投資儲蓄」）與交易日篩選。`);
+                        return;
+                    }
+                    const lines = [`共 ${stockTrades.value.length} 筆股票交易，檢查結果：`, `・已連動且內容一致：${okN} 筆`];
+                    if (dupTrades.length) lines.push(`・交易 ID 重複，將重新編號：${dupTrades.length} 筆`);
+                    if (badLinks.length) lines.push(`・連動記號指向不相干的收支（疑似 ID 衝突），將重新編號並補建收支：${badLinks.length} 筆`);
+                    if (linkN) lines.push(`・找到相符的既有收支並連結（同時統一成標準格式）：${linkN} 筆`);
+                    if (newN) lines.push(`・找不到收支，將新增（付款方式「${DEFAULT_STOCK_PAY}」）：${newN} 筆`);
+                    if (fixes.length) lines.push(`・已連動但內容與股票交易不一致，將統一格式：${fixes.length} 筆`);
+                    const sample = [...plan.map(p => p.t), ...fixes.map(f => f.t)].slice(0, 5);
+                    if (sample.length) lines.push('', '涉及的交易（最多列 5 筆）：', ...sample.map(t => `  ${t.date} ${t.action} ${cleanSymbol(t.symbol)} ${t.name || ''}`));
+                    lines.push('', '要執行嗎？（執行後 10 秒內可復原）');
+                    if (!confirm(lines.join('\n'))) return;
                     captureUndo();
+                    const usedIds = new Set(stockTrades.value.map(t => String(t.id)));
+                    expenses.value.forEach(e => { if (e.stockId !== undefined && e.stockId !== '') usedIds.add(String(e.stockId)); });
+                    let nextTradeId = Date.now() + 100000;
+                    reid.forEach(t => { while (usedIds.has(String(nextTradeId))) nextTradeId++; t.id = nextTradeId; usedIds.add(String(nextTradeId)); });
                     const fresh = [];
                     plan.forEach(({ t, m }) => {
-                        if (m) { m.stockId = t.id; }
-                        else fresh.push({ id: newExpenseId(fresh.map(x => x.id)), ...stockExpenseFields(t), stockId: t.id, paidAmount: 0, paymentMethod: DEFAULT_STOCK_PAY, paymentDate: '', settlementDate: '' });
+                        const std = stockExpenseFields(t);
+                        if (m) Object.assign(m, std, { stockId: t.id });
+                        else fresh.push({ id: newExpenseId(fresh.map(x => x.id)), ...std, stockId: t.id, paidAmount: 0, paymentMethod: DEFAULT_STOCK_PAY, paymentDate: '', settlementDate: '' });
                     });
+                    fixes.forEach(({ t, e }) => Object.assign(e, stockExpenseFields(t)));
                     expenses.value = [...fresh, ...expenses.value];
                     pushToCloud();
-                    armUndo(`已連結 ${linkN} 筆、新增 ${newN} 筆收支紀錄`);
+                    armUndo(`已連結 ${linkN} 筆、新增 ${newN} 筆、統一格式 ${fixes.length} 筆` + (reid.size ? `、重新編號 ${reid.size} 筆` : ''));
                     nextTick(() => renderCharts());
                 };
 
