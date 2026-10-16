@@ -289,7 +289,7 @@
                     <!-- Filters Bar -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 pt-2 border-t border-slate-800">
                         <div>
-                            <input v-model="expenseSearch" type="text" placeholder="搜尋類別/項目/內容/備註..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
+                            <input v-model="expenseSearch" type="text" placeholder="類別/項目/內容/備註..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
                         </div>
                         
                         <div class="flex items-center h-10 bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
@@ -359,14 +359,14 @@
 
                         <div>
                             <select v-model="filterYear" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
-                                <option value="">交易日：全部年份</option>
+                                <option value="">交易全部年份</option>
                                 <option v-for="y in expenseYearOptions" :key="y" :value="y">{{ y }} 年</option>
                             </select>
                         </div>
 
                         <div>
                             <select v-model="filterMonth" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
-                                <option value="">交易日：全部月份</option>
+                                <option value="">交易全部月份</option>
                                 <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
                             </select>
                         </div>
@@ -585,7 +585,7 @@
                         </button>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 pt-2 border-t border-slate-800">
-                        <input v-model="stockSearch" type="text" placeholder="搜尋代碼／標的名稱..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
+                        <input v-model="stockSearch" type="text" placeholder="代碼／標的名稱..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
                         <select v-model="stockFilterSymbol" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
                             <option value="">全部標的</option>
                             <option v-for="o in stockSymbolOptions" :key="o.symbol" :value="o.symbol">{{ o.symbol }} {{ o.name }}</option>
@@ -596,11 +596,11 @@
                             <option value="賣出">只看賣出</option>
                         </select>
                         <select v-model="stockFilterYear" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
-                            <option value="">交易日：全部年份</option>
+                            <option value="">交易全部年份</option>
                             <option v-for="y in stockYearOptions" :key="y" :value="y">{{ y }} 年</option>
                         </select>
                         <select v-model="stockFilterMonth" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
-                            <option value="">交易日：全部月份</option>
+                            <option value="">交易全部月份</option>
                             <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
                         </select>
                         <div class="flex items-center justify-between text-xs text-slate-400 px-1">
