@@ -111,15 +111,19 @@
                             <span class="hidden sm:inline">更新市價</span>
                         </button>
                     </div>
-                    <div class="relative group">
-                        <button class="flex items-center space-x-1 bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 px-2.5 py-2 rounded-xl text-xs font-medium transition">
+                    <div class="relative" @click.stop>
+                        <button @click="toggleDropdown('tools')" class="flex items-center space-x-1 bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 px-2.5 py-2 rounded-xl text-xs font-medium transition">
                             <i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400"></i>
                             <span class="hidden sm:inline">工具</span>
                         </button>
-                        <div class="absolute right-0 top-full mt-1 w-44 glass-modal rounded-xl border border-slate-700/80 shadow-2xl py-1.5 hidden group-hover:block z-50">
+                        <div v-show="activeDropdown === 'tools'" @click="closeAllDropdowns" class="absolute right-0 top-full mt-1 w-44 glass-modal rounded-xl border border-slate-700/80 shadow-2xl py-1.5 z-50">
                             <button @click="showApiConfigModal = true" class="w-full text-left px-3 py-2 text-xs text-sky-300 hover:bg-slate-800/80 flex items-center space-x-2">
                                 <i data-lucide="settings" class="w-3.5 h-3.5"></i>
                                 <span>API 設定</span>
+                            </button>
+                            <button @click="syncLegacyStockExpenses" class="w-full text-left px-3 py-2 text-xs text-indigo-300 hover:bg-slate-800/80 flex items-center space-x-2">
+                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                                <span>股票交易同步到收支</span>
                             </button>
                             <button @click="showCardSettingsModal = true" class="w-full text-left px-3 py-2 text-xs text-sky-300 hover:bg-slate-800/80 flex items-center space-x-2">
                                 <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
@@ -283,14 +287,14 @@
                     </div>
 
                     <!-- Filters Bar -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 pt-2 border-t border-slate-800">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 pt-2 border-t border-slate-800">
                         <div>
                             <input v-model="expenseSearch" type="text" placeholder="搜尋類別/項目/內容/備註..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
                         </div>
                         
                         <div class="flex items-center h-10 bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
-                            <button @click="expenseMonthFilterScope = 'MONTH'" :class="expenseMonthFilterScope === 'MONTH' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">僅當月</button>
-                            <button @click="expenseMonthFilterScope = 'ALL'" :class="expenseMonthFilterScope === 'ALL' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">全部歷史</button>
+                            <button @click="expenseMonthFilterScope = 'MONTH'; filterYear = ''; filterMonth = ''" :class="expenseMonthFilterScope === 'MONTH' && !dateFilterActive ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">僅當月</button>
+                            <button @click="expenseMonthFilterScope = 'ALL'; filterYear = ''; filterMonth = ''" :class="expenseMonthFilterScope === 'ALL' && !dateFilterActive ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">全部歷史</button>
                         </div>
                         
                         <div class="relative" @click.stop>
@@ -396,7 +400,7 @@
                                         <span class="text-slate-300">{{ item.date }}</span>
                                     </td>
                                     <td class="py-3 px-3 whitespace-nowrap">
-                                        <div class="font-medium text-slate-200">{{ item.item }}</div>
+                                        <div class="font-medium text-slate-200">{{ item.item }}<span v-if="item.stockId" class="ml-1 text-[10px] text-indigo-300 bg-indigo-500/10 border border-indigo-500/30 rounded px-1 align-middle">股票連動</span></div>
                                         <div class="text-[11px] text-slate-400">{{ item.category }}</div>
                                     </td>
                                     <td class="py-3 px-3 text-slate-300 max-w-[150px] truncate">{{ item.content || '-' }}</td>
@@ -566,6 +570,30 @@
                             批次刪除 ({{ selectedStockIds.length }})
                         </button>
                     </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 pt-2 border-t border-slate-800">
+                        <input v-model="stockSearch" type="text" placeholder="搜尋代碼／標的名稱..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
+                        <select v-model="stockFilterSymbol" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
+                            <option value="">全部標的</option>
+                            <option v-for="o in stockSymbolOptions" :key="o.symbol" :value="o.symbol">{{ o.symbol }} {{ o.name }}</option>
+                        </select>
+                        <select v-model="stockFilterAction" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
+                            <option value="">買進＋賣出</option>
+                            <option value="買進">只看買進</option>
+                            <option value="賣出">只看賣出</option>
+                        </select>
+                        <select v-model="stockFilterYear" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
+                            <option value="">交易日：全部年份</option>
+                            <option v-for="y in stockYearOptions" :key="y" :value="y">{{ y }} 年</option>
+                        </select>
+                        <select v-model="stockFilterMonth" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
+                            <option value="">交易日：全部月份</option>
+                            <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
+                        </select>
+                        <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+                            <span>顯示 {{ filteredStockTrades.length }} / {{ stockTrades.length }} 筆</span>
+                            <button v-if="stockFilterActive" @click="resetStockFilters" class="underline hover:text-slate-200">重設篩選器</button>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800">
                         <table class="w-full text-left text-xs sm:text-sm">
                             <thead class="bg-slate-800/90 text-slate-400 border-b border-slate-700/60 uppercase sticky top-0 z-10 backdrop-blur-md">
@@ -586,7 +614,7 @@
                             </thead>
                             <tbody class="divide-y divide-slate-800/60">
                                 <tr 
-                                    v-for="(trade, index) in stockTrades" 
+                                    v-for="(trade, index) in filteredStockTrades" 
                                     :key="trade.id" 
                                     draggable="true"
                                     @dragstart="onDragStart($event, index, 'stock')"
@@ -688,7 +716,7 @@
                 <div class="overflow-x-auto max-h-[60vh] overflow-y-auto rounded-lg border border-slate-800">
                     <table class="w-full text-left text-xs sm:text-sm">
                         <thead class="bg-slate-800/90 text-slate-400 sticky top-0">
-                            <tr><th class="py-2 px-3">日期</th><th class="py-2 px-3">項目 / 類別</th><th class="py-2 px-3">內容</th><th class="py-2 px-3">備註</th><th class="py-2 px-3 text-right">金額</th><th class="py-2 px-3">結算日</th></tr>
+                            <tr><th class="py-2 px-3">日期</th><th class="py-2 px-3">項目 / 類別</th><th class="py-2 px-3">內容</th><th class="py-2 px-3">備註</th><th class="py-2 px-3 text-right">金額</th><th class="py-2 px-3">付款日</th><th class="py-2 px-3">結算日</th></tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60">
                             <tr v-for="r in cardDetail.rows" :key="r.id">
@@ -697,9 +725,10 @@
                                 <td class="py-2 px-3">{{ r.content }}</td>
                                 <td class="py-2 px-3 text-slate-400">{{ r.note }}</td>
                                 <td class="py-2 px-3 text-right text-rose-300 whitespace-nowrap">{{ formatCurrency(r.amount) }}</td>
+                                <td class="py-2 px-3 text-slate-400 whitespace-nowrap">{{ r.paymentDate || '未填' }}</td>
                                 <td class="py-2 px-3 text-slate-400 whitespace-nowrap">{{ r.settlementDate || '未填' }}</td>
                             </tr>
-                            <tr v-if="cardDetail.rows.length === 0"><td colspan="6" class="py-6 text-center text-slate-500">這個帳期沒有消費紀錄</td></tr>
+                            <tr v-if="cardDetail.rows.length === 0"><td colspan="7" class="py-6 text-center text-slate-500">這個帳期沒有消費紀錄</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -827,6 +856,20 @@
                                 <option value="收入">收入 (+)</option>
                             </select>
                         </div>
+
+                        <div>
+                            <select v-model="filterYear" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
+                                <option value="">交易日：全部年份</option>
+                                <option v-for="y in expenseYearOptions" :key="y" :value="y">{{ y }} 年</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <select v-model="filterMonth" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
+                                <option value="">交易日：全部月份</option>
+                                <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
+                            </select>
+                        </div>
                         <div>
                             <label class="block text-slate-400 mb-1">日期</label>
                             <input v-model="expenseForm.date" type="date" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
@@ -947,6 +990,14 @@
                             <label class="block text-slate-400 mb-1">交易稅 (NT$)</label>
                             <input v-model.number="stockForm.tax" type="number" min="0" placeholder="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">付款方式／帳戶（會寫入自動產生的收支）</label>
+                        <select v-model="stockForm.payMethod" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <option value="">（不指定）</option>
+                            <option v-for="pm in paymentMethodsList" :key="pm" :value="pm">{{ pm }}</option>
+                        </select>
+                        <p class="text-[11px] text-slate-500 mt-1">儲存後會自動新增一筆收支：{{ stockForm.action === '賣出' ? '收入／ETF賣出' : '支出／ETF投資' }}，類別「投資儲蓄」。</p>
                     </div>
                     <div class="bg-indigo-950/60 border border-indigo-800/80 p-3 rounded-xl flex justify-between items-center">
                         <span class="text-indigo-300">估計總金額 (自動計算):</span>
@@ -1100,6 +1151,8 @@
                 const selectedItemFilters = ref([]);
                 const selectedPaymentFilters = ref([]);
                 const selectedTypeFilter = ref('ALL');
+                const filterYear = ref('');
+                const filterMonth = ref('');
                 const activeDropdown = ref(null);
 
                 const toggleDropdown = (name) => {
@@ -1408,10 +1461,16 @@
                             expenses.value = full;
                         }
                     } else if (type === 'stock') {
-                        const targetList = [...stockTrades.value];
-                        const movedItem = targetList.splice(draggedIndex.value, 1)[0];
-                        targetList.splice(targetIndex, 0, movedItem);
-                        stockTrades.value = targetList;
+                        const view = filteredStockTrades.value;
+                        const moved = view[draggedIndex.value];
+                        const target = view[targetIndex];
+                        if (moved && target && moved.id !== target.id) {
+                            const full = [...stockTrades.value];
+                            full.splice(full.findIndex(x => x.id === moved.id), 1);
+                            const toIdx = full.findIndex(x => x.id === target.id);
+                            full.splice(draggedIndex.value < targetIndex ? toIdx + 1 : toIdx, 0, moved);
+                            stockTrades.value = full;
+                        }
                     }
                     draggedIndex.value = null;
                     pushToCloud();
@@ -1630,7 +1689,7 @@
                 const cardStatements = computed(() => {
                     const today = new Date(), todayText = ymd(today);
                     return appSettings.value.creditCards.map(c => {
-                        const periods = [0, 1].map(i => {
+                        const periods = [1, 0].map(i => {  // 左邊較舊（上期）、右邊較新（本期）
                             const k = cardOffset.value + i;
                             const p = cardPeriod(c.closingDay, k, today);
                             const rows = cardRows(c.name, p);
@@ -1681,13 +1740,18 @@
                     const el = ev.target;
                     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80 && visibleCount.value < filteredExpenses.value.length) loadMoreExpenses();
                 };
-                watch([expenseSearch, selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilter, selectedYear, selectedMonth, expenseMonthFilterScope], () => { visibleCount.value = PAGE_SIZE; }, { deep: true });
+                watch([expenseSearch, selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilter, selectedYear, selectedMonth, expenseMonthFilterScope, filterYear, filterMonth], () => { visibleCount.value = PAGE_SIZE; }, { deep: true });
 
+                const dateFilterActive = computed(() => !!(filterYear.value || filterMonth.value));
+                const yearsOf = (list) => Array.from(new Set(list.map(x => String(x.date || '').slice(0, 4)).filter(y => /^\d{4}$/.test(y)))).sort().reverse();
+                const expenseYearOptions = computed(() => yearsOf(expenses.value));
                 const filteredExpenses = computed(() => {
                     const prefix = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`;
                     const kw = (expenseSearch.value || '').trim().toLowerCase();
                     return expenses.value.filter(e => {
-                        const matchMonth = expenseMonthFilterScope.value === 'ALL' || (e.date && e.date.startsWith(prefix));
+                        const matchMonth = dateFilterActive.value
+                            ? ((!filterYear.value || String(e.date || '').slice(0, 4) === filterYear.value) && (!filterMonth.value || String(e.date || '').slice(5, 7) === String(filterMonth.value).padStart(2, '0')))
+                            : (expenseMonthFilterScope.value === 'ALL' || (e.date && e.date.startsWith(prefix)));
                         const matchKw = !kw || 
                             (e.item && String(e.item).toLowerCase().includes(kw)) ||
                             (e.category && String(e.category).toLowerCase().includes(kw)) ||
@@ -1709,12 +1773,41 @@
                     selectedItemFilters.value = [];
                     selectedPaymentFilters.value = [];
                     selectedTypeFilter.value = 'ALL';
+                    filterYear.value = '';
+                    filterMonth.value = '';
                 };
+
+                // ---------- 股票交易紀錄篩選 ----------
+                const stockSearch = ref('');
+                const stockFilterSymbol = ref('');
+                const stockFilterAction = ref('');
+                const stockFilterYear = ref('');
+                const stockFilterMonth = ref('');
+                const stockSymbolOptions = computed(() => {
+                    const m = {};
+                    stockTrades.value.forEach(t => { const sym = cleanSymbol(t.symbol); if (sym && !m[sym]) m[sym] = t.name || ''; });
+                    return Object.entries(m).sort((a, b) => a[0].localeCompare(b[0])).map(([symbol, name]) => ({ symbol, name }));
+                });
+                const stockYearOptions = computed(() => yearsOf(stockTrades.value));
+                const filteredStockTrades = computed(() => {
+                    const kw = (stockSearch.value || '').trim().toLowerCase();
+                    return stockTrades.value.filter(t => {
+                        const sym = cleanSymbol(t.symbol).toLowerCase();
+                        const d = String(t.date || '');
+                        return (!kw || sym.includes(kw) || String(t.name || '').toLowerCase().includes(kw))
+                            && (!stockFilterSymbol.value || sym === stockFilterSymbol.value.toLowerCase())
+                            && (!stockFilterAction.value || t.action === stockFilterAction.value)
+                            && (!stockFilterYear.value || d.slice(0, 4) === stockFilterYear.value)
+                            && (!stockFilterMonth.value || d.slice(5, 7) === String(stockFilterMonth.value).padStart(2, '0'));
+                    });
+                });
+                const stockFilterActive = computed(() => !!(stockSearch.value || stockFilterSymbol.value || stockFilterAction.value || stockFilterYear.value || stockFilterMonth.value));
+                const resetStockFilters = () => { stockSearch.value = ''; stockFilterSymbol.value = ''; stockFilterAction.value = ''; stockFilterYear.value = ''; stockFilterMonth.value = ''; };
 
                 const isAllExpensesSelected = computed(() => filteredExpenses.value.length > 0 && selectedExpenseIds.value.length === filteredExpenses.value.length);
                 const toggleSelectAllExpenses = (e) => { selectedExpenseIds.value = e.target.checked ? filteredExpenses.value.map(x => x.id) : []; };
-                const isAllStocksSelected = computed(() => stockTrades.value.length > 0 && selectedStockIds.value.length === stockTrades.value.length);
-                const toggleSelectAllStocks = (e) => { selectedStockIds.value = e.target.checked ? stockTrades.value.map(s => s.id) : []; };
+                const isAllStocksSelected = computed(() => filteredStockTrades.value.length > 0 && selectedStockIds.value.length === filteredStockTrades.value.length);
+                const toggleSelectAllStocks = (e) => { selectedStockIds.value = e.target.checked ? filteredStockTrades.value.map(s => s.id) : []; };
 
                 // 執行批次複製功能
                 const openBatchCopyModal = () => {
@@ -1741,7 +1834,8 @@
                         id: newId,
                         date: targetCopyDate.value,
                         paymentDate: '',
-                        settlementDate: ''
+                        settlementDate: '',
+                        stockId: ''
                     }));
                     
                     expenses.value.unshift(...newItems);
@@ -1776,7 +1870,8 @@
                         '付款方式': e.paymentMethod,
                         '付款日': formatSlashDate(e.paymentDate), 
                         '結算日': formatSlashDate(e.settlementDate),
-                        '備註': e.note
+                        '備註': e.note,
+                        '關聯股票ID': e.stockId || ''
                     }));
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expData), '日常收支紀錄');
 
@@ -1820,6 +1915,7 @@
                                             content: row['內容'] || '',
                                             amount: Number(row['金額'] || 0),
                                             paidAmount: Number(row['已付金額'] || 0),  // 未填就是 0，不再用「金額」補值
+                        stockId: row['關聯股票ID'] || '',
                                             paymentMethod: row['付款方式'] || '付現',
                                             paymentDate: row['付款日'] ? String(row['付款日']).replace(/\//g, '-') : '',
                                             settlementDate: row['結算日'] ? String(row['結算日']).replace(/\//g, '-') : '',
@@ -1929,32 +2025,70 @@
                     }
                 };
 
+                // ---------- 股票交易 ↔ 收支 連動 ----------
+                const DEFAULT_STOCK_PAY = '國泰帳戶';   // 記股票自動帶出收支時的預設付款方式
+                const lastStockPay = () => DEFAULT_STOCK_PAY;
+                const stockExpenseFields = (t) => ({
+                    type: t.action === '賣出' ? '收入' : '支出',
+                    date: t.date,
+                    category: '投資儲蓄',
+                    item: t.action === '賣出' ? 'ETF賣出' : 'ETF投資',
+                    content: cleanSymbol(t.symbol),
+                    amount: Number(t.totalAmount || 0),
+                    note: `${t.price}*${t.shares}`
+                });
+                const findLinkedExpense = (tradeId) => expenses.value.find(e => e.stockId !== undefined && e.stockId !== '' && String(e.stockId) === String(tradeId));
+                // 舊資料：找「同日、同方向、代碼相同、金額相符」且尚未連動的既有收支
+                const findMatchingExpense = (t, taken) => expenses.value.find(e => !e.stockId && !taken.has(e.id)
+                    && e.date === t.date && e.type === (t.action === '賣出' ? '收入' : '支出')
+                    && cleanSymbol(e.content) === cleanSymbol(t.symbol)
+                    && Math.abs(Number(e.amount || 0) - Number(t.totalAmount || 0)) <= 1);
+                const newExpenseId = (extraTaken = []) => {
+                    let nid = Date.now() + 1;
+                    while (expenses.value.some(e => e.id === nid) || extraTaken.includes(nid)) nid++;
+                    return nid;
+                };
+
                 const openStockModal = (trade = null) => {
                     if (trade) {
                         editingStockId.value = trade.id;
-                        stockForm.value = { ...trade, symbol: cleanSymbol(trade.symbol) };
+                        const linked = findLinkedExpense(trade.id) || findMatchingExpense(trade, new Set());
+                        stockForm.value = { ...trade, symbol: cleanSymbol(trade.symbol), payMethod: linked ? (linked.paymentMethod || '') : lastStockPay() };
                     } else {
                         editingStockId.value = null;
-                        stockForm.value = { action: '買進', date: todayStr(), symbol: '0050', name: '元大台灣50', price: null, shares: null, fee: 0, tax: 0 };
+                        stockForm.value = { action: '買進', date: todayStr(), symbol: '0050', name: '元大台灣50', price: null, shares: null, fee: 0, tax: 0, payMethod: lastStockPay() };
                     }
                     showStockModal.value = true;
                 };
 
                 const saveStockTradeSubmit = () => {
-                    const data = { 
-                        ...stockForm.value, 
-                        symbol: cleanSymbol(stockForm.value.symbol), 
-                        price: Number(stockForm.value.price || 0), 
-                        shares: Number(stockForm.value.shares || 0),
-                        fee: Number(stockForm.value.fee || 0),
-                        tax: Number(stockForm.value.tax || 0),
-                        totalAmount: calculatedStockTotal.value 
+                    const { payMethod, ...form } = stockForm.value;
+                    const data = {
+                        ...form,
+                        symbol: cleanSymbol(form.symbol),
+                        price: Number(form.price || 0),
+                        shares: Number(form.shares || 0),
+                        fee: Number(form.fee || 0),
+                        tax: Number(form.tax || 0),
+                        totalAmount: calculatedStockTotal.value
                     };
+                    let tradeId;
                     if (editingStockId.value) {
-                        const idx = stockTrades.value.findIndex(t => t.id === editingStockId.value);
-                        if (idx !== -1) stockTrades.value[idx] = { id: editingStockId.value, ...data };
+                        tradeId = editingStockId.value;
+                        const idx = stockTrades.value.findIndex(t => t.id === tradeId);
+                        if (idx !== -1) stockTrades.value[idx] = { id: tradeId, ...data };
                     } else {
-                        stockTrades.value.unshift({ id: Date.now(), ...data });
+                        tradeId = Date.now();
+                        stockTrades.value.unshift({ id: tradeId, ...data });
+                    }
+                    // 自動補上／更新對應的收支紀錄
+                    const trade = { id: tradeId, ...data };
+                    const fields = stockExpenseFields(trade);
+                    const linked = findLinkedExpense(tradeId) || findMatchingExpense(trade, new Set());
+                    if (linked) {
+                        Object.assign(linked, fields, { stockId: tradeId, paymentMethod: payMethod || '' });
+                    } else {
+                        expenses.value.unshift({ id: newExpenseId(), ...fields, stockId: tradeId, paidAmount: 0, paymentMethod: payMethod || '', paymentDate: '', settlementDate: '' });
                     }
                     showStockModal.value = false;
                     pushToCloud();
@@ -1962,20 +2096,55 @@
                 };
 
                 const confirmDeleteStockTrade = (trade) => {
-                    if (confirm(`確定要刪除「${trade.symbol} ${trade.name}」交易紀錄？`)) {
-                        withUndo('已刪除 1 筆股票交易', () => { stockTrades.value = stockTrades.value.filter(t => t.id !== trade.id); });
+                    const hasLink = !!findLinkedExpense(trade.id);
+                    if (confirm(`確定要刪除「${trade.symbol} ${trade.name}」交易紀錄？` + (hasLink ? '\n（對應的收支紀錄也會一併刪除）' : ''))) {
+                        withUndo(hasLink ? '已刪除 1 筆股票交易與對應收支' : '已刪除 1 筆股票交易', () => {
+                            stockTrades.value = stockTrades.value.filter(t => t.id !== trade.id);
+                            expenses.value = expenses.value.filter(e => String(e.stockId) !== String(trade.id));
+                        });
                         pushToCloud();
                         nextTick(() => renderCharts());
                     }
                 };
 
                 const confirmBatchDeleteStockTrades = () => {
-                    if (confirm(`確定要刪除勾選的 ${selectedStockIds.value.length} 筆股票紀錄？`)) {
-                        withUndo(`已刪除 ${selectedStockIds.value.length} 筆股票交易`, () => { stockTrades.value = stockTrades.value.filter(t => !selectedStockIds.value.includes(t.id)); });
+                    const ids = new Set(selectedStockIds.value.map(String));
+                    const linkedN = expenses.value.filter(e => e.stockId !== undefined && e.stockId !== '' && ids.has(String(e.stockId))).length;
+                    if (confirm(`確定要刪除勾選的 ${selectedStockIds.value.length} 筆股票紀錄？` + (linkedN ? `\n（對應的 ${linkedN} 筆收支紀錄也會一併刪除）` : ''))) {
+                        withUndo(`已刪除 ${selectedStockIds.value.length} 筆股票交易` + (linkedN ? `與 ${linkedN} 筆收支` : ''), () => {
+                            stockTrades.value = stockTrades.value.filter(t => !ids.has(String(t.id)));
+                            expenses.value = expenses.value.filter(e => !(e.stockId !== undefined && e.stockId !== '' && ids.has(String(e.stockId))));
+                        });
                         selectedStockIds.value = [];
                         pushToCloud();
                         nextTick(() => renderCharts());
                     }
+                };
+
+                // 工具：把「還沒有連動收支」的既有股票交易補齊（找得到相符的既有收支就連結，找不到才新增）
+                const syncLegacyStockExpenses = () => {
+                    const taken = new Set();
+                    const plan = [];
+                    stockTrades.value.forEach(t => {
+                        if (findLinkedExpense(t.id)) return;
+                        const m = findMatchingExpense(t, taken);
+                        if (m) taken.add(m.id);
+                        plan.push({ t, m });
+                    });
+                    if (plan.length === 0) { alert('所有股票交易都已有對應的收支紀錄。'); return; }
+                    const linkN = plan.filter(p => p.m).length;
+                    const newN = plan.length - linkN;
+                    if (!confirm(`有 ${plan.length} 筆股票交易還沒有連動的收支紀錄：\n・找到相符的既有收支，直接連結：${linkN} 筆\n・找不到相符的，會新增收支（付款方式「國泰帳戶」）：${newN} 筆\n\n要執行嗎？（執行後 10 秒內可復原）`)) return;
+                    captureUndo();
+                    const fresh = [];
+                    plan.forEach(({ t, m }) => {
+                        if (m) { m.stockId = t.id; }
+                        else fresh.push({ id: newExpenseId(fresh.map(x => x.id)), ...stockExpenseFields(t), stockId: t.id, paidAmount: 0, paymentMethod: DEFAULT_STOCK_PAY, paymentDate: '', settlementDate: '' });
+                    });
+                    expenses.value = [...fresh, ...expenses.value];
+                    pushToCloud();
+                    armUndo(`已連結 ${linkN} 筆、新增 ${newN} 筆收支紀錄`);
+                    nextTick(() => renderCharts());
                 };
 
                 const openBatchDateModal = (type) => {
@@ -2088,6 +2257,8 @@
                 });
 
                 onMounted(() => {
+                    document.addEventListener('click', () => closeAllDropdowns());
+                    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeAllDropdowns(); });
                     if (window.lucide) lucide.createIcons();
                     if (gasApiUrl.value) syncFromCloud(true); else fetchStockPrices(true);
                     refreshDynamicOptions();
@@ -2105,6 +2276,8 @@
                 return {
                     appSettings, showCardSettingsModal, isCard, getCardDay, toggleCard, setCardDay, cardOffset, cardStatements, cardDetail, openCardDetail,
                     showRealizedModal, realizedInfo, realizedRowsDesc, realizedBySymbolList,
+                    filterYear, filterMonth, dateFilterActive, expenseYearOptions,
+                    stockSearch, stockFilterSymbol, stockFilterAction, stockFilterYear, stockFilterMonth, stockSymbolOptions, stockYearOptions, filteredStockTrades, stockFilterActive, resetStockFilters, syncLegacyStockExpenses,
                     undoToast, undoLast, displayedExpenses, loadMoreExpenses, onExpenseScroll, totalDividend,
                     expenses, stockTrades, activeTab, selectedYear, selectedMonth, isCurrentMonthOrFuture,
                     isFetchingPrices, lastPriceUpdate, expenseSearch, expenseMonthFilterScope,
