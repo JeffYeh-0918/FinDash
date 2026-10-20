@@ -289,7 +289,7 @@
                     <!-- Filters Bar -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 pt-2 border-t border-slate-800">
                         <div>
-                            <input v-model="expenseSearch" type="text" placeholder="類別/項目/內容/備註..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
+                            <input v-model="expenseSearch" type="text" placeholder="搜尋類別/項目/內容/備註..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
                         </div>
                         
                         <div class="flex items-center h-10 bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
@@ -349,26 +349,16 @@
                         </div>
 
                         <div>
-                            <select v-model="selectedTypeFilter" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
-                                <option value="ALL">全部收支類型</option>
-                                <option value="支出">支出 (-)</option>
-                                <option value="收入">收入 (+)</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <select v-model="filterYear" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
-                                <option value="">交易全部年份</option>
-                                <option v-for="y in expenseYearOptions" :key="y" :value="y">{{ y }} 年</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <select v-model="filterMonth" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
-                                <option value="">交易全部月份</option>
-                                <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
-                            </select>
+                            <single-select v-model="selectedTypeFilter" id="f-type" :options="typeSelectOptions"></single-select>
                             <button @click="resetFilters" class="mt-1 w-full text-[10px] text-slate-400 hover:text-emerald-400 underline text-right block">重設篩選器</button>
+                        </div>
+
+                        <div>
+                            <single-select v-model="filterYear" id="f-year" :options="expenseYearSelectOptions"></single-select>
+                        </div>
+
+                        <div>
+                            <single-select v-model="filterMonth" id="f-month" :options="monthSelectOptions"></single-select>
                         </div>
                     </div>
 
@@ -585,24 +575,11 @@
                         </button>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 pt-2 border-t border-slate-800">
-                        <input v-model="stockSearch" type="text" placeholder="代碼／標的名稱..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
-                        <select v-model="stockFilterSymbol" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
-                            <option value="">全部標的</option>
-                            <option v-for="o in stockSymbolOptions" :key="o.symbol" :value="o.symbol">{{ o.symbol }} {{ o.name }}</option>
-                        </select>
-                        <select v-model="stockFilterAction" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
-                            <option value="">買進＋賣出</option>
-                            <option value="買進">只看買進</option>
-                            <option value="賣出">只看賣出</option>
-                        </select>
-                        <select v-model="stockFilterYear" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
-                            <option value="">交易全部年份</option>
-                            <option v-for="y in stockYearOptions" :key="y" :value="y">{{ y }} 年</option>
-                        </select>
-                        <select v-model="stockFilterMonth" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
-                            <option value="">交易全部月份</option>
-                            <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
-                        </select>
+                        <input v-model="stockSearch" type="text" placeholder="搜尋代碼／標的名稱..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
+                        <single-select v-model="stockFilterSymbol" id="s-symbol" :options="stockSymbolSelectOptions"></single-select>
+                        <single-select v-model="stockFilterAction" id="s-action" :options="stockActionSelectOptions"></single-select>
+                        <single-select v-model="stockFilterYear" id="s-year" :options="stockYearSelectOptions"></single-select>
+                        <single-select v-model="stockFilterMonth" id="s-month" :options="monthSelectOptions"></single-select>
                         <div class="flex items-center justify-between text-xs text-slate-400 px-1">
                             <span>顯示 {{ filteredStockTrades.length }} / {{ stockTrades.length }} 筆</span>
                             <button v-if="stockFilterActive" @click="resetStockFilters" class="underline hover:text-slate-200">重設篩選器</button>
@@ -1083,7 +1060,35 @@
     </div>
 
     <script>
-        const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick } = Vue;
+        const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick, provide, inject } = Vue;
+
+        // 單選下拉元件：樣式與「類別／項目／付款方式」下拉相同，並共用同一組開關（一次只開一個、點外面會關）
+        const SingleSelect = {
+            props: ['modelValue', 'options', 'id'],
+            emits: ['update:modelValue'],
+            setup(props, { emit }) {
+                const dd = inject('dropdown');
+                const isOpen = computed(() => dd.activeDropdown.value === props.id);
+                const isSelected = (o) => String(o.value) === String(props.modelValue);
+                const label = computed(() => (props.options.find(isSelected) || props.options[0] || { label: '' }).label);
+                const toggle = () => dd.toggleDropdown(props.id);
+                const pick = (v) => { emit('update:modelValue', v); dd.closeAllDropdowns(); };
+                return { isOpen, isSelected, label, toggle, pick };
+            },
+            template: `
+                <div class="relative" @click.stop>
+                    <button type="button" @click="toggle" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 flex items-center justify-between focus:border-emerald-500 focus:outline-none">
+                        <span class="truncate">{{ label }}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-slate-400 ml-1 shrink-0"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div v-if="isOpen" class="absolute left-0 right-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
+                        <div v-for="o in options" :key="o.value" @click="pick(o.value)" class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer" :class="isSelected(o) ? 'text-emerald-400 font-bold' : 'text-slate-200'">
+                            <span class="w-3 shrink-0">{{ isSelected(o) ? '✓' : '' }}</span>
+                            <span class="truncate">{{ o.label }}</span>
+                        </div>
+                    </div>
+                </div>`
+        };
         createApp({
             setup() {
                 const STORAGE_KEY_EXPENSES = 'findash_expenses_v2';
@@ -1159,6 +1164,7 @@
                     activeDropdown.value = activeDropdown.value === name ? null : name;
                 };
                 const closeAllDropdowns = () => { activeDropdown.value = null; };
+                provide('dropdown', { activeDropdown, toggleDropdown, closeAllDropdowns });
 
                 const categoryFilterLabel = computed(() => {
                     if (selectedCategoryFilters.value.length === 0) return '所有類別';
@@ -1802,6 +1808,12 @@
                     });
                 });
                 const stockFilterActive = computed(() => !!(stockSearch.value || stockFilterSymbol.value || stockFilterAction.value || stockFilterYear.value || stockFilterMonth.value));
+                const monthSelectOptions = [{ value: '', label: '交易日：全部月份' }, ...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} 月` }))];
+                const typeSelectOptions = [{ value: 'ALL', label: '全部收支類型' }, { value: '支出', label: '支出 (-)' }, { value: '收入', label: '收入 (+)' }];
+                const expenseYearSelectOptions = computed(() => [{ value: '', label: '交易日：全部年份' }, ...expenseYearOptions.value.map(y => ({ value: y, label: `${y} 年` }))]);
+                const stockYearSelectOptions = computed(() => [{ value: '', label: '交易日：全部年份' }, ...stockYearOptions.value.map(y => ({ value: y, label: `${y} 年` }))]);
+                const stockSymbolSelectOptions = computed(() => [{ value: '', label: '全部標的' }, ...stockSymbolOptions.value.map(o => ({ value: o.symbol, label: `${o.symbol} ${o.name}`.trim() }))]);
+                const stockActionSelectOptions = [{ value: '', label: '買進＋賣出' }, { value: '買進', label: '只看買進' }, { value: '賣出', label: '只看賣出' }];
                 const resetStockFilters = () => { stockSearch.value = ''; stockFilterSymbol.value = ''; stockFilterAction.value = ''; stockFilterYear.value = ''; stockFilterMonth.value = ''; };
 
                 const isAllExpensesSelected = computed(() => filteredExpenses.value.length > 0 && selectedExpenseIds.value.length === filteredExpenses.value.length);
@@ -2316,6 +2328,7 @@
                     showRealizedModal, realizedInfo, realizedRowsDesc, realizedBySymbolList,
                     filterYear, filterMonth, dateFilterActive, expenseYearOptions,
                     stockSearch, stockFilterSymbol, stockFilterAction, stockFilterYear, stockFilterMonth, stockSymbolOptions, stockYearOptions, filteredStockTrades, stockFilterActive, resetStockFilters, syncLegacyStockExpenses,
+                    monthSelectOptions, typeSelectOptions, expenseYearSelectOptions, stockYearSelectOptions, stockSymbolSelectOptions, stockActionSelectOptions,
                     undoToast, undoLast, displayedExpenses, loadMoreExpenses, onExpenseScroll, totalDividend,
                     expenses, stockTrades, activeTab, selectedYear, selectedMonth, isCurrentMonthOrFuture,
                     isFetchingPrices, lastPriceUpdate, expenseSearch, expenseMonthFilterScope,
@@ -2336,7 +2349,7 @@
                     exportToExcel, handleFileUpload, downloadTemplateExcel, onDragStart, onDragOver, onDrop, resetAllData, formatCurrency
                 };
             }
-        }).mount('#app');
+        }).component('single-select', SingleSelect).mount('#app');
     </script>
 </body>
 </html>
