@@ -293,8 +293,8 @@
                         </div>
                         
                         <div class="flex items-center h-10 bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
-                            <button @click="expenseMonthFilterScope = 'MONTH'; filterYear = ''; filterMonth = ''" :class="expenseMonthFilterScope === 'MONTH' && !dateFilterActive ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">僅當月</button>
-                            <button @click="expenseMonthFilterScope = 'ALL'; filterYear = ''; filterMonth = ''" :class="expenseMonthFilterScope === 'ALL' && !dateFilterActive ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">全部歷史</button>
+                            <button @click="expenseMonthFilterScope = 'MONTH'; filterYears = []; filterMonths = []" :class="expenseMonthFilterScope === 'MONTH' && !dateFilterActive ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">僅當月</button>
+                            <button @click="expenseMonthFilterScope = 'ALL'; filterYears = []; filterMonths = []" :class="expenseMonthFilterScope === 'ALL' && !dateFilterActive ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">全部歷史</button>
                         </div>
                         
                         <div class="relative" @click.stop>
@@ -349,16 +349,16 @@
                         </div>
 
                         <div>
-                            <single-select v-model="selectedTypeFilter" id="f-type" :options="typeSelectOptions"></single-select>
+                            <multi-select v-model="selectedTypeFilters" id="f-type" :options="typeSelectOptions" all-label="全部收支類型" unit="種類型"></multi-select>
+                        </div>
+
+                        <div>
+                            <multi-select v-model="filterYears" id="f-year" :options="expenseYearSelectOptions" all-label="全部交易年份" unit="個年份"></multi-select>
+                        </div>
+
+                        <div>
+                            <multi-select v-model="filterMonths" id="f-month" :options="monthSelectOptions" all-label="全部交易月份" unit="個月份"></multi-select>
                             <button @click="resetFilters" class="mt-1 w-full text-[10px] text-slate-400 hover:text-emerald-400 underline text-right block">重設篩選器</button>
-                        </div>
-
-                        <div>
-                            <single-select v-model="filterYear" id="f-year" :options="expenseYearSelectOptions"></single-select>
-                        </div>
-
-                        <div>
-                            <single-select v-model="filterMonth" id="f-month" :options="monthSelectOptions"></single-select>
                         </div>
                     </div>
 
@@ -576,10 +576,10 @@
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 pt-2 border-t border-slate-800">
                         <input v-model="stockSearch" type="text" placeholder="搜尋代碼／標的名稱..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
-                        <single-select v-model="stockFilterSymbol" id="s-symbol" :options="stockSymbolSelectOptions"></single-select>
-                        <single-select v-model="stockFilterAction" id="s-action" :options="stockActionSelectOptions"></single-select>
-                        <single-select v-model="stockFilterYear" id="s-year" :options="stockYearSelectOptions"></single-select>
-                        <single-select v-model="stockFilterMonth" id="s-month" :options="monthSelectOptions"></single-select>
+                        <multi-select v-model="stockFilterSymbols" id="s-symbol" :options="stockSymbolSelectOptions" all-label="全部標的" unit="檔標的"></multi-select>
+                        <multi-select v-model="stockFilterActions" id="s-action" :options="stockActionSelectOptions" all-label="買進＋賣出" unit="種交易"></multi-select>
+                        <multi-select v-model="stockFilterYears" id="s-year" :options="stockYearSelectOptions" all-label="全部交易年份" unit="個年份"></multi-select>
+                        <multi-select v-model="stockFilterMonths" id="s-month" :options="monthSelectOptions" all-label="全部交易月份" unit="個月份"></multi-select>
                         <div class="flex items-center justify-between text-xs text-slate-400 px-1">
                             <span>顯示 {{ filteredStockTrades.length }} / {{ stockTrades.length }} 筆</span>
                             <button v-if="stockFilterActive" @click="resetStockFilters" class="underline hover:text-slate-200">重設篩選器</button>
@@ -1062,18 +1062,24 @@
     <script>
         const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick, provide, inject } = Vue;
 
-        // 單選下拉元件：樣式與「類別／項目／付款方式」下拉相同，並共用同一組開關（一次只開一個、點外面會關）
-        const SingleSelect = {
-            props: ['modelValue', 'options', 'id'],
+        // 多選下拉元件：外觀與操作方式和「類別／項目／付款方式」完全相同（空選＝全部）
+        const MultiSelect = {
+            props: ['modelValue', 'options', 'id', 'allLabel', 'unit'],
             emits: ['update:modelValue'],
             setup(props, { emit }) {
                 const dd = inject('dropdown');
                 const isOpen = computed(() => dd.activeDropdown.value === props.id);
-                const isSelected = (o) => String(o.value) === String(props.modelValue);
-                const label = computed(() => (props.options.find(isSelected) || props.options[0] || { label: '' }).label);
+                const isOn = (v) => props.modelValue.includes(v);
+                const label = computed(() => {
+                    const n = props.modelValue.length;
+                    if (n === 0) return props.allLabel;
+                    if (n === 1) return (props.options.find(o => o.value === props.modelValue[0]) || { label: props.modelValue[0] }).label;
+                    return `已選 ${n} ${props.unit || '項'}`;
+                });
                 const toggle = () => dd.toggleDropdown(props.id);
-                const pick = (v) => { emit('update:modelValue', v); dd.closeAllDropdowns(); };
-                return { isOpen, isSelected, label, toggle, pick };
+                const clear = () => emit('update:modelValue', []);
+                const flip = (v) => emit('update:modelValue', isOn(v) ? props.modelValue.filter(x => x !== v) : [...props.modelValue, v]);
+                return { isOpen, isOn, label, toggle, clear, flip };
             },
             template: `
                 <div class="relative" @click.stop>
@@ -1082,10 +1088,14 @@
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-slate-400 ml-1 shrink-0"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
                     <div v-if="isOpen" class="absolute left-0 right-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
-                        <div v-for="o in options" :key="o.value" @click="pick(o.value)" class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer" :class="isSelected(o) ? 'text-emerald-400 font-bold' : 'text-slate-200'">
-                            <span class="w-3 shrink-0">{{ isSelected(o) ? '✓' : '' }}</span>
-                            <span class="truncate">{{ o.label }}</span>
-                        </div>
+                        <label class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-emerald-400 font-bold border-b border-slate-800">
+                            <input type="checkbox" :checked="modelValue.length === 0" @change="clear" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
+                            <span>{{ allLabel }}</span>
+                        </label>
+                        <label v-for="o in options" :key="o.value" class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-slate-200">
+                            <input type="checkbox" :checked="isOn(o.value)" @change="flip(o.value)" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
+                            <span>{{ o.label }}</span>
+                        </label>
                     </div>
                 </div>`
         };
@@ -1155,9 +1165,9 @@
                 const selectedCategoryFilters = ref([]);
                 const selectedItemFilters = ref([]);
                 const selectedPaymentFilters = ref([]);
-                const selectedTypeFilter = ref('ALL');
-                const filterYear = ref('');
-                const filterMonth = ref('');
+                const selectedTypeFilters = ref([]);
+                const filterYears = ref([]);
+                const filterMonths = ref([]);
                 const activeDropdown = ref(null);
 
                 const toggleDropdown = (name) => {
@@ -1746,9 +1756,9 @@
                     const el = ev.target;
                     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80 && visibleCount.value < filteredExpenses.value.length) loadMoreExpenses();
                 };
-                watch([expenseSearch, selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilter, selectedYear, selectedMonth, expenseMonthFilterScope, filterYear, filterMonth], () => { visibleCount.value = PAGE_SIZE; }, { deep: true });
+                watch([expenseSearch, selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilters, selectedYear, selectedMonth, expenseMonthFilterScope, filterYears, filterMonths], () => { visibleCount.value = PAGE_SIZE; }, { deep: true });
 
-                const dateFilterActive = computed(() => !!(filterYear.value || filterMonth.value));
+                const dateFilterActive = computed(() => filterYears.value.length > 0 || filterMonths.value.length > 0);
                 const yearsOf = (list) => Array.from(new Set(list.map(x => String(x.date || '').slice(0, 4)).filter(y => /^\d{4}$/.test(y)))).sort().reverse();
                 const expenseYearOptions = computed(() => yearsOf(expenses.value));
                 const filteredExpenses = computed(() => {
@@ -1756,7 +1766,7 @@
                     const kw = (expenseSearch.value || '').trim().toLowerCase();
                     return expenses.value.filter(e => {
                         const matchMonth = dateFilterActive.value
-                            ? ((!filterYear.value || String(e.date || '').slice(0, 4) === filterYear.value) && (!filterMonth.value || String(e.date || '').slice(5, 7) === String(filterMonth.value).padStart(2, '0')))
+                            ? ((filterYears.value.length === 0 || filterYears.value.includes(String(e.date || '').slice(0, 4))) && (filterMonths.value.length === 0 || filterMonths.value.includes(String(parseInt(String(e.date || '').slice(5, 7), 10)))))
                             : (expenseMonthFilterScope.value === 'ALL' || (e.date && e.date.startsWith(prefix)));
                         const matchKw = !kw || 
                             (e.item && String(e.item).toLowerCase().includes(kw)) ||
@@ -1766,7 +1776,7 @@
                         const matchCat = selectedCategoryFilters.value.length === 0 || selectedCategoryFilters.value.includes(e.category);
                         const matchItem = selectedItemFilters.value.length === 0 || selectedItemFilters.value.includes(e.item);
                         const matchPay = selectedPaymentFilters.value.length === 0 || selectedPaymentFilters.value.includes(e.paymentMethod);
-                        const matchType = selectedTypeFilter.value === 'ALL' || e.type === selectedTypeFilter.value;
+                        const matchType = selectedTypeFilters.value.length === 0 || selectedTypeFilters.value.includes(e.type);
                         return matchMonth && matchKw && matchCat && matchItem && matchPay && matchType;
                     });
                 });
@@ -1778,17 +1788,17 @@
                     selectedCategoryFilters.value = [];
                     selectedItemFilters.value = [];
                     selectedPaymentFilters.value = [];
-                    selectedTypeFilter.value = 'ALL';
-                    filterYear.value = '';
-                    filterMonth.value = '';
+                    selectedTypeFilters.value = [];
+                    filterYears.value = [];
+                    filterMonths.value = [];
                 };
 
                 // ---------- 股票交易紀錄篩選 ----------
                 const stockSearch = ref('');
-                const stockFilterSymbol = ref('');
-                const stockFilterAction = ref('');
-                const stockFilterYear = ref('');
-                const stockFilterMonth = ref('');
+                const stockFilterSymbols = ref('');
+                const stockFilterActions = ref('');
+                const stockFilterYears = ref('');
+                const stockFilterMonths = ref('');
                 const stockSymbolOptions = computed(() => {
                     const m = {};
                     stockTrades.value.forEach(t => { const sym = cleanSymbol(t.symbol); if (sym && !m[sym]) m[sym] = t.name || ''; });
@@ -1798,23 +1808,23 @@
                 const filteredStockTrades = computed(() => {
                     const kw = (stockSearch.value || '').trim().toLowerCase();
                     return stockTrades.value.filter(t => {
-                        const sym = cleanSymbol(t.symbol).toLowerCase();
+                        const sym = cleanSymbol(t.symbol);
                         const d = String(t.date || '');
-                        return (!kw || sym.includes(kw) || String(t.name || '').toLowerCase().includes(kw))
-                            && (!stockFilterSymbol.value || sym === stockFilterSymbol.value.toLowerCase())
-                            && (!stockFilterAction.value || t.action === stockFilterAction.value)
-                            && (!stockFilterYear.value || d.slice(0, 4) === stockFilterYear.value)
-                            && (!stockFilterMonth.value || d.slice(5, 7) === String(stockFilterMonth.value).padStart(2, '0'));
+                        return (!kw || sym.toLowerCase().includes(kw) || String(t.name || '').toLowerCase().includes(kw))
+                            && (stockFilterSymbols.value.length === 0 || stockFilterSymbols.value.includes(sym))
+                            && (stockFilterActions.value.length === 0 || stockFilterActions.value.includes(t.action))
+                            && (stockFilterYears.value.length === 0 || stockFilterYears.value.includes(d.slice(0, 4)))
+                            && (stockFilterMonths.value.length === 0 || stockFilterMonths.value.includes(String(parseInt(d.slice(5, 7), 10))));
                     });
                 });
-                const stockFilterActive = computed(() => !!(stockSearch.value || stockFilterSymbol.value || stockFilterAction.value || stockFilterYear.value || stockFilterMonth.value));
-                const monthSelectOptions = [{ value: '', label: '交易日：全部月份' }, ...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} 月` }))];
-                const typeSelectOptions = [{ value: 'ALL', label: '全部收支類型' }, { value: '支出', label: '支出 (-)' }, { value: '收入', label: '收入 (+)' }];
-                const expenseYearSelectOptions = computed(() => [{ value: '', label: '交易日：全部年份' }, ...expenseYearOptions.value.map(y => ({ value: y, label: `${y} 年` }))]);
-                const stockYearSelectOptions = computed(() => [{ value: '', label: '交易日：全部年份' }, ...stockYearOptions.value.map(y => ({ value: y, label: `${y} 年` }))]);
-                const stockSymbolSelectOptions = computed(() => [{ value: '', label: '全部標的' }, ...stockSymbolOptions.value.map(o => ({ value: o.symbol, label: `${o.symbol} ${o.name}`.trim() }))]);
-                const stockActionSelectOptions = [{ value: '', label: '買進＋賣出' }, { value: '買進', label: '只看買進' }, { value: '賣出', label: '只看賣出' }];
-                const resetStockFilters = () => { stockSearch.value = ''; stockFilterSymbol.value = ''; stockFilterAction.value = ''; stockFilterYear.value = ''; stockFilterMonth.value = ''; };
+                const stockFilterActive = computed(() => !!(stockSearch.value || stockFilterSymbols.value.length || stockFilterActions.value.length || stockFilterYears.value.length || stockFilterMonths.value.length));
+                const resetStockFilters = () => { stockSearch.value = ''; stockFilterSymbols.value = []; stockFilterActions.value = []; stockFilterYears.value = []; stockFilterMonths.value = []; };
+                const monthSelectOptions = Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} 月` }));
+                const typeSelectOptions = [{ value: '支出', label: '支出 (-)' }, { value: '收入', label: '收入 (+)' }];
+                const expenseYearSelectOptions = computed(() => expenseYearOptions.value.map(y => ({ value: y, label: `${y} 年` })));
+                const stockYearSelectOptions = computed(() => stockYearOptions.value.map(y => ({ value: y, label: `${y} 年` })));
+                const stockSymbolSelectOptions = computed(() => stockSymbolOptions.value.map(o => ({ value: o.symbol, label: `${o.symbol} ${o.name}`.trim() })));
+                const stockActionSelectOptions = [{ value: '買進', label: '買進' }, { value: '賣出', label: '賣出' }];
 
                 const isAllExpensesSelected = computed(() => filteredExpenses.value.length > 0 && selectedExpenseIds.value.length === filteredExpenses.value.length);
                 const toggleSelectAllExpenses = (e) => { selectedExpenseIds.value = e.target.checked ? filteredExpenses.value.map(x => x.id) : []; };
@@ -2326,13 +2336,13 @@
                 return {
                     appSettings, showCardSettingsModal, isCard, getCardDay, toggleCard, setCardDay, cardOffset, cardStatements, cardDetail, openCardDetail,
                     showRealizedModal, realizedInfo, realizedRowsDesc, realizedBySymbolList,
-                    filterYear, filterMonth, dateFilterActive, expenseYearOptions,
-                    stockSearch, stockFilterSymbol, stockFilterAction, stockFilterYear, stockFilterMonth, stockSymbolOptions, stockYearOptions, filteredStockTrades, stockFilterActive, resetStockFilters, syncLegacyStockExpenses,
+                    filterYears, filterMonths, dateFilterActive, expenseYearOptions,
+                    stockSearch, stockFilterSymbols, stockFilterActions, stockFilterYears, stockFilterMonths, stockSymbolOptions, stockYearOptions, filteredStockTrades, stockFilterActive, resetStockFilters, syncLegacyStockExpenses,
                     monthSelectOptions, typeSelectOptions, expenseYearSelectOptions, stockYearSelectOptions, stockSymbolSelectOptions, stockActionSelectOptions,
                     undoToast, undoLast, displayedExpenses, loadMoreExpenses, onExpenseScroll, totalDividend,
                     expenses, stockTrades, activeTab, selectedYear, selectedMonth, isCurrentMonthOrFuture,
                     isFetchingPrices, lastPriceUpdate, expenseSearch, expenseMonthFilterScope,
-                    selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilter, resetFilters,
+                    selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilters, resetFilters,
                     activeDropdown, toggleDropdown, closeAllDropdowns, categoryFilterLabel, itemFilterLabel, paymentFilterLabel,
                     selectedExpenseIds, selectedStockIds, categoriesList, itemsList, paymentMethodsList,
                     showExpenseModal, editingExpenseId, showStockModal, editingStockId, showBatchDateModal,
@@ -2349,7 +2359,7 @@
                     exportToExcel, handleFileUpload, downloadTemplateExcel, onDragStart, onDragOver, onDrop, resetAllData, formatCurrency
                 };
             }
-        }).component('single-select', SingleSelect).mount('#app');
+        }).component('multi-select', MultiSelect).mount('#app');
     </script>
 </body>
 </html>
