@@ -388,6 +388,8 @@
                                     @dragstart="onDragStart($event, index, 'expense')"
                                     @dragover.prevent="onDragOver($event, index)"
                                     @drop="onDrop($event, index, 'expense')"
+                                    @dragend="onDragEnd"
+                                    :class="draggingIds.includes(String(item.id)) ? 'opacity-40' : ''"
                                     class="hover:bg-slate-800/40 cursor-pointer transition select-none"
                                     @click="openExpenseModal(item)"
                                 >
@@ -431,6 +433,14 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div class="mt-2 flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3 rounded-xl border text-xs" :class="selectedExpenseStats.n ? 'bg-emerald-500/10 border-emerald-500/30 text-slate-200' : 'bg-slate-900/50 border-slate-800 text-slate-500'">
+                        <span v-if="!selectedExpenseStats.n">勾選明細後，這裡會顯示筆數與金額合計</span>
+                        <span v-if="selectedExpenseStats.n" class="font-bold text-emerald-400">已勾選 {{ selectedExpenseStats.n }} 筆<span v-if="selectedExpenseStats.hidden" class="font-normal text-amber-300">（含 {{ selectedExpenseStats.hidden }} 筆目前未顯示）</span></span>
+                        <span v-if="selectedExpenseStats.n">支出合計 <b class="text-rose-300">-{{ formatCurrency(selectedExpenseStats.exp) }}</b><span class="text-slate-500">（已付 {{ formatCurrency(selectedExpenseStats.paidExp) }}）</span></span>
+                        <span v-if="selectedExpenseStats.n">收入合計 <b class="text-emerald-300">+{{ formatCurrency(selectedExpenseStats.inc) }}</b><span class="text-slate-500">（已付 {{ formatCurrency(selectedExpenseStats.paidInc) }}）</span></span>
+                        <span v-if="selectedExpenseStats.n">淨額 <b :class="selectedExpenseStats.inc - selectedExpenseStats.exp >= 0 ? 'text-emerald-300' : 'text-rose-300'">{{ selectedExpenseStats.inc - selectedExpenseStats.exp >= 0 ? '+' : '-' }}{{ formatCurrency(Math.abs(selectedExpenseStats.inc - selectedExpenseStats.exp)) }}</b></span>
+                        <button v-if="selectedExpenseStats.n" @click="selectedExpenseIds = []" class="ml-auto text-slate-400 hover:text-slate-200 underline">清除勾選</button>
                     </div>
                     <div v-if="filteredExpenses.length > displayedExpenses.length" class="text-center text-xs text-slate-400 py-1">
                         已顯示 {{ displayedExpenses.length }} / 共 {{ filteredExpenses.length }} 筆，捲到底會自動載入更多
@@ -576,7 +586,7 @@
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 pt-2 border-t border-slate-800">
                         <input v-model="stockSearch" type="text" placeholder="搜尋代碼／標的名稱..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
-                        <multi-select v-model="stockFilterSymbols" id="s-symbol" :options="stockSymbolSelectOptions" all-label="全部標的" unit="檔標的"></multi-select>
+                        <multi-select v-model="stockFilterSymbols" id="s-symbol" :wide="true" :options="stockSymbolSelectOptions" all-label="全部標的" unit="檔標的"></multi-select>
                         <multi-select v-model="stockFilterActions" id="s-action" :options="stockActionSelectOptions" all-label="買進＋賣出" unit="種交易"></multi-select>
                         <multi-select v-model="stockFilterYears" id="s-year" :options="stockYearSelectOptions" all-label="全部交易年份" unit="個年份"></multi-select>
                         <multi-select v-model="stockFilterMonths" id="s-month" :options="monthSelectOptions" all-label="全部交易月份" unit="個月份"></multi-select>
@@ -611,6 +621,8 @@
                                     @dragstart="onDragStart($event, index, 'stock')"
                                     @dragover.prevent="onDragOver($event, index)"
                                     @drop="onDrop($event, index, 'stock')"
+                                    @dragend="onDragEnd"
+                                    :class="draggingIds.includes(String(trade.id)) ? 'opacity-40' : ''"
                                     class="hover:bg-slate-800/40 cursor-pointer transition select-none"
                                     @click="openStockModal(trade)"
                                 >
@@ -643,6 +655,15 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div class="mt-2 flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3 rounded-xl border text-xs" :class="selectedStockStats.n ? 'bg-indigo-500/10 border-indigo-500/30 text-slate-200' : 'bg-slate-900/50 border-slate-800 text-slate-500'">
+                        <span v-if="!selectedStockStats.n">勾選交易後，這裡會顯示筆數與金額合計</span>
+                        <span v-if="selectedStockStats.n" class="font-bold text-indigo-300">已勾選 {{ selectedStockStats.n }} 筆<span v-if="selectedStockStats.hidden" class="font-normal text-amber-300">（含 {{ selectedStockStats.hidden }} 筆目前未顯示）</span></span>
+                        <span v-if="selectedStockStats.n">買進 {{ selectedStockStats.buyN }} 筆 <b class="text-rose-300">{{ formatCurrency(selectedStockStats.buyAmt) }}</b><span class="text-slate-500">（{{ selectedStockStats.buyShares.toLocaleString() }} 股）</span></span>
+                        <span v-if="selectedStockStats.n">賣出 {{ selectedStockStats.sellN }} 筆 <b class="text-emerald-300">{{ formatCurrency(selectedStockStats.sellAmt) }}</b><span class="text-slate-500">（{{ selectedStockStats.sellShares.toLocaleString() }} 股）</span></span>
+                        <span v-if="selectedStockStats.n">賣出 − 買進 <b :class="selectedStockStats.sellAmt - selectedStockStats.buyAmt >= 0 ? 'text-emerald-300' : 'text-rose-300'">{{ selectedStockStats.sellAmt - selectedStockStats.buyAmt >= 0 ? '+' : '-' }}{{ formatCurrency(Math.abs(selectedStockStats.sellAmt - selectedStockStats.buyAmt)) }}</b></span>
+                        <span v-if="selectedStockStats.n" class="text-slate-400">手續費 {{ formatCurrency(selectedStockStats.fee) }}・交易稅 {{ formatCurrency(selectedStockStats.tax) }}</span>
+                        <button v-if="selectedStockStats.n" @click="selectedStockIds = []" class="ml-auto text-slate-400 hover:text-slate-200 underline">清除勾選</button>
                     </div>
                 </div>
             </div>
@@ -1064,7 +1085,7 @@
 
         // 多選下拉元件：外觀與操作方式和「類別／項目／付款方式」完全相同（空選＝全部）
         const MultiSelect = {
-            props: ['modelValue', 'options', 'id', 'allLabel', 'unit'],
+            props: ['modelValue', 'options', 'id', 'allLabel', 'unit', 'wide'],
             emits: ['update:modelValue'],
             setup(props, { emit }) {
                 const dd = inject('dropdown');
@@ -1087,12 +1108,12 @@
                         <span class="truncate">{{ label }}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-slate-400 ml-1 shrink-0"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
-                    <div v-if="isOpen" class="absolute left-0 right-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
-                        <label class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-emerald-400 font-bold border-b border-slate-800">
+                    <div v-if="isOpen" :class="wide ? 'min-w-full w-max max-w-[24rem]' : 'right-0'" class="absolute left-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
+                        <label class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-emerald-400 font-bold border-b border-slate-800 whitespace-nowrap">
                             <input type="checkbox" :checked="modelValue.length === 0" @change="clear" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
                             <span>{{ allLabel }}</span>
                         </label>
-                        <label v-for="o in options" :key="o.value" class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-slate-200">
+                        <label v-for="o in options" :key="o.value" :class="wide ? 'whitespace-nowrap' : ''" class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-slate-200">
                             <input type="checkbox" :checked="isOn(o.value)" @change="flip(o.value)" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
                             <span>{{ o.label }}</span>
                         </label>
@@ -1456,42 +1477,75 @@
                     return stockForm.value.action === '買進' ? (price * shares) + fee : (price * shares) - fee - tax;
                 });
 
+                // <<REORDER-START>>
+                // 拖曳排序：被拖的列若已勾選，所有「目前畫面上、已勾選」的列會一起搬到目標位置；
+                // 若沒勾選就只搬這一列。永遠只調整順序，不增不減（即使畫面是篩選後的清單）。
+                const reorderWithGroup = (full, view, fromIdx, toIdx, selectedIds) => {
+                    const dragged = view[fromIdx], target = view[toIdx];
+                    if (!dragged || !target || String(dragged.id) === String(target.id)) return full;
+                    const sel = new Set((selectedIds || []).map(String));
+                    const group = sel.has(String(dragged.id)) ? view.filter(x => sel.has(String(x.id))) : [dragged];
+                    const groupIds = new Set(group.map(x => String(x.id)));
+                    if (groupIds.has(String(target.id))) return full;   // 放到自己人身上 → 不動
+                    const rest = full.filter(x => !groupIds.has(String(x.id)));
+                    const at = rest.findIndex(x => String(x.id) === String(target.id));
+                    rest.splice(fromIdx < toIdx ? at + 1 : at, 0, ...group);
+                    return rest;
+                };
+                // <<REORDER-END>>
+                const draggingIds = ref([]);
                 const onDragStart = (e, index, type) => {
                     draggedIndex.value = index;
+                    const list = type === 'expense' ? filteredExpenses.value : filteredStockTrades.value;
+                    const sel = (type === 'expense' ? selectedExpenseIds.value : selectedStockIds.value).map(String);
+                    const dragged = list[index];
+                    draggingIds.value = !dragged ? [] : (sel.includes(String(dragged.id)) ? list.filter(x => sel.includes(String(x.id))).map(x => String(x.id)) : [String(dragged.id)]);
                     e.dataTransfer.effectAllowed = 'move';
+                    try { e.dataTransfer.setData('text/plain', String(draggingIds.value.length)); } catch (err) {}
                 };
+                const onDragEnd = () => { draggingIds.value = []; };
                 const onDragOver = (e, index) => {};
                 const onDrop = (e, targetIndex, type) => {
                     if (draggedIndex.value === null) return;
                     if (type === 'expense') {
-                        // 注意：畫面上的清單可能是「篩選後」的結果，絕對不能直接拿它覆蓋整份資料！
-                        // 這裡用 id 找到在完整清單中的位置，只調整順序，不增不減。
-                        const view = filteredExpenses.value;
-                        const moved = view[draggedIndex.value];
-                        const target = view[targetIndex];
-                        if (moved && target && moved.id !== target.id) {
-                            const full = [...expenses.value];
-                            full.splice(full.findIndex(x => x.id === moved.id), 1);
-                            const toIdx = full.findIndex(x => x.id === target.id);
-                            full.splice(draggedIndex.value < targetIndex ? toIdx + 1 : toIdx, 0, moved);
-                            expenses.value = full;
-                        }
+                        expenses.value = reorderWithGroup(expenses.value, filteredExpenses.value, draggedIndex.value, targetIndex, selectedExpenseIds.value);
                     } else if (type === 'stock') {
-                        const view = filteredStockTrades.value;
-                        const moved = view[draggedIndex.value];
-                        const target = view[targetIndex];
-                        if (moved && target && moved.id !== target.id) {
-                            const full = [...stockTrades.value];
-                            full.splice(full.findIndex(x => x.id === moved.id), 1);
-                            const toIdx = full.findIndex(x => x.id === target.id);
-                            full.splice(draggedIndex.value < targetIndex ? toIdx + 1 : toIdx, 0, moved);
-                            stockTrades.value = full;
-                        }
+                        stockTrades.value = reorderWithGroup(stockTrades.value, filteredStockTrades.value, draggedIndex.value, targetIndex, selectedStockIds.value);
                     }
                     draggedIndex.value = null;
+                    draggingIds.value = [];
                     pushToCloud();
                     nextTick(() => renderCharts());
                 };
+
+                // ---------- 勾選紀錄的合計 ----------
+                const selectedExpenseStats = computed(() => {
+                    const ids = new Set(selectedExpenseIds.value.map(String));
+                    const r = { n: 0, exp: 0, inc: 0, paidExp: 0, paidInc: 0, hidden: 0 };
+                    const visible = new Set(filteredExpenses.value.map(e => String(e.id)));
+                    expenses.value.forEach(e => {
+                        if (!ids.has(String(e.id))) return;
+                        r.n++;
+                        if (!visible.has(String(e.id))) r.hidden++;
+                        const amt = Number(e.amount || 0), paid = Number(e.paidAmount || 0);
+                        if (e.type === '收入') { r.inc += amt; r.paidInc += paid; } else { r.exp += amt; r.paidExp += paid; }
+                    });
+                    return r;
+                });
+                const selectedStockStats = computed(() => {
+                    const ids = new Set(selectedStockIds.value.map(String));
+                    const r = { n: 0, buyN: 0, buyShares: 0, buyAmt: 0, sellN: 0, sellShares: 0, sellAmt: 0, fee: 0, tax: 0, hidden: 0 };
+                    const visible = new Set(filteredStockTrades.value.map(t => String(t.id)));
+                    stockTrades.value.forEach(t => {
+                        if (!ids.has(String(t.id))) return;
+                        r.n++;
+                        if (!visible.has(String(t.id))) r.hidden++;
+                        const shares = Number(t.shares || 0), amt = Number(t.totalAmount || 0);
+                        if (t.action === '賣出') { r.sellN++; r.sellShares += shares; r.sellAmt += amt; } else { r.buyN++; r.buyShares += shares; r.buyAmt += amt; }
+                        r.fee += Number(t.fee || 0); r.tax += Number(t.tax || 0);
+                    });
+                    return r;
+                });
 
                 const fetchStockPrices = async (silent = false) => {
                     const symbols = Array.from(new Set(stockTrades.value.map(t => cleanSymbol(t.symbol)).filter(Boolean)));
@@ -2356,7 +2410,7 @@
                     toggleSelectAllStocks, promptAddOption, openExpenseModal, saveExpenseSubmit, confirmDeleteExpense,
                     confirmBatchDeleteExpenses, openStockModal, saveStockTradeSubmit, confirmDeleteStockTrade,
                     confirmBatchDeleteStockTrades, openBatchDateModal, applyBatchDate, changeMonth, fetchStockPrices,
-                    exportToExcel, handleFileUpload, downloadTemplateExcel, onDragStart, onDragOver, onDrop, resetAllData, formatCurrency
+                    exportToExcel, handleFileUpload, downloadTemplateExcel, onDragStart, onDragOver, onDrop, onDragEnd, draggingIds, selectedExpenseStats, selectedStockStats, resetAllData, formatCurrency
                 };
             }
         }).component('multi-select', MultiSelect).mount('#app');
