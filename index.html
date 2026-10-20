@@ -354,7 +354,6 @@
                                 <option value="支出">支出 (-)</option>
                                 <option value="收入">收入 (+)</option>
                             </select>
-                            <button @click="resetFilters" class="mt-1 w-full text-[10px] text-slate-400 hover:text-emerald-400 underline text-right block">重設篩選器</button>
                         </div>
 
                         <div>
@@ -369,6 +368,7 @@
                                 <option value="">交易全部月份</option>
                                 <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
                             </select>
+                            <button @click="resetFilters" class="mt-1 w-full text-[10px] text-slate-400 hover:text-emerald-400 underline text-right block">重設篩選器</button>
                         </div>
                     </div>
 
