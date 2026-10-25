@@ -65,30 +65,32 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(100, 116, 139, 0.7);
         }
+        .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="min-h-screen bg-slate-900 text-slate-100 antialiased selection:bg-emerald-500 selection:text-white" @click="closeAllDropdowns">
     <div id="app" class="pb-12">
         <!-- Header / Navigation Bar -->
-        <header class="sticky top-0 z-30 glass-card border-b border-slate-800/80 px-4 lg:px-8 py-3 mb-6">
-            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-start">
+        <header class="lg:sticky lg:top-0 z-30 glass-card border-b border-slate-800/80 px-4 lg:px-8 py-3 mb-6">
+            <div class="max-w-7xl mx-auto flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 lg:gap-4">
+                <div class="flex items-center space-x-3 w-full lg:w-auto justify-between lg:justify-start">
                     <div class="flex items-center space-x-3">
                         <div class="p-2.5 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-xl shadow-lg shadow-emerald-500/20">
                             <i data-lucide="wallet" class="w-6 h-6 text-slate-950"></i>
                         </div>
                         <div>
-                            <h1 class="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                            <h1 class="text-xl font-bold whitespace-nowrap bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
                                 FinDash 智慧資產管理
                             </h1>
-                            <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+                            <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
                                 <span>日常收支與股票投資儀表板</span>
-                                <span v-if="gasApiUrl && syncBadge.text" :class="syncBadge.cls" class="text-[10px] px-1.5 py-0.2 rounded border">{{ syncBadge.text }}</span>
+                                <span v-if="gasApiUrl && syncBadge.text" :class="syncBadge.cls" class="text-[10px] px-1.5 py-0.2 rounded border whitespace-nowrap">{{ syncBadge.text }}</span>
                             </p>
                         </div>
                     </div>
                 </div>
-                <div class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 w-full md:w-auto">
+                <div class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 w-full lg:w-auto">
                     <div class="flex items-center glass-card rounded-xl p-1 border border-slate-700/60">
                         <button @click="changeMonth(-1)" class="p-1.5 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white" title="上個月">
                             <i data-lucide="chevron-left" class="w-4 h-4"></i>
@@ -177,38 +179,57 @@
         </header>
 
         <main class="max-w-7xl mx-auto px-4 lg:px-8 space-y-6">
-            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="glass-card rounded-2xl p-5">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-medium text-slate-400">當月總收入</span>
-                        <div class="p-2 bg-emerald-500/10 rounded-lg text-emerald-400"><i data-lucide="arrow-down-left" class="w-5 h-5"></i></div>
+            <nav class="sticky top-0 lg:top-[var(--header-h,0px)] z-20 -mx-4 px-4 lg:-mx-8 lg:px-8 pt-2 bg-slate-900/95 backdrop-blur flex border-b border-slate-800/80 space-x-4 sm:space-x-6 overflow-x-auto whitespace-nowrap no-scrollbar">
+                <button @click="activeTab = 'expenses'" :class="activeTab === 'expenses' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 shrink-0 flex items-center space-x-2 text-sm sm:text-base transition">
+                    <i data-lucide="receipt" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">日常收支與對帳管理</span><span class="sm:hidden">日常收支</span>
+                </button>
+                <button @click="activeTab = 'investments'" :class="activeTab === 'investments' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 shrink-0 flex items-center space-x-2 text-sm sm:text-base transition">
+                    <i data-lucide="line-chart" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">ETF & 股票投資儀表板</span><span class="sm:hidden">ETF & 股票</span>
+                </button>
+                <button @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'border-amber-500 text-amber-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 shrink-0 flex items-center space-x-2 text-sm sm:text-base transition">
+                    <i data-lucide="table" class="w-4 h-4"></i>
+                    <span>月收支表</span>
+                </button>
+                <button @click="activeTab = 'cards'" :class="activeTab === 'cards' ? 'border-sky-500 text-sky-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 shrink-0 flex items-center space-x-2 text-sm sm:text-base transition">
+                    <i data-lucide="credit-card" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">信用卡待結算</span><span class="sm:hidden">信用卡</span>
+                </button>
+            </nav>
+
+            <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div class="glass-card rounded-2xl p-3 sm:p-5">
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="text-[11px] sm:text-xs font-medium text-slate-400">當月總收入</span>
+                        <div class="p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg text-emerald-400 shrink-0"><i data-lucide="arrow-down-left" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
                     </div>
-                    <div class="mt-3">
-                        <div class="text-2xl font-bold text-emerald-400">{{ formatCurrency(monthlyTotalIncome) }}</div>
-                        <p class="text-xs text-slate-400 mt-1">{{ selectedYear }} / {{ selectedMonth }} 月計</p>
+                    <div class="mt-2 sm:mt-3">
+                        <div class="text-lg sm:text-2xl font-bold text-emerald-400 whitespace-nowrap">{{ formatCurrency(monthlyTotalIncome) }}</div>
+                        <p class="text-[10px] sm:text-xs text-slate-400 mt-1">{{ selectedYear }} / {{ selectedMonth }} 月計</p>
                     </div>
                 </div>
-                <div class="glass-card rounded-2xl p-5">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-medium text-slate-400">當月總支出</span>
-                        <div class="p-2 bg-rose-500/10 rounded-lg text-rose-400"><i data-lucide="arrow-up-right" class="w-5 h-5"></i></div>
+                <div class="glass-card rounded-2xl p-3 sm:p-5">
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="text-[11px] sm:text-xs font-medium text-slate-400">當月總支出</span>
+                        <div class="p-1.5 sm:p-2 bg-rose-500/10 rounded-lg text-rose-400 shrink-0"><i data-lucide="arrow-up-right" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
                     </div>
-                    <div class="mt-3">
-                        <div class="text-2xl font-bold text-rose-400">{{ formatCurrency(monthlyTotalExpense) }}</div>
-                        <p class="text-xs text-slate-400 mt-1 flex justify-between">
+                    <div class="mt-2 sm:mt-3">
+                        <div class="text-lg sm:text-2xl font-bold text-rose-400 whitespace-nowrap">{{ formatCurrency(monthlyTotalExpense) }}</div>
+                        <p class="text-[10px] sm:text-xs text-slate-400 mt-1 flex justify-between">
                             <span>淨儲蓄率</span>
                             <span class="text-slate-200 font-bold">{{ monthlySavingsRate }}%</span>
                         </p>
                     </div>
                 </div>
-                <div class="glass-card rounded-2xl p-5">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-medium text-slate-400">投資資產總市值</span>
-                        <div class="p-2 bg-indigo-500/10 rounded-lg text-indigo-400"><i data-lucide="pie-chart" class="w-5 h-5"></i></div>
+                <div class="glass-card rounded-2xl p-3 sm:p-5">
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="text-[11px] sm:text-xs font-medium text-slate-400">投資資產總市值</span>
+                        <div class="p-1.5 sm:p-2 bg-indigo-500/10 rounded-lg text-indigo-400 shrink-0"><i data-lucide="pie-chart" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
                     </div>
-                    <div class="mt-3">
-                        <div class="text-2xl font-bold text-slate-100">{{ formatCurrency(totalInvestmentMarketValue) }}</div>
-                        <p class="text-xs text-slate-400 mt-1 flex justify-between">
+                    <div class="mt-2 sm:mt-3">
+                        <div class="text-lg sm:text-2xl font-bold text-slate-100 whitespace-nowrap">{{ formatCurrency(totalInvestmentMarketValue) }}</div>
+                        <p class="text-[10px] sm:text-xs text-slate-400 mt-1 flex flex-col sm:flex-row sm:justify-between">
                             <span>未實現損益</span>
                             <span :class="totalUnrealizedPL >= 0 ? 'text-emerald-400' : 'text-rose-400'" class="font-medium">
                                 {{ totalUnrealizedPL >= 0 ? '+' : '' }}{{ formatCurrency(totalUnrealizedPL) }} ({{ totalUnrealizedPLRate }}%)
@@ -216,49 +237,33 @@
                         </p>
                     </div>
                 </div>
-                <div @click="showRealizedModal = true" class="glass-card rounded-2xl p-5 cursor-pointer hover:border-amber-500/40 transition">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-medium text-slate-400">累積已實現損益</span>
-                        <div class="p-2 bg-amber-500/10 rounded-lg text-amber-400"><i data-lucide="coins" class="w-5 h-5"></i></div>
+                <div @click="showRealizedModal = true" class="glass-card rounded-2xl p-3 sm:p-5 cursor-pointer hover:border-amber-500/40 transition">
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="text-[11px] sm:text-xs font-medium text-slate-400">累積已實現損益</span>
+                        <div class="p-1.5 sm:p-2 bg-amber-500/10 rounded-lg text-amber-400 shrink-0"><i data-lucide="coins" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
                     </div>
-                    <div class="mt-3">
-                        <div class="text-2xl font-bold" :class="totalRealizedPL >= 0 ? 'text-emerald-400' : 'text-rose-400'">
+                    <div class="mt-2 sm:mt-3">
+                        <div class="text-lg sm:text-2xl font-bold whitespace-nowrap" :class="totalRealizedPL >= 0 ? 'text-emerald-400' : 'text-rose-400'">
                             {{ totalRealizedPL >= 0 ? '+' : '' }}{{ formatCurrency(totalRealizedPL) }}
                         </div>
-                        <p class="text-xs text-slate-400 mt-1">賣出後落袋的損益（移動平均成本，已扣手續費與稅）</p>
-                        <p class="text-[11px] text-slate-500 mt-0.5">累積股息收入 {{ formatCurrency(totalDividend) }}</p>
-                        <p class="text-[11px] text-amber-400/80 mt-0.5">點擊查看計算明細</p>
+                        <p class="hidden sm:block text-xs text-slate-400 mt-1">賣出後落袋的損益（移動平均成本，已扣手續費與稅）</p>
+                        <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1 sm:mt-0.5">累積股息 {{ formatCurrency(totalDividend) }}</p>
+                        <p class="text-[10px] sm:text-[11px] text-amber-400/80 mt-0.5">點擊查看明細</p>
                     </div>
                 </div>
             </section>
 
-            <div class="flex border-b border-slate-800/80 space-x-6 overflow-x-auto whitespace-nowrap">
-                <button @click="activeTab = 'expenses'" :class="activeTab === 'expenses' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 flex items-center space-x-2 text-sm sm:text-base transition">
-                    <i data-lucide="receipt" class="w-4 h-4"></i>
-                    <span>日常收支與對帳管理</span>
-                </button>
-                <button @click="activeTab = 'investments'" :class="activeTab === 'investments' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 flex items-center space-x-2 text-sm sm:text-base transition">
-                    <i data-lucide="line-chart" class="w-4 h-4"></i>
-                    <span>ETF & 股票投資儀表板</span>
-                </button>
-                <button @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'border-amber-500 text-amber-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 flex items-center space-x-2 text-sm sm:text-base transition">
-                    <i data-lucide="table" class="w-4 h-4"></i>
-                    <span>月收支表</span>
-                </button>
-                <button @click="activeTab = 'cards'" :class="activeTab === 'cards' ? 'border-sky-500 text-sky-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 flex items-center space-x-2 text-sm sm:text-base transition">
-                    <i data-lucide="credit-card" class="w-4 h-4"></i>
-                    <span>信用卡待結算</span>
-                </button>
-            </div>
-
             <!-- TAB 1: 日常收支儀表板 -->
             <div v-show="activeTab === 'expenses'" class="space-y-6">
-                <div class="flex items-center justify-between flex-wrap gap-2">
-                    <p class="text-xs text-slate-400">圖表預設不含投資（ETF 買賣、投資儲蓄），避免大額投資稀釋其他項目；投資另外顯示在下方區塊。</p>
-                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
-                        <input type="checkbox" v-model="includeInvest" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
-                        含投資
-                    </label>
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between gap-3">
+                        <h3 class="text-base font-semibold text-slate-200 whitespace-nowrap">支出分析</h3>
+                        <div class="flex items-center shrink-0 h-9 bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
+                            <button @click="includeInvest = false" :class="!includeInvest ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="h-full px-3 rounded-md transition whitespace-nowrap">不含投資</button>
+                            <button @click="includeInvest = true" :class="includeInvest ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="h-full px-3 rounded-md transition whitespace-nowrap">含投資</button>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500">預設不含投資（ETF 買賣、投資儲蓄），避免大額投資稀釋其他項目；投資另外顯示在下方區塊。</p>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
@@ -295,14 +300,14 @@
                         <i data-lucide="trending-up" class="w-4 h-4 text-amber-400"></i>
                         本月投資（不計入上方消費圖表）
                     </h3>
-                    <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-                        <span class="text-slate-400">買進 <b class="text-rose-300">{{ formatCurrency(monthlyInvestSummary.buy) }}</b></span>
-                        <span class="text-slate-400">賣出 <b class="text-emerald-300">{{ formatCurrency(monthlyInvestSummary.sell) }}</b></span>
-                        <span class="text-slate-400">淨投入 <b :class="monthlyInvestSummary.buy - monthlyInvestSummary.sell >= 0 ? 'text-slate-100' : 'text-emerald-300'">{{ formatCurrency(monthlyInvestSummary.buy - monthlyInvestSummary.sell) }}</b></span>
-                        <span class="text-slate-400">股息收入 <b class="text-emerald-300">{{ formatCurrency(monthlyInvestSummary.dividend) }}</b></span>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">買進</div><div class="text-base sm:text-lg font-bold text-rose-300 mt-0.5">{{ formatCurrency(monthlyInvestSummary.buy) }}</div></div>
+                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">賣出</div><div class="text-base sm:text-lg font-bold text-emerald-300 mt-0.5">{{ formatCurrency(monthlyInvestSummary.sell) }}</div></div>
+                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">淨投入</div><div class="text-base sm:text-lg font-bold mt-0.5" :class="monthlyInvestSummary.buy - monthlyInvestSummary.sell >= 0 ? 'text-slate-100' : 'text-emerald-300'">{{ formatCurrency(monthlyInvestSummary.buy - monthlyInvestSummary.sell) }}</div></div>
+                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">股息收入</div><div class="text-base sm:text-lg font-bold text-emerald-300 mt-0.5">{{ formatCurrency(monthlyInvestSummary.dividend) }}</div></div>
                     </div>
-                    <div v-if="monthlyInvestSummary.list.length" class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
-                        <div v-for="x in monthlyInvestSummary.list" :key="x.symbol" class="flex items-center justify-between bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
+                    <div v-if="monthlyInvestSummary.list.length" class="mt-3 flex flex-wrap gap-2 text-xs">
+                        <div v-for="x in monthlyInvestSummary.list" :key="x.symbol" class="inline-flex items-center gap-4 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
                             <span class="text-slate-200 font-medium">{{ x.symbol || '(無代碼)' }}</span>
                             <span class="text-slate-400">買 {{ formatCurrency(x.buy) }}<span v-if="x.sell"> ／ 賣 {{ formatCurrency(x.sell) }}</span></span>
                         </div>
@@ -317,21 +322,11 @@
                             <h3 class="text-lg font-semibold text-slate-200">日常交易明細清單</h3>
                             <p class="text-xs text-slate-400">點選可修改；<span class="text-emerald-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>；勾選可批次複製、填日期或刪除</p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                            <!-- 批次複製按鈕 -->
-                            <button @click="openBatchCopyModal" :disabled="selectedExpenseIds.length === 0" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 transition flex items-center space-x-1">
-                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                                <span>批次複製 ({{ selectedExpenseIds.length }})</span>
-                            </button>
-                            <button @click="openBatchDateModal('payment')" :disabled="selectedExpenseIds.length === 0" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 transition">
-                                填付款日 ({{ selectedExpenseIds.length }})
-                            </button>
-                            <button @click="openBatchDateModal('settlement')" :disabled="selectedExpenseIds.length === 0" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-40 transition">
-                                填結算日 ({{ selectedExpenseIds.length }})
-                            </button>
-                            <button @click="confirmBatchDeleteExpenses" :disabled="selectedExpenseIds.length === 0" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-40 transition">
-                                批次刪除 ({{ selectedExpenseIds.length }})
-                            </button>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto lg:grid-cols-[repeat(4,7.5rem)]">
+                            <button @click="openBatchCopyModal" :disabled="selectedExpenseIds.length === 0" class="w-full h-9 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-emerald-600 hover:bg-emerald-500">批次複製 ({{ selectedExpenseIds.length }})</button>
+                            <button @click="openBatchDateModal('payment')" :disabled="selectedExpenseIds.length === 0" class="w-full h-9 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-indigo-600 hover:bg-indigo-500">填付款日 ({{ selectedExpenseIds.length }})</button>
+                            <button @click="openBatchDateModal('settlement')" :disabled="selectedExpenseIds.length === 0" class="w-full h-9 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-amber-600 hover:bg-amber-500">填結算日 ({{ selectedExpenseIds.length }})</button>
+                            <button @click="confirmBatchDeleteExpenses" :disabled="selectedExpenseIds.length === 0" class="w-full h-9 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-rose-600 hover:bg-rose-500">批次刪除 ({{ selectedExpenseIds.length }})</button>
                         </div>
                     </div>
 
@@ -415,18 +410,18 @@
                         <table class="w-full text-left text-xs sm:text-sm">
                             <thead class="bg-slate-800/90 text-slate-400 border-b border-slate-700/60 uppercase sticky top-0 z-10 backdrop-blur-md">
                                 <tr>
-                                    <th class="py-3 px-2 text-center w-8">拖拽</th>
-                                    <th class="py-3 px-3 text-center w-8">
+                                    <th class="whitespace-nowrap py-3 px-2 text-center w-10 whitespace-nowrap" title="按住拖曳調整順序"><i data-lucide="grip-vertical" class="w-4 h-4 inline-block text-slate-500"></i><span class="sr-only">拖曳</span></th>
+                                    <th class="whitespace-nowrap py-3 px-3 text-center w-8">
                                         <input type="checkbox" @change="toggleSelectAllExpenses" :checked="isAllExpensesSelected" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
                                     </th>
-                                    <th class="py-3 px-3 whitespace-nowrap">類型 / 日期</th>
-                                    <th class="py-3 px-3">類別 / 項目</th>
-                                    <th class="py-3 px-3">內容</th>
-                                    <th class="py-3 px-3 text-right">金額 / 已付</th>
-                                    <th class="py-3 px-3">備註</th>
-                                    <th class="py-3 px-3">付款方式</th>
-                                    <th class="py-3 px-3 whitespace-nowrap">付款日 / 結算日</th>
-                                    <th class="py-3 px-3 text-center">操作</th>
+                                    <th class="whitespace-nowrap py-3 px-3 whitespace-nowrap">類型 / 日期</th>
+                                    <th class="whitespace-nowrap py-3 px-3">類別 / 項目</th>
+                                    <th class="whitespace-nowrap py-3 px-3">內容</th>
+                                    <th class="whitespace-nowrap py-3 px-3 text-right">金額 / 已付</th>
+                                    <th class="whitespace-nowrap py-3 px-3">備註</th>
+                                    <th class="whitespace-nowrap py-3 px-3">付款方式</th>
+                                    <th class="whitespace-nowrap py-3 px-3 whitespace-nowrap">付款日 / 結算日</th>
+                                    <th class="whitespace-nowrap py-3 px-3 text-center">操作</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-800/60">
@@ -483,13 +478,13 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="mt-2 flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3 rounded-xl border text-xs" :class="selectedExpenseStats.n ? 'bg-emerald-500/10 border-emerald-500/30 text-slate-200' : 'bg-slate-900/50 border-slate-800 text-slate-500'">
+                    <div class="mt-2 px-4 py-3 rounded-xl border text-xs flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-1" :class="selectedExpenseStats.n ? 'bg-emerald-500/10 border-emerald-500/30 text-slate-200' : 'bg-slate-900/50 border-slate-800 text-slate-500'">
                         <span v-if="!selectedExpenseStats.n">勾選明細後，這裡會顯示筆數與金額合計</span>
-                        <span v-if="selectedExpenseStats.n" class="font-bold text-emerald-400">已勾選 {{ selectedExpenseStats.n }} 筆<span v-if="selectedExpenseStats.hidden" class="font-normal text-amber-300">（含 {{ selectedExpenseStats.hidden }} 筆目前未顯示）</span></span>
-                        <span v-if="selectedExpenseStats.n">支出合計 <b class="text-rose-300">-{{ formatCurrency(selectedExpenseStats.exp) }}</b><span class="text-slate-500">（已付 {{ formatCurrency(selectedExpenseStats.paidExp) }}）</span></span>
-                        <span v-if="selectedExpenseStats.n">收入合計 <b class="text-emerald-300">+{{ formatCurrency(selectedExpenseStats.inc) }}</b><span class="text-slate-500">（已付 {{ formatCurrency(selectedExpenseStats.paidInc) }}）</span></span>
-                        <span v-if="selectedExpenseStats.n">淨額 <b :class="selectedExpenseStats.inc - selectedExpenseStats.exp >= 0 ? 'text-emerald-300' : 'text-rose-300'">{{ selectedExpenseStats.inc - selectedExpenseStats.exp >= 0 ? '+' : '-' }}{{ formatCurrency(Math.abs(selectedExpenseStats.inc - selectedExpenseStats.exp)) }}</b></span>
-                        <button v-if="selectedExpenseStats.n" @click="selectedExpenseIds = []" class="ml-auto text-slate-400 hover:text-slate-200 underline">清除勾選</button>
+                        <div v-if="selectedExpenseStats.n" class="font-bold text-emerald-400">已勾選 {{ selectedExpenseStats.n }} 筆<span v-if="selectedExpenseStats.hidden" class="font-normal text-amber-300">（含 {{ selectedExpenseStats.hidden }} 筆目前未顯示）</span></div>
+                        <div v-if="selectedExpenseStats.n" class="flex items-center justify-between sm:justify-start sm:gap-1.5"><span class="text-slate-400 sm:text-slate-200">支出合計</span><span><b class="text-rose-300">-{{ formatCurrency(selectedExpenseStats.exp) }}</b><span class="text-slate-500">（已付 {{ formatCurrency(selectedExpenseStats.paidExp) }}）</span></span></div>
+                        <div v-if="selectedExpenseStats.n" class="flex items-center justify-between sm:justify-start sm:gap-1.5"><span class="text-slate-400 sm:text-slate-200">收入合計</span><span><b class="text-emerald-300">+{{ formatCurrency(selectedExpenseStats.inc) }}</b><span class="text-slate-500">（已付 {{ formatCurrency(selectedExpenseStats.paidInc) }}）</span></span></div>
+                        <div v-if="selectedExpenseStats.n" class="flex items-center justify-between sm:justify-start sm:gap-1.5"><span class="text-slate-400 sm:text-slate-200">淨額</span><b :class="selectedExpenseStats.inc - selectedExpenseStats.exp >= 0 ? 'text-emerald-300' : 'text-rose-300'">{{ selectedExpenseStats.inc - selectedExpenseStats.exp >= 0 ? '+' : '-' }}{{ formatCurrency(Math.abs(selectedExpenseStats.inc - selectedExpenseStats.exp)) }}</b></div>
+                        <button v-if="selectedExpenseStats.n" @click="selectedExpenseIds = []" class="self-end sm:self-auto sm:ml-auto text-slate-400 hover:text-slate-200 underline">清除勾選</button>
                     </div>
                     <div v-if="filteredExpenses.length > displayedExpenses.length" class="text-center text-xs text-slate-400 py-1">
                         已顯示 {{ displayedExpenses.length }} / 共 {{ filteredExpenses.length }} 筆，捲到底會自動載入更多
@@ -581,14 +576,14 @@
 
             <div v-show="activeTab === 'investments'" class="space-y-6">
                 <div>
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-slate-200 flex items-center gap-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                        <h3 class="text-base sm:text-lg font-semibold text-slate-200 flex items-center gap-2 whitespace-nowrap">
                             <i data-lucide="layers" class="w-5 h-5 text-indigo-400"></i>
                             持有庫存標的資產估值
                         </h3>
                         <div class="text-xs text-slate-400 flex items-center gap-2">
-                            <span v-if="lastPriceUpdate" class="text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">
-                                市價更新時間：{{ lastPriceUpdate }}
+                            <span v-if="lastPriceUpdate" class="text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20 whitespace-nowrap">
+                                <span class="hidden sm:inline">市價更新時間：</span><span class="sm:hidden">更新 </span>{{ lastPriceUpdate }}
                             </span>
                             <span v-else class="text-amber-400">點擊上方「更新即時市價」連線 API</span>
                         </div>
@@ -671,14 +666,14 @@
                 </div>
 
                 <div class="glass-card rounded-2xl p-5 space-y-4">
-                    <div class="flex justify-between items-center">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-200">ETF & 股票交易歷史紀錄</h3>
                             <p class="text-xs text-slate-400"><span class="text-indigo-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>，系統自動依買賣計算總市值與平均成本</p>
                         </div>
-                        <button @click="confirmBatchDeleteStockTrades" :disabled="selectedStockIds.length === 0" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-40 transition">
-                            批次刪除 ({{ selectedStockIds.length }})
-                        </button>
+                        <div class="w-full lg:w-auto lg:ml-auto">
+                            <button @click="confirmBatchDeleteStockTrades" :disabled="selectedStockIds.length === 0" class="w-full h-9 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap lg:w-[7.5rem] bg-rose-600 hover:bg-rose-500">批次刪除 ({{ selectedStockIds.length }})</button>
+                        </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 pt-2 border-t border-slate-800">
                         <input v-model="stockSearch" type="text" placeholder="搜尋代碼／標的名稱..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-indigo-500 focus:outline-none">
@@ -692,21 +687,21 @@
                         </div>
                     </div>
                     <div class="overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800">
-                        <table class="w-full text-left text-xs sm:text-sm">
+                        <table class="w-full text-left text-xs sm:text-sm whitespace-nowrap">
                             <thead class="bg-slate-800/90 text-slate-400 border-b border-slate-700/60 uppercase sticky top-0 z-10 backdrop-blur-md">
                                 <tr>
-                                    <th class="py-3 px-2 text-center w-8">拖拽</th>
-                                    <th class="py-3 px-4 text-center w-8">
+                                    <th class="whitespace-nowrap py-3 px-2 text-center w-10 whitespace-nowrap" title="按住拖曳調整順序"><i data-lucide="grip-vertical" class="w-4 h-4 inline-block text-slate-500"></i><span class="sr-only">拖曳</span></th>
+                                    <th class="whitespace-nowrap py-3 px-4 text-center w-8">
                                         <input type="checkbox" @change="toggleSelectAllStocks" :checked="isAllStocksSelected" class="rounded bg-slate-900 border-slate-700 text-indigo-500">
                                     </th>
-                                    <th class="py-3 px-4">交易日期</th>
-                                    <th class="py-3 px-4">買 / 賣</th>
-                                    <th class="py-3 px-4">代碼 / 標的名稱</th>
-                                    <th class="py-3 px-4 text-right">成交單價</th>
-                                    <th class="py-3 px-4 text-right">成交股數</th>
-                                    <th class="py-3 px-4 text-right">手續費 / 交易稅</th>
-                                    <th class="py-3 px-4 text-right">總金額</th>
-                                    <th class="py-3 px-4 text-center">操作</th>
+                                    <th class="whitespace-nowrap py-3 px-4">交易日期</th>
+                                    <th class="whitespace-nowrap py-3 px-4">買 / 賣</th>
+                                    <th class="whitespace-nowrap py-3 px-4">代碼 / 標的名稱</th>
+                                    <th class="whitespace-nowrap py-3 px-4 text-right">成交單價</th>
+                                    <th class="whitespace-nowrap py-3 px-4 text-right">成交股數</th>
+                                    <th class="whitespace-nowrap py-3 px-4 text-right">手續費 / 交易稅</th>
+                                    <th class="whitespace-nowrap py-3 px-4 text-right">總金額</th>
+                                    <th class="whitespace-nowrap py-3 px-4 text-center">操作</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-800/60">
@@ -752,14 +747,14 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="mt-2 flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-3 rounded-xl border text-xs" :class="selectedStockStats.n ? 'bg-indigo-500/10 border-indigo-500/30 text-slate-200' : 'bg-slate-900/50 border-slate-800 text-slate-500'">
+                    <div class="mt-2 px-4 py-3 rounded-xl border text-xs flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-1" :class="selectedStockStats.n ? 'bg-indigo-500/10 border-indigo-500/30 text-slate-200' : 'bg-slate-900/50 border-slate-800 text-slate-500'">
                         <span v-if="!selectedStockStats.n">勾選交易後，這裡會顯示筆數與金額合計</span>
-                        <span v-if="selectedStockStats.n" class="font-bold text-indigo-300">已勾選 {{ selectedStockStats.n }} 筆<span v-if="selectedStockStats.hidden" class="font-normal text-amber-300">（含 {{ selectedStockStats.hidden }} 筆目前未顯示）</span></span>
-                        <span v-if="selectedStockStats.n">買進 {{ selectedStockStats.buyN }} 筆 <b class="text-rose-300">{{ formatCurrency(selectedStockStats.buyAmt) }}</b><span class="text-slate-500">（{{ selectedStockStats.buyShares.toLocaleString() }} 股）</span></span>
-                        <span v-if="selectedStockStats.n">賣出 {{ selectedStockStats.sellN }} 筆 <b class="text-emerald-300">{{ formatCurrency(selectedStockStats.sellAmt) }}</b><span class="text-slate-500">（{{ selectedStockStats.sellShares.toLocaleString() }} 股）</span></span>
-                        <span v-if="selectedStockStats.n">賣出 − 買進 <b :class="selectedStockStats.sellAmt - selectedStockStats.buyAmt >= 0 ? 'text-emerald-300' : 'text-rose-300'">{{ selectedStockStats.sellAmt - selectedStockStats.buyAmt >= 0 ? '+' : '-' }}{{ formatCurrency(Math.abs(selectedStockStats.sellAmt - selectedStockStats.buyAmt)) }}</b></span>
-                        <span v-if="selectedStockStats.n" class="text-slate-400">手續費 {{ formatCurrency(selectedStockStats.fee) }}・交易稅 {{ formatCurrency(selectedStockStats.tax) }}</span>
-                        <button v-if="selectedStockStats.n" @click="selectedStockIds = []" class="ml-auto text-slate-400 hover:text-slate-200 underline">清除勾選</button>
+                        <div v-if="selectedStockStats.n" class="font-bold text-indigo-300">已勾選 {{ selectedStockStats.n }} 筆<span v-if="selectedStockStats.hidden" class="font-normal text-amber-300">（含 {{ selectedStockStats.hidden }} 筆目前未顯示）</span></div>
+                        <div v-if="selectedStockStats.n" class="flex items-center justify-between sm:justify-start sm:gap-1.5"><span class="text-slate-400 sm:text-slate-200">買進 {{ selectedStockStats.buyN }} 筆</span><span><b class="text-rose-300">{{ formatCurrency(selectedStockStats.buyAmt) }}</b><span class="text-slate-500">（{{ selectedStockStats.buyShares.toLocaleString() }} 股）</span></span></div>
+                        <div v-if="selectedStockStats.n" class="flex items-center justify-between sm:justify-start sm:gap-1.5"><span class="text-slate-400 sm:text-slate-200">賣出 {{ selectedStockStats.sellN }} 筆</span><span><b class="text-emerald-300">{{ formatCurrency(selectedStockStats.sellAmt) }}</b><span class="text-slate-500">（{{ selectedStockStats.sellShares.toLocaleString() }} 股）</span></span></div>
+                        <div v-if="selectedStockStats.n" class="flex items-center justify-between sm:justify-start sm:gap-1.5"><span class="text-slate-400 sm:text-slate-200">賣出 − 買進</span><b :class="selectedStockStats.sellAmt - selectedStockStats.buyAmt >= 0 ? 'text-emerald-300' : 'text-rose-300'">{{ selectedStockStats.sellAmt - selectedStockStats.buyAmt >= 0 ? '+' : '-' }}{{ formatCurrency(Math.abs(selectedStockStats.sellAmt - selectedStockStats.buyAmt)) }}</b></div>
+                        <div v-if="selectedStockStats.n" class="flex items-center justify-between sm:justify-start sm:gap-1.5"><span class="text-slate-400">手續費 / 交易稅</span><span class="text-slate-300">{{ formatCurrency(selectedStockStats.fee) }} / {{ formatCurrency(selectedStockStats.tax) }}</span></div>
+                        <button v-if="selectedStockStats.n" @click="selectedStockIds = []" class="self-end sm:self-auto sm:ml-auto text-slate-400 hover:text-slate-200 underline">清除勾選</button>
                     </div>
                 </div>
             </div>
@@ -1021,6 +1016,19 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        <!-- 手機版浮動新增鈕（頂部工具列捲走後，仍可隨時記收支／記股票） -->
+        <div class="lg:hidden fixed right-4 z-40 flex flex-col items-end gap-2" :class="undoToast ? 'bottom-24' : 'bottom-6'" @click.stop>
+            <div v-show="activeDropdown === 'fab'" class="flex flex-col items-end gap-2">
+                <button @click="closeAllDropdowns(); openStockModal()" class="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-4 h-10 rounded-full text-xs font-bold shadow-xl whitespace-nowrap">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i><span>記股票</span>
+                </button>
+                <button @click="closeAllDropdowns(); openExpenseModal()" class="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 h-10 rounded-full text-xs font-bold shadow-xl whitespace-nowrap">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i><span>記收支</span>
+                </button>
+            </div>
+            <button @click="toggleDropdown('fab')" aria-label="新增紀錄" class="w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-2xl shadow-emerald-600/30 text-3xl leading-none flex items-center justify-center transition-transform" :class="activeDropdown === 'fab' ? 'rotate-45' : ''">+</button>
         </div>
 
         <!-- 復原提示 -->
@@ -2857,6 +2865,14 @@
                 onMounted(() => {
                     document.addEventListener('click', () => closeAllDropdowns());
                     document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeAllDropdowns(); });
+                    // 量測頂部工具列高度，讓電腦版的分頁列固定在它正下方（工具列換行、出現同步徽章時會自動跟著調整）
+                    const headerEl = document.querySelector('header');
+                    if (headerEl) {
+                        const setHeaderH = () => document.documentElement.style.setProperty('--header-h', headerEl.offsetHeight + 'px');
+                        setHeaderH();
+                        window.addEventListener('resize', setHeaderH);
+                        if (window.ResizeObserver) new ResizeObserver(setHeaderH).observe(headerEl);
+                    }
                     if (window.lucide) lucide.createIcons();
                     if (gasApiUrl.value) syncFromCloud(true); else fetchStockPrices(true);
                     refreshDynamicOptions();
