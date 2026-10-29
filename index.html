@@ -72,7 +72,7 @@
 <body class="min-h-screen bg-slate-900 text-slate-100 antialiased selection:bg-emerald-500 selection:text-white" @click="closeAllDropdowns">
     <div id="app" class="pb-12">
         <!-- Header / Navigation Bar -->
-        <header class="lg:sticky lg:top-0 z-30 glass-card border-b border-slate-800/80 px-4 lg:px-8 py-3 mb-6">
+        <header class="relative lg:sticky lg:top-0 z-30 glass-card border-b border-slate-800/80 px-4 lg:px-8 py-3 mb-6">
             <div class="max-w-7xl mx-auto flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 lg:gap-4">
                 <div class="flex items-center space-x-3 w-full lg:w-auto justify-between lg:justify-start">
                     <div class="flex items-center space-x-3">
@@ -113,52 +113,50 @@
                             <span class="hidden sm:inline">更新市價</span>
                         </button>
                     </div>
-                    <div class="relative" @click.stop>
+                    <div class="lg:relative" @click.stop>
                         <button @click="toggleDropdown('tools')" class="flex items-center space-x-1 bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 px-2.5 py-2 rounded-xl text-xs font-medium transition">
                             <i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400"></i>
                             <span class="hidden sm:inline">工具</span>
                         </button>
-                        <div v-show="activeDropdown === 'tools'" @click="closeAllDropdowns" class="absolute right-0 top-full mt-1 w-44 glass-modal rounded-xl border border-slate-700/80 shadow-2xl py-1.5 z-50">
-                            <button @click="showApiConfigModal = true" class="w-full text-left px-3 py-2 text-xs text-sky-300 hover:bg-slate-800/80 flex items-center space-x-2">
+                        <div v-show="activeDropdown === 'tools'" @click="closeAllDropdowns" class="absolute left-4 right-4 sm:left-auto sm:right-4 sm:w-60 lg:right-0 lg:w-52 top-full mt-1 glass-modal rounded-xl border border-slate-700/80 shadow-2xl py-1.5 z-50 max-h-[70vh] overflow-y-auto">
+                            <div class="px-3 pt-2 pb-1 text-[10px] font-bold tracking-wider text-slate-500">單次設定</div>
+                            <button @click="showApiConfigModal = true" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-sky-300">
                                 <i data-lucide="settings" class="w-3.5 h-3.5"></i>
                                 <span>API 設定</span>
                             </button>
-                            <button @click="syncLegacyStockExpenses" class="w-full text-left px-3 py-2 text-xs text-indigo-300 hover:bg-slate-800/80 flex items-center space-x-2">
+                            <button @click="syncLegacyStockExpenses" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-indigo-300">
                                 <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                                 <span>股票交易同步到收支</span>
                             </button>
-                            <button @click="showCategoryMapModal = true" class="w-full text-left px-3 py-2 text-xs text-teal-300 hover:bg-slate-800/80 flex items-center space-x-2">
+                            <div class="my-1 border-t border-slate-800"></div>
+                            <div class="px-3 pt-2 pb-1 text-[10px] font-bold tracking-wider text-slate-500">常態設定</div>
+                            <button @click="openCategorySettings('map')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-teal-300">
                                 <i data-lucide="list-tree" class="w-3.5 h-3.5"></i>
-                                <span>類別與項目對照</span>
+                                <span>類別與項目</span>
                                 <span v-if="mismatchTotal" class="ml-auto text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded px-1">{{ mismatchTotal }}</span>
                             </button>
-                            <button @click="showFlowSettingsModal = true" class="w-full text-left px-3 py-2 text-xs text-amber-300 hover:bg-slate-800/80 flex items-center space-x-2">
-                                <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
-                                <span>預付與儲值設定</span>
-                            </button>
-                            <button @click="showCardSettingsModal = true" class="w-full text-left px-3 py-2 text-xs text-sky-300 hover:bg-slate-800/80 flex items-center space-x-2">
+                            <button @click="openPaymentSettings('methods')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-amber-300">
                                 <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
-                                <span>信用卡設定</span>
+                                <span>付款與帳單</span>
                             </button>
-                            <button @click="showOptionManagerModal = true" class="w-full text-left px-3 py-2 text-xs text-indigo-300 hover:bg-slate-800/80 flex items-center space-x-2">
-                                <i data-lucide="list-checks" class="w-3.5 h-3.5"></i>
-                                <span>選單項目管理</span>
-                            </button>
-                            <button @click="exportToExcel" class="w-full text-left px-3 py-2 text-xs text-emerald-300 hover:bg-slate-800/80 flex items-center space-x-2">
+                            <div class="my-1 border-t border-slate-800"></div>
+                            <div class="px-3 pt-2 pb-1 text-[10px] font-bold tracking-wider text-slate-500">資料</div>
+                            <button @click="exportToExcel" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-emerald-300">
                                 <i data-lucide="download" class="w-3.5 h-3.5"></i>
                                 <span>匯出 Excel</span>
                             </button>
-                            <label class="w-full text-left px-3 py-2 text-xs text-sky-300 hover:bg-slate-800/80 flex items-center space-x-2 cursor-pointer">
+                            <label class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-sky-300 cursor-pointer">
                                 <i data-lucide="upload" class="w-3.5 h-3.5"></i>
                                 <span>匯入檔案</span>
                                 <input type="file" ref="fileInputRef" @change="handleFileUpload" accept=".xlsx, .xls, .csv" class="hidden">
                             </label>
-                            <button @click="showImportHelpModal = true" class="w-full text-left px-3 py-2 text-xs text-amber-300 hover:bg-slate-800/80 flex items-center space-x-2">
+                            <button @click="showImportHelpModal = true" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-amber-300">
                                 <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
                                 <span>匯入說明</span>
                             </button>
                             <div class="my-1 border-t border-slate-800"></div>
-                            <button @click="resetAllData" class="w-full text-left px-3 py-2 text-xs text-rose-400 hover:bg-rose-950/40 flex items-center space-x-2">
+                            <div class="px-3 pt-2 pb-1 text-[10px] font-bold tracking-wider text-slate-500">進階</div>
+                            <button @click="openResetModal" class="w-full text-left px-3 py-2 text-xs text-rose-400 hover:bg-rose-950/40 flex items-center space-x-2">
                                 <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
                                 <span>清空重來</span>
                             </button>
@@ -257,7 +255,10 @@
             <div v-show="activeTab === 'expenses'" class="space-y-6">
                 <div class="space-y-1.5">
                     <div class="flex items-center justify-between gap-3">
-                        <h3 class="text-base font-semibold text-slate-200 whitespace-nowrap">支出分析</h3>
+                        <div class="flex items-center gap-2 min-w-0">
+                            <h3 class="text-base font-semibold text-slate-200 whitespace-nowrap">支出分析</h3>
+                            <button type="button" @click="openPaymentSettings('rules')" class="shrink-0 inline-flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-400/60 rounded-md px-1.5 py-0.5 transition" title="調整儲值事件與消費定義"><i data-lucide="sliders-horizontal" class="w-3 h-3"></i>規則</button>
+                        </div>
                         <div class="flex items-center shrink-0 h-9 bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
                             <button @click="includeInvest = false" :class="!includeInvest ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="h-full px-3 rounded-md transition whitespace-nowrap">不含投資</button>
                             <button @click="includeInvest = true" :class="includeInvest ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="h-full px-3 rounded-md transition whitespace-nowrap">含投資</button>
@@ -496,7 +497,10 @@
             <!-- TAB 2: ETF & 股票投資儀表板 -->
             <div v-show="activeTab === 'monthly'" class="space-y-4">
                 <div>
-                    <h2 class="text-lg font-bold text-slate-100">月收支表</h2>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-lg font-bold text-slate-100">月收支表</h2>
+                        <button type="button" @click="openPaymentSettings('rules')" class="shrink-0 inline-flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-400/60 rounded-md px-1.5 py-0.5 transition" title="調整儲值事件與消費定義"><i data-lucide="sliders-horizontal" class="w-3 h-3"></i>規則</button>
+                    </div>
                     <p class="text-xs text-slate-400 mt-1">以「金額」計算。收入＝薪資等收入＋股息（不含 ETF賣出）；消費支出＝支出且不屬於投資；結餘＝收入 − 消費支出；投資淨投入＝ETF投資 − ETF賣出；投資後現金＝結餘 − 投資淨投入。</p>
                 </div>
                 <div class="glass-card rounded-2xl overflow-hidden">
@@ -538,7 +542,7 @@
                         </table>
                     </div>
                 </div>
-                <p class="text-[11px] text-slate-500">「其他儲蓄」欄只在有「非消費類別、且不是 ETF」的支出（例如單純存錢）時才會出現；分類規則可在「工具 → 預付與儲值設定」調整。</p>
+                <p class="text-[11px] text-slate-500">「其他儲蓄」欄只在有「非消費類別、且不是 ETF」的支出（例如單純存錢）時才會出現；分類規則可在「工具 → 付款與帳單」調整。</p>
             </div>
 
             <div v-show="activeTab === 'cards'" class="space-y-6">
@@ -550,7 +554,7 @@
                     <div class="flex items-center gap-2">
                         <button @click="cardOffset++" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">◀ 更早一期</button>
                         <button @click="cardOffset = Math.max(0, cardOffset - 1)" :disabled="cardOffset === 0" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 disabled:opacity-40">較新一期 ▶</button>
-                        <button @click="showCardSettingsModal = true" class="px-3 py-1.5 rounded-lg text-xs bg-sky-700 hover:bg-sky-600 text-white">信用卡設定</button>
+                        <button @click="openPaymentSettings('methods')" class="px-3 py-1.5 rounded-lg text-xs bg-sky-700 hover:bg-sky-600 text-white">信用卡設定</button>
                     </div>
                 </div>
                 <div v-if="cardStatements.length === 0" class="glass-card rounded-2xl p-6 text-sm text-slate-400">
@@ -813,14 +817,19 @@
             </div>
         </div>
 
-        <!-- 類別與項目對照 -->
-        <div v-if="showCategoryMapModal" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
-            <div class="glass-modal rounded-2xl w-full max-w-3xl p-6 space-y-5 border border-slate-700/80 my-8">
+        <!-- 設定：類別與項目 -->
+        <div v-if="showCategoryMapModal" class="fixed inset-0 z-[65] flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
+            <div class="glass-modal rounded-2xl w-full max-w-3xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <h3 class="text-base font-bold text-slate-100">類別與項目對照</h3>
+                    <h3 class="text-base font-bold text-slate-100">類別與項目</h3>
                     <button @click="showCategoryMapModal = false" class="text-slate-400 hover:text-white text-lg leading-none">✕</button>
                 </div>
+                <div class="flex border-b border-slate-800/80 space-x-2 overflow-x-auto no-scrollbar">
+                    <button @click="catTab = 'map'" :class="catTab === 'map' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="px-3 py-2 border-b-2 text-xs sm:text-sm whitespace-nowrap transition">類別涵蓋的項目</button>
+                    <button @click="catTab = 'options'" :class="catTab === 'options' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="px-3 py-2 border-b-2 text-xs sm:text-sm whitespace-nowrap transition">選項增刪</button>
+                </div>
 
+                <div v-show="catTab === 'map'" class="space-y-5">
                 <div class="space-y-2">
                     <h4 class="text-sm font-semibold" :class="mismatchGroups.length ? 'text-amber-300' : 'text-emerald-400'">
                         {{ mismatchGroups.length ? `有 ${mismatchTotal} 筆既有紀錄不在對照表內` : '所有既有紀錄都符合對照表' }}
@@ -862,31 +871,92 @@
                     </div>
                     <p class="text-[11px] text-slate-500">新增收支時用「+ 新增」加入的類別，預設允許全部項目；加入的項目會自動歸到目前選的類別。</p>
                 </div>
+                </div>
+
+                <div v-show="catTab === 'options'" class="space-y-4 text-xs">
+                    <p class="text-slate-400">在這裡新增、改名、刪除類別與項目的選項。改名會一併更新歷史紀錄與各項設定；刪除只是不再出現在選單，不會刪除歷史紀錄。要決定「哪個類別可以選哪些項目」，請到「類別涵蓋的項目」分頁。</p>
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="font-bold text-emerald-400">收支類別</span>
+                            <button @click="promptAddOption('category')" class="text-[11px] text-emerald-400 hover:underline">+ 新增類別</button>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                            <div v-for="(cat, idx) in categoriesList" :key="cat" class="flex items-center space-x-1 bg-slate-800 px-2 py-1 rounded border border-slate-700">
+                                <span>{{ cat }}</span>
+                                <button @click="editOptionName('category', idx)" class="text-slate-400 hover:text-sky-300 ml-1">✎</button>
+                                <button @click="deleteOptionItem('category', idx)" class="text-slate-400 hover:text-rose-400">×</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="font-bold text-indigo-400">明細項目</span>
+                            <button @click="promptAddOption('item')" class="text-[11px] text-indigo-400 hover:underline">+ 新增項目</button>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 bg-slate-900 p-2.5 rounded-xl border border-slate-800 max-h-48 overflow-y-auto">
+                            <div v-for="(it, idx) in itemsList" :key="it" class="flex items-center space-x-1 bg-slate-800 px-2 py-1 rounded border border-slate-700">
+                                <span>{{ it }}</span>
+                                <button @click="editOptionName('item', idx)" class="text-slate-400 hover:text-sky-300 ml-1">✎</button>
+                                <button @click="deleteOptionItem('item', idx)" class="text-slate-400 hover:text-rose-400">×</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="pt-3 flex justify-end border-t border-slate-800">
                     <button @click="showCategoryMapModal = false" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">完成</button>
                 </div>
             </div>
         </div>
 
-        <!-- 預付與儲值設定 -->
-        <div v-if="showFlowSettingsModal" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
-            <div class="glass-modal rounded-2xl w-full max-w-xl p-6 space-y-5 border border-slate-700/80 my-8">
+        <!-- 設定：付款與帳單 -->
+        <div v-if="showCardSettingsModal" class="fixed inset-0 z-[65] flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
+            <div class="glass-modal rounded-2xl w-full max-w-xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <h3 class="text-base font-bold text-slate-100">預付與儲值設定</h3>
-                    <button @click="showFlowSettingsModal = false" class="text-slate-400 hover:text-white text-lg leading-none">✕</button>
+                    <h3 class="text-base font-bold text-slate-100">付款與帳單</h3>
+                    <button @click="showCardSettingsModal = false" class="text-slate-400 hover:text-white text-lg leading-none">✕</button>
                 </div>
-                <div class="space-y-2">
-                    <h4 class="text-sm font-semibold text-slate-200">1. 預付類付款方式</h4>
-                    <p class="text-xs text-slate-400">這些付款方式的「使用」記在已付金額（金額為 0）。項目圖會用已付金額計入，並以淺色顯示。目前共 {{ prepaidUseCount }} 筆紀錄使用。</p>
-                    <div class="flex flex-wrap gap-2">
-                        <label v-for="pm in paymentMethodsList" :key="pm" class="flex items-center space-x-1.5 text-xs text-slate-200 bg-slate-900/60 border border-slate-800 rounded-lg px-2.5 py-1.5 cursor-pointer">
-                            <input type="checkbox" :checked="appSettings.prepaidMethods.includes(pm)" @change="toggleFlowList('prepaidMethods', pm)" class="rounded bg-slate-900 border-slate-700">
-                            <span>{{ pm }}</span>
-                        </label>
+                <div class="flex border-b border-slate-800/80 space-x-2 overflow-x-auto no-scrollbar">
+                    <button @click="payTab = 'methods'" :class="payTab === 'methods' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="px-3 py-2 border-b-2 text-xs sm:text-sm whitespace-nowrap transition">付款方式</button>
+                    <button @click="payTab = 'rules'" :class="payTab === 'rules' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="px-3 py-2 border-b-2 text-xs sm:text-sm whitespace-nowrap transition">儲值事件與消費定義</button>
+                </div>
+
+                <div v-show="payTab === 'methods'" class="space-y-3">
+                    <p class="text-xs text-slate-400">每個付款方式在這裡一次設定：名稱、是否為信用卡（填每月結帳日；29～31 日遇到較短的月份會自動取該月最後一天）、是否為預付類（使用時記在已付金額、金額為 0）。目前共 {{ prepaidUseCount }} 筆紀錄使用預付類付款方式。</p>
+                    <div class="flex justify-end">
+                        <button @click="promptAddOption('payment')" class="text-[11px] text-amber-400 hover:underline">+ 新增付款方式</button>
+                    </div>
+                    <div class="space-y-2 max-h-[55vh] overflow-y-auto">
+                        <div v-for="(pm, idx) in paymentMethodsList" :key="pm" class="bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-slate-100 font-medium">{{ pm }}</span>
+                                <span class="flex items-center gap-3 text-sm">
+                                    <button @click="editOptionName('payment', idx)" class="text-slate-400 hover:text-sky-300" title="改名">✎</button>
+                                    <button @click="deleteOptionItem('payment', idx)" class="text-slate-400 hover:text-rose-400" title="從選單移除">×</button>
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+                                <label class="flex items-center space-x-1.5 text-slate-200 cursor-pointer">
+                                    <input type="checkbox" :checked="isCard(pm)" @change="toggleCard(pm)" class="rounded bg-slate-900 border-slate-700">
+                                    <span>信用卡</span>
+                                </label>
+                                <span v-if="isCard(pm)" class="flex items-center space-x-1 text-slate-400">
+                                    <span>每月</span>
+                                    <input type="number" min="1" max="31" :value="getCardDay(pm)" @input="setCardDay(pm, $event.target.value)" class="w-16 bg-slate-900 border border-slate-700 rounded p-1 text-center text-slate-200">
+                                    <span>日結帳</span>
+                                </span>
+                                <label class="flex items-center space-x-1.5 text-slate-200 cursor-pointer">
+                                    <input type="checkbox" :checked="appSettings.prepaidMethods.includes(pm)" @change="toggleFlowList('prepaidMethods', pm)" class="rounded bg-slate-900 border-slate-700">
+                                    <span>預付類</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <div v-show="payTab === 'rules'" class="space-y-5">
                 <div class="space-y-2">
-                    <h4 class="text-sm font-semibold text-slate-200">2. 儲值事件（先出錢、之後才分項使用）</h4>
+                    <h4 class="text-sm font-semibold text-slate-200">儲值事件（先出錢、之後才分項使用）</h4>
                     <p class="text-xs text-slate-400">符合「類別＋項目」的支出會從項目圖排除（避免和之後的分項使用重複），但仍計入付款管道統計與月收支表。目前符合 {{ fundingMatchCount }} 筆。</p>
                     <div v-for="(r, i) in appSettings.fundingRules" :key="i" class="flex items-center gap-2">
                         <select v-model="r.category" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
@@ -900,7 +970,7 @@
                     <button @click="addFundingRule" class="text-xs text-emerald-400 hover:underline">+ 新增規則</button>
                 </div>
                 <div class="space-y-2">
-                    <h4 class="text-sm font-semibold text-slate-200">3. 不算消費支出的類別</h4>
+                    <h4 class="text-sm font-semibold text-slate-200">不算消費支出的類別</h4>
                     <p class="text-xs text-slate-400">這些類別的支出不計入「消費支出」與支出圖表（預設為投資儲蓄）。其中不是 ETF 的支出（例如單純存錢）會在月收支表的「其他儲蓄」欄顯示。</p>
                     <div class="flex flex-wrap gap-2">
                         <label v-for="c in categoriesList" :key="c" class="flex items-center space-x-1.5 text-xs text-slate-200 bg-slate-900/60 border border-slate-800 rounded-lg px-2.5 py-1.5 cursor-pointer">
@@ -909,33 +979,8 @@
                         </label>
                     </div>
                 </div>
-                <div class="pt-3 flex justify-end border-t border-slate-800">
-                    <button @click="showFlowSettingsModal = false" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">完成</button>
                 </div>
-            </div>
-        </div>
 
-        <!-- 信用卡設定 -->
-        <div v-if="showCardSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
-            <div class="glass-modal rounded-2xl w-full max-w-lg p-6 space-y-4 border border-slate-700/80 my-8">
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <h3 class="text-base font-bold text-slate-100">信用卡設定</h3>
-                    <button @click="showCardSettingsModal = false" class="text-slate-400 hover:text-white text-lg leading-none">✕</button>
-                </div>
-                <p class="text-xs text-slate-400">勾選屬於信用卡的付款方式，並填入每月結帳日。結帳日是 29～31 日時，遇到較短的月份會自動取該月最後一天。</p>
-                <div class="space-y-2 max-h-80 overflow-y-auto">
-                    <div v-for="pm in paymentMethodsList" :key="pm" class="flex items-center justify-between bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
-                        <label class="flex items-center space-x-2 text-sm text-slate-200">
-                            <input type="checkbox" :checked="isCard(pm)" @change="toggleCard(pm)" class="rounded bg-slate-900 border-slate-700">
-                            <span>{{ pm }}</span>
-                        </label>
-                        <div v-if="isCard(pm)" class="flex items-center space-x-1 text-xs text-slate-400">
-                            <span>每月</span>
-                            <input type="number" min="1" max="31" :value="getCardDay(pm)" @input="setCardDay(pm, $event.target.value)" class="w-16 bg-slate-900 border border-slate-700 rounded p-1 text-center text-slate-200">
-                            <span>日結帳</span>
-                        </div>
-                    </div>
-                </div>
                 <div class="pt-3 flex justify-end border-t border-slate-800">
                     <button @click="showCardSettingsModal = false" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">完成</button>
                 </div>
@@ -1019,7 +1064,7 @@
         </div>
 
         <!-- 手機版浮動新增鈕（頂部工具列捲走後，仍可隨時記收支／記股票） -->
-        <div class="lg:hidden fixed right-4 z-40 flex flex-col items-end gap-2" :class="undoToast ? 'bottom-24' : 'bottom-6'" @click.stop>
+        <div v-show="activeDropdown !== 'tools'" class="lg:hidden fixed right-4 z-40 flex flex-col items-end gap-2" :class="undoToast ? 'bottom-24' : 'bottom-6'" @click.stop>
             <div v-show="activeDropdown === 'fab'" class="flex flex-col items-end gap-2">
                 <button @click="closeAllDropdowns(); openStockModal()" class="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-4 h-10 rounded-full text-xs font-bold shadow-xl whitespace-nowrap">
                     <i data-lucide="trending-up" class="w-4 h-4"></i><span>記股票</span>
@@ -1031,65 +1076,39 @@
             <button @click="toggleDropdown('fab')" aria-label="新增紀錄" class="w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-2xl shadow-emerald-600/30 text-3xl leading-none flex items-center justify-center transition-transform" :class="activeDropdown === 'fab' ? 'rotate-45' : ''">+</button>
         </div>
 
+        <!-- 清空重來（加強確認） -->
+        <div v-if="showResetModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+            <div class="glass-modal rounded-2xl w-full max-w-md p-6 space-y-4 border border-rose-500/40 my-8">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 class="text-base font-bold text-rose-400">清空重來</h3>
+                    <button @click="showResetModal = false" class="text-slate-400 hover:text-white text-lg leading-none">✕</button>
+                </div>
+                <div class="text-xs text-slate-300 space-y-2">
+                    <p>這個動作會<b class="text-rose-300">永久清空</b>：</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>日常收支 <b class="text-slate-100">{{ expenses.length }}</b> 筆</li>
+                        <li>股票交易 <b class="text-slate-100">{{ stockTrades.length }}</b> 筆</li>
+                        <li v-if="gasApiUrl" class="text-amber-300">已連線 Google 試算表：雲端資料也會被一併清空，其他裝置同步後也會變成空的</li>
+                        <li v-else>目前未連線雲端，只會清空這個瀏覽器裡的資料</li>
+                    </ul>
+                    <p class="text-slate-400">設定（類別與項目、付款與帳單等）不會被清除。清空後無法復原，建議先匯出備份。</p>
+                </div>
+                <button @click="exportToExcel" class="w-full h-9 rounded-lg text-xs font-medium bg-emerald-700 hover:bg-emerald-600 text-white flex items-center justify-center">先匯出 Excel 備份</button>
+                <div class="space-y-1.5">
+                    <label class="block text-xs text-slate-400">請輸入「<b class="text-rose-300">清空</b>」兩個字確認</label>
+                    <input v-model="resetConfirmText" type="text" autocomplete="off" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 focus:border-rose-500 focus:outline-none">
+                </div>
+                <div class="pt-2 flex justify-end gap-2 border-t border-slate-800">
+                    <button @click="showResetModal = false" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold">取消</button>
+                    <button @click="confirmResetAll" :disabled="resetConfirmText.trim() !== '清空'" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed">確定清空</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 復原提示 -->
         <div v-if="undoToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center space-x-4 bg-slate-800 border border-slate-600 text-slate-100 text-sm rounded-xl shadow-2xl px-4 py-3">
             <span>{{ undoToast }}</span>
             <button @click="undoLast" class="font-bold text-emerald-400 hover:text-emerald-300">復原</button>
-        </div>
-
-        <!-- MODAL: 選單項目管理視窗 -->
-        <div v-if="showOptionManagerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
-            <div class="glass-modal rounded-2xl w-full max-w-xl p-6 space-y-4 border border-slate-700/80 my-8">
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <h3 class="text-lg font-bold text-slate-100">管理下拉選單項目（類別 / 項目 / 付款方式）</h3>
-                    <button @click="showOptionManagerModal = false" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
-                </div>
-                <div class="space-y-4 text-xs">
-                    <p class="text-slate-400">於此處刪除的選項不會消失現有的歷史交易紀錄，但會防止該選項出現在記帳下拉選單中。</p>
-                    <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <span class="font-bold text-emerald-400">1. 收支類別管理</span>
-                            <button @click="promptAddOption('category')" class="text-[11px] text-emerald-400 hover:underline">+ 新增類別</button>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                            <div v-for="(cat, idx) in categoriesList" :key="cat" class="flex items-center space-x-1 bg-slate-800 px-2 py-1 rounded border border-slate-700">
-                                <span>{{ cat }}</span>
-                                <button @click="editOptionName('category', idx)" class="text-slate-400 hover:text-sky-300 ml-1">✎</button>
-                                <button @click="deleteOptionItem('category', idx)" class="text-slate-400 hover:text-rose-400">×</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <span class="font-bold text-indigo-400">2. 明細項目管理</span>
-                            <button @click="promptAddOption('item')" class="text-[11px] text-indigo-400 hover:underline">+ 新增項目</button>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 bg-slate-900 p-2.5 rounded-xl border border-slate-800 max-h-32 overflow-y-auto">
-                            <div v-for="(it, idx) in itemsList" :key="it" class="flex items-center space-x-1 bg-slate-800 px-2 py-1 rounded border border-slate-700">
-                                <span>{{ it }}</span>
-                                <button @click="editOptionName('item', idx)" class="text-slate-400 hover:text-sky-300 ml-1">✎</button>
-                                <button @click="deleteOptionItem('item', idx)" class="text-slate-400 hover:text-rose-400">×</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <span class="font-bold text-amber-400">3. 付款方式管理</span>
-                            <button @click="promptAddOption('payment')" class="text-[11px] text-amber-400 hover:underline">+ 新增付款方式</button>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                            <div v-for="(pm, idx) in paymentMethodsList" :key="pm" class="flex items-center space-x-1 bg-slate-800 px-2 py-1 rounded border border-slate-700">
-                                <span>{{ pm }}</span>
-                                <button @click="editOptionName('payment', idx)" class="text-slate-400 hover:text-sky-300 ml-1">✎</button>
-                                <button @click="deleteOptionItem('payment', idx)" class="text-slate-400 hover:text-rose-400">×</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="pt-3 flex justify-end border-t border-slate-800">
-                    <button @click="showOptionManagerModal = false" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">完成設定</button>
-                </div>
-            </div>
         </div>
 
         <!-- MODAL 1: Expense Edit/Create -->
@@ -1117,7 +1136,10 @@
                         <div>
                             <div class="flex justify-between items-center mb-1">
                                 <label class="block text-slate-400">類別</label>
-                                <button type="button" @click="promptAddOption('category')" class="text-[10px] text-emerald-400 hover:underline">+ 新增</button>
+                                <span class="flex items-center gap-3">
+                                    <button type="button" @click="openCategorySettings('map')" class="text-[10px] text-teal-400 hover:underline" title="調整各類別可選的項目">調整對照</button>
+                                    <button type="button" @click="promptAddOption('category')" class="text-[10px] text-emerald-400 hover:underline">+ 新增</button>
+                                </span>
                             </div>
                             <select v-model="expenseForm.category" @change="onCategoryChange" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                                 <option v-for="cat in formCategories" :key="cat" :value="cat">{{ cat }}</option>
@@ -1487,11 +1509,41 @@
                     localStorage.setItem(STORAGE_KEY_BLACKLIST, JSON.stringify(blacklistedOptions.value));
                 };
 
+                // <<SETTINGS-OPS-START>>
+                // 改名／刪除選項時，同步更新「類別對照、儲值事件、非消費類別、信用卡、預付類」等設定，避免設定指向已不存在的名稱
+                const renameInSettings = (type, oldVal, clean) => {
+                    const st = appSettings.value;
+                    if (type === 'category') {
+                        st.categoryItems = Object.fromEntries(Object.entries(st.categoryItems).map(([k, v]) => [k === oldVal ? clean : k, v]));
+                        st.fundingRules.forEach(r => { if (r.category === oldVal) r.category = clean; });
+                        st.nonConsumptionCategories = st.nonConsumptionCategories.map(c => c === oldVal ? clean : c);
+                    } else if (type === 'item') {
+                        Object.keys(st.categoryItems).forEach(k => { const a = st.categoryItems[k]; if (Array.isArray(a)) st.categoryItems[k] = Array.from(new Set(a.map(i => i === oldVal ? clean : i))); });
+                        st.fundingRules.forEach(r => { if (r.item === oldVal) r.item = clean; });
+                    } else if (type === 'payment') {
+                        st.creditCards.forEach(c => { if (c.name === oldVal) c.name = clean; });
+                        st.prepaidMethods = Array.from(new Set(st.prepaidMethods.map(p => p === oldVal ? clean : p)));
+                    }
+                };
+                const removeFromSettings = (type, val) => {
+                    const st = appSettings.value;
+                    if (type === 'category') {
+                        delete st.categoryItems[val];
+                        st.nonConsumptionCategories = st.nonConsumptionCategories.filter(c => c !== val);
+                    } else if (type === 'item') {
+                        Object.keys(st.categoryItems).forEach(k => { const a = st.categoryItems[k]; if (Array.isArray(a)) st.categoryItems[k] = a.filter(i => i !== val); });
+                    } else if (type === 'payment') {
+                        st.prepaidMethods = st.prepaidMethods.filter(p => p !== val);
+                        st.creditCards = st.creditCards.filter(c => c.name !== val);
+                    }
+                };
+                // <<SETTINGS-OPS-END>>
+
                 const editOptionName = (type, index) => {
                     let list = type === 'category' ? categoriesList.value : (type === 'item' ? itemsList.value : paymentMethodsList.value);
                     const oldVal = list[index];
-                    const newVal = prompt(`請修改名稱:`, oldVal);
-                    if (newVal && newVal.trim() && newVal !== oldVal) {
+                    const newVal = prompt(`請修改名稱（會一併更新歷史紀錄與相關設定）:`, oldVal);
+                    if (newVal && newVal.trim() && newVal.trim() !== oldVal) {
                         const clean = newVal.trim();
                         list[index] = clean;
                         expenses.value.forEach(e => {
@@ -1499,6 +1551,7 @@
                             if (type === 'item' && e.item === oldVal) e.item = clean;
                             if (type === 'payment' && e.paymentMethod === oldVal) e.paymentMethod = clean;
                         });
+                        renameInSettings(type, oldVal, clean);
                         refreshDynamicOptions();
                         pushToCloud();
                     }
@@ -1507,11 +1560,13 @@
                 const deleteOptionItem = (type, index) => {
                     let list = type === 'category' ? categoriesList.value : (type === 'item' ? itemsList.value : paymentMethodsList.value);
                     const targetVal = list[index];
-                    if (confirm(`確定要將「${targetVal}」從選單移除嗎？`)) {
+                    const extra = type === 'payment' ? '\n（歷史紀錄不受影響；這個付款方式的信用卡結帳日、預付類設定會一併移除）' : '\n（歷史紀錄不受影響）';
+                    if (confirm(`確定要將「${targetVal}」從選單移除嗎？${extra}`)) {
                         list.splice(index, 1);
                         if (!blacklistedOptions.value.includes(targetVal)) {
                             blacklistedOptions.value.push(targetVal);
                         }
+                        removeFromSettings(type, targetVal);
                         refreshDynamicOptions();
                     }
                 };
@@ -1696,7 +1751,7 @@
                 const roundTwo = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;
 
                 const resetAllData = () => {
-                    if (confirm('確定要清空系統中所有的歷史收支與股票紀錄？（若已連線 Google 雲端也會同步清空）')) {
+                    {   // 確認步驟已移到「清空重來」視窗（需輸入文字確認）
                         expenses.value = [];
                         stockTrades.value = [];
                         livePricesMap.value = {};
@@ -1976,7 +2031,7 @@
 
                 // ---------- 設定（信用卡結帳日），會同步到雲端 ----------
                 // <<LEDGER-START>>
-                // 預付／儲值／非消費類別的預設設定（可在「工具 → 預付與儲值設定」修改）
+                // 預付／儲值／非消費類別的預設設定（可在「工具 → 付款與帳單」修改）
                 const DEFAULT_FLOW = {
                     prepaidMethods: ['每月預付', '悠遊卡儲值'],                                   // 這些付款方式的「使用」記在已付金額，金額為 0
                     fundingRules: [{ category: '固定支出', item: '每月費用' }, { category: '儲值', item: '交通費' }], // 先出錢、之後才分項使用的「儲值事件」
@@ -2255,6 +2310,20 @@
                     pushToCloud();
                     armUndo(`已將 ${g.count} 筆「${g.item}」的類別改成「${target}」`);
                     nextTick(() => renderCharts());
+                };
+
+                // ---------- 設定視窗（分頁）與清空重來 ----------
+                const catTab = ref('map');          // 類別與項目：'map' 類別涵蓋的項目｜'options' 選項增刪
+                const payTab = ref('methods');      // 付款與帳單：'methods' 付款方式｜'rules' 儲值事件與消費定義
+                const openCategorySettings = (tab = 'map') => { catTab.value = tab; showCategoryMapModal.value = true; };
+                const openPaymentSettings = (tab = 'methods') => { payTab.value = tab; showCardSettingsModal.value = true; };
+                const showResetModal = ref(false);
+                const resetConfirmText = ref('');
+                const openResetModal = () => { resetConfirmText.value = ''; showResetModal.value = true; };
+                const confirmResetAll = () => {
+                    if (resetConfirmText.value.trim() !== '清空') return;
+                    showResetModal.value = false;
+                    resetAllData();
                 };
 
                 // ---------- 復原 ----------
@@ -2894,6 +2963,7 @@
                     stockSearch, stockFilterSymbols, stockFilterActions, stockFilterYears, stockFilterMonths, stockSymbolOptions, stockYearOptions, filteredStockTrades, stockFilterActive, resetStockFilters, syncLegacyStockExpenses,
                     monthSelectOptions, typeSelectOptions, expenseYearSelectOptions, stockYearSelectOptions, stockSymbolSelectOptions, stockActionSelectOptions,
                     includeInvest, itemChartData, itemChartLegend, paymentChartData, itemDetail, monthlyInvestSummary, ledgerMonthRows, ledgerYearRows, showOtherCol, signedCurrency,
+                    catTab, payTab, openCategorySettings, openPaymentSettings, showResetModal, resetConfirmText, openResetModal, confirmResetAll,
                     showCategoryMapModal, catMapKeys, formCategories, formItems, onCategoryChange, isAllItems, toggleAllItems, catHasItem, toggleCatItem, allKnownItems, mismatchGroups, mismatchTotal, fixTarget, getFixTarget, applyCategoryFix,
                     showFlowSettingsModal, toggleFlowList, addFundingRule, removeFundingRule, fundingMatchCount, prepaidUseCount, itemGroups,
                     undoToast, undoLast, displayedExpenses, loadMoreExpenses, onExpenseScroll, totalDividend,
