@@ -33,6 +33,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
     <style>
+        [v-cloak] { display: none !important; }
         body {
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #0f172a;
@@ -73,7 +74,7 @@
     </style>
 </head>
 <body class="min-h-screen bg-slate-900 text-slate-100 antialiased selection:bg-emerald-500 selection:text-white" @click="closeAllDropdowns">
-    <div id="app" class="pb-12">
+    <div id="app" v-cloak class="pb-12">
         <!-- Header / Navigation Bar -->
         <header class="relative lg:sticky lg:top-0 z-30 glass-card border-b border-slate-800/80 px-4 lg:px-8 py-3 mb-6">
             <div class="max-w-7xl mx-auto flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 lg:gap-4">
@@ -507,7 +508,7 @@
                             <i data-lucide="sliders-horizontal" class="w-3 h-3"></i>規則
                         </button>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">以「金額」計算。收入＝薪資等收入＋股息（不含 ETF賣出與代墊回收）；消費支出＝支出且不屬於投資、代墊；結餘＝收入 − 消費支出；投資淨投入＝ETF投資 − ETF賣出；代墊淨額＝墊付支出 − 回收；投資後現金＝結餘 − 投資淨投入 − 代墊淨額。點任一個月可跳到該月明細。</p>
+                    <p class="text-xs text-slate-400 mt-1">以「金額」計算。收入＝薪資等收入＋股息（不含 ETF賣出與代墊回收）；消費支出＝支出且不屬於投資、代墊；結餘＝收入 − 消費支出；投資淨投入＝ETF投資 − ETF賣出；代墊淨額＝墊付支出（算在消費月份）− 收回（以結算日所在月份為準，沒填結算日就是還沒收回）；投資後現金＝結餘 − 投資淨投入 − 代墊淨額。點任一個月可跳到該月明細。</p>
                 </div>
                 <div class="glass-card rounded-2xl overflow-hidden">
                     <div class="overflow-x-auto">
@@ -519,7 +520,7 @@
                                     <th scope="col" class="py-3 px-4 text-right">消費支出</th>
                                     <th scope="col" class="py-3 px-4 text-right">結餘</th>
                                     <th scope="col" class="py-3 px-4 text-right">投資淨投入</th>
-                                    <th scope="col" class="py-3 px-4 text-right">代墊淨額</th>
+                                    <th v-if="showAdvanceCol" scope="col" class="py-3 px-4 text-right">代墊淨額</th>
                                     <th v-if="showOtherCol" scope="col" class="py-3 px-4 text-right">其他儲蓄</th>
                                     <th scope="col" class="py-3 px-4 text-right">投資後現金</th>
                                 </tr>
@@ -539,22 +540,25 @@
                                         <div v-if="r.yoy" class="text-xs" :class="(r.net - r.yoy.net >= 0) === true ? 'text-emerald-400' : 'text-rose-400'">較去年同月 {{ signedCurrency(r.net - r.yoy.net) }}</div>
                                     </td>
                                     <td class="py-2.5 px-4 text-right text-slate-300">{{ formatCurrency(r.invest) }}</td>
-                                    <td class="py-2.5 px-4 text-right text-slate-300">{{ formatCurrency(r.advance) }}</td>
+                                    <td v-if="showAdvanceCol" class="py-2.5 px-4 text-right text-slate-300">
+                                        <div>{{ formatCurrency(r.advance) }}</div>
+                                        <div v-if="r.advanceOut || r.advanceIn" class="text-xs text-slate-400 mt-0.5">墊 {{ formatCurrency(r.advanceOut) }}／收 {{ formatCurrency(r.advanceIn) }}</div>
+                                    </td>
                                     <td v-if="showOtherCol" class="py-2.5 px-4 text-right text-slate-300">{{ formatCurrency(r.other) }}</td>
                                     <td class="py-2.5 px-4 text-right" :class="r.after >= 0 ? 'text-slate-200' : 'text-rose-400'">{{ signedCurrency(r.after) }}</td>
                                 </tr>
-                                <tr class="bg-slate-900/70"><td :colspan="showOtherCol ? 8 : 7" class="py-2 px-4 text-xs text-slate-400 font-semibold">年度合計（日曆年）與月均</td></tr>
+                                <tr class="bg-slate-900/70"><td :colspan="6 + (showOtherCol ? 1 : 0) + (showAdvanceCol ? 1 : 0)" class="py-2 px-4 text-xs text-slate-400 font-semibold">年度合計（日曆年）與月均</td></tr>
                                 <tr v-for="r in ledgerYearRows" :key="r.key" :class="r.kind === 'avg' ? 'bg-slate-900/20' : 'bg-slate-900/40'">
                                     <td class="py-2.5 px-4" :class="r.kind === 'avg' ? 'text-slate-400 pl-8' : 'font-semibold text-slate-100'">{{ r.label }}</td>
                                     <td class="py-2.5 px-4 text-right text-emerald-300" :class="r.kind === 'total' ? 'font-semibold' : ''">{{ formatCurrency(r.income) }}</td>
                                     <td class="py-2.5 px-4 text-right text-rose-300" :class="r.kind === 'total' ? 'font-semibold' : ''">{{ formatCurrency(r.consume) }}</td>
                                     <td class="py-2.5 px-4 text-right font-bold" :class="r.net >= 0 ? 'text-emerald-400' : 'text-rose-400'">{{ signedCurrency(r.net) }}</td>
                                     <td class="py-2.5 px-4 text-right text-slate-300">{{ formatCurrency(r.invest) }}</td>
-                                    <td class="py-2.5 px-4 text-right text-slate-300">{{ formatCurrency(r.advance) }}</td>
+                                    <td v-if="showAdvanceCol" class="py-2.5 px-4 text-right text-slate-300">{{ formatCurrency(r.advance) }}</td>
                                     <td v-if="showOtherCol" class="py-2.5 px-4 text-right text-slate-300">{{ formatCurrency(r.other) }}</td>
                                     <td class="py-2.5 px-4 text-right" :class="r.after >= 0 ? 'text-slate-200' : 'text-rose-400'">{{ signedCurrency(r.after) }}</td>
                                 </tr>
-                                <tr v-if="ledgerYearRows.length === 0"><td :colspan="showOtherCol ? 8 : 7" class="py-6 text-center text-slate-400">目前沒有資料</td></tr>
+                                <tr v-if="ledgerYearRows.length === 0"><td :colspan="6 + (showOtherCol ? 1 : 0) + (showAdvanceCol ? 1 : 0)" class="py-6 text-center text-slate-400">目前沒有資料</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -872,12 +876,33 @@
                     <h4 class="text-sm font-semibold text-slate-200">對照表（新增收支時，項目只會列出所屬類別的項目）</h4>
                     <div v-for="cat in catMapKeys" :key="cat" class="bg-slate-900/60 border border-slate-800 rounded-lg p-3 space-y-2">
                         <div class="flex items-center justify-between">
-                            <span class="text-sm font-bold text-slate-100">{{ cat }}</span>
+                            <button @click="toggleColorPanel(cat)" :aria-expanded="colorPanelCat === cat" :aria-label="cat + ' 的顏色，點擊更換'" class="flex items-center gap-2 text-left group">
+                                <span class="w-4 h-4 rounded-full border border-slate-500 shrink-0" :style="{ background: catColor(cat) }"></span>
+                                <span class="text-sm font-bold text-slate-100">{{ cat }}</span>
+                                <span class="text-xs text-slate-400 group-hover:text-slate-200">{{ colorPanelCat === cat ? '收合' : '換色' }}</span>
+                            </button>
                             <label class="flex items-center space-x-1.5 text-xs text-slate-300 cursor-pointer">
                                 <input type="checkbox" :checked="isAllItems(cat)" @change="toggleAllItems(cat)" class="rounded bg-slate-900 border-slate-700">
                                 <span>允許全部項目</span>
                             </label>
                         </div>
+                        <label class="flex items-center gap-2 text-xs text-slate-300">
+                            <span>屬性</span>
+                            <select :value="categoryKind(cat)" @change="setCategoryKind(cat, $event.target.value)" class="bg-slate-900 border border-slate-700 rounded p-1 text-slate-200">
+                                <option value="normal">一般消費</option>
+                                <option value="noncons">不算消費</option>
+                                <option value="pass">代墊</option>
+                            </select>
+                        </label>
+                        <div v-if="colorPanelCat === cat" class="flex flex-wrap items-center gap-2 bg-slate-950/50 border border-slate-800 rounded-lg p-2.5">
+                            <button v-for="c in COLOR_CHOICES" :key="c" @click="setCategoryColor(cat, c); colorPanelCat = ''" :style="{ background: c }" :aria-label="cat + ' 改用顏色 ' + c" class="w-6 h-6 rounded-full transition" :class="catColor(cat).toLowerCase() === c ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900' : 'hover:scale-110'"></button>
+                            <label class="relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-600 text-xs text-slate-300 hover:text-white cursor-pointer">
+                                <span class="w-3 h-3 rounded-full" :style="{ background: 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }"></span>自訂
+                                <input type="color" :value="catColor(cat)" @input="setCategoryColor(cat, $event.target.value)" :aria-label="cat + ' 自訂顏色'" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                            </label>
+                        </div>
+                        <p v-if="categoryKind(cat) === 'pass'" class="text-xs text-slate-400">代墊：支出算在消費月份，收回請在該筆支出填「結算日」，會算在結算日所在月份；不算消費、不算收入，也不出現在支出圖表。</p>
+                        <p v-else-if="categoryKind(cat) === 'noncons'" class="text-xs text-slate-400">不算消費：不計入消費支出與支出圖表（勾「含投資」才會顯示）；非 ETF 的支出會在月收支表的「其他儲蓄」欄。</p>
                         <div v-if="!isAllItems(cat)" class="flex flex-wrap gap-2">
                             <label v-for="it in allKnownItems" :key="it" class="flex items-center space-x-1.5 text-xs bg-slate-900 border border-slate-800 rounded px-2 py-1 cursor-pointer" :class="catHasItem(cat, it) ? 'text-emerald-300 border-emerald-500/40' : 'text-slate-400'">
                                 <input type="checkbox" :checked="catHasItem(cat, it)" @change="toggleCatItem(cat, it)" class="rounded bg-slate-900 border-slate-700">
@@ -935,7 +960,7 @@
                 </div>
                 <div class="flex border-b border-slate-800/80 space-x-2 overflow-x-auto no-scrollbar">
                     <button @click="payTab = 'methods'" :class="payTab === 'methods' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="px-3 py-2 border-b-2 text-xs sm:text-sm whitespace-nowrap transition">付款方式</button>
-                    <button @click="payTab = 'rules'" :class="payTab === 'rules' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="px-3 py-2 border-b-2 text-xs sm:text-sm whitespace-nowrap transition">儲值事件與消費定義</button>
+                    <button @click="payTab = 'rules'" :class="payTab === 'rules' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="px-3 py-2 border-b-2 text-xs sm:text-sm whitespace-nowrap transition">儲值事件</button>
                 </div>
 
                 <div v-show="payTab === 'methods'" class="space-y-3">
@@ -986,26 +1011,7 @@
                     </div>
                     <button @click="addFundingRule" class="text-xs text-emerald-400 hover:underline">+ 新增規則</button>
                 </div>
-                <div class="space-y-2">
-                    <h4 class="text-sm font-semibold text-slate-200">代墊類別</h4>
-                    <p class="text-xs text-slate-400">代墊（例如幫別人先付錢、之後會收回）的支出與回收都不算消費、也不算收入，月收支表另有「代墊淨額」欄（墊付支出減回收收入），代表目前還卡在別人那邊的錢，並會從「投資後現金」扣除。</p>
-                    <div class="flex flex-wrap gap-2">
-                        <label v-for="c in categoriesList" :key="'p' + c" class="flex items-center space-x-1.5 text-xs text-slate-200 bg-slate-900/60 border border-slate-800 rounded-lg px-2.5 py-1.5 cursor-pointer">
-                            <input type="checkbox" :checked="appSettings.passThroughCategories.includes(c)" @change="toggleFlowList('passThroughCategories', c)" class="rounded bg-slate-900 border-slate-700">
-                            <span>{{ c }}</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="space-y-2">
-                    <h4 class="text-sm font-semibold text-slate-200">不算消費支出的類別</h4>
-                    <p class="text-xs text-slate-400">這些類別的支出不計入「消費支出」與支出圖表（預設為投資儲蓄）；若同時勾選為代墊類別，以代墊為準。其中不是 ETF 的支出（例如單純存錢）會在月收支表的「其他儲蓄」欄顯示。</p>
-                    <div class="flex flex-wrap gap-2">
-                        <label v-for="c in categoriesList" :key="c" class="flex items-center space-x-1.5 text-xs text-slate-200 bg-slate-900/60 border border-slate-800 rounded-lg px-2.5 py-1.5 cursor-pointer">
-                            <input type="checkbox" :checked="appSettings.nonConsumptionCategories.includes(c)" @change="toggleFlowList('nonConsumptionCategories', c)" class="rounded bg-slate-900 border-slate-700">
-                            <span>{{ c }}</span>
-                        </label>
-                    </div>
-                </div>
+                
                 </div>
 
                 <div class="pt-3 flex justify-end border-t border-slate-800">
@@ -1582,11 +1588,23 @@
                 const selectedExpenseIds = ref([]);
                 const selectedStockIds = ref([]);
 
-                const defaultCategories = ['固定支出', '變動支出', '投資', '儲蓄', '保險', '儲值', '墊付', '固定收入'];
-                const defaultItems = ['交通費', '飲食費', '電話費', '剪頭髮', '保險費', '採買費', '每月費用', '出遊', '房租', '購物', '醫療', '額外交通費', '額外飲食費', 'ETF投資', '薪資', '福利獎金', '年終', '年度獎金', '股息'];
+                const defaultCategories = ['固定支出', '變動支出', '投資儲蓄', '保險', '儲值', '墊付', '固定收入'];
+                const defaultItems = ['交通費', '飲食費', '電話費', '剪頭髮', '保險費', '採買費', '每月費用', '出遊', '房租', '購物', '醫療', '額外交通費', '額外飲食費', 'ETF投資', 'ETF賣出', '薪資', '福利獎金', '年終', '年度獎金', '股息'];
                 const defaultPayments = ['每月預付', '國泰信用卡', '玉山信用卡', '國泰帳戶', '玉山帳戶', '付現', '悠遊卡儲值', '待付', '已付'];
 
-                const categoriesList = ref(JSON.parse(localStorage.getItem(STORAGE_KEY_CATEGORIES)) || defaultCategories);
+                const categoriesList = ref((() => {
+                    let v = null;
+                    try { v = JSON.parse(localStorage.getItem(STORAGE_KEY_CATEGORIES)); } catch (e) { v = null; }
+                    if (!Array.isArray(v)) return [...defaultCategories];
+                    // 一次性整理：舊版預設把「投資」「儲蓄」分開，改成合併的「投資儲蓄」。有紀錄在用的會由 refreshDynamicOptions 自動補回，不會遺失
+                    if (!localStorage.getItem('findash_mig_invest_cat_v1')) {
+                        localStorage.setItem('findash_mig_invest_cat_v1', '1');
+                        const had = v.includes('投資') || v.includes('儲蓄');
+                        v = v.filter(c => c !== '投資' && c !== '儲蓄');
+                        if (had && !v.includes('投資儲蓄')) v.splice(Math.min(2, v.length), 0, '投資儲蓄');
+                    }
+                    return v;
+                })());
                 const itemsList = ref(JSON.parse(localStorage.getItem(STORAGE_KEY_ITEMS)) || defaultItems);
                 const paymentMethodsList = ref(JSON.parse(localStorage.getItem(STORAGE_KEY_PAYMENTS)) || defaultPayments);
                 const blacklistedOptions = ref(JSON.parse(localStorage.getItem(STORAGE_KEY_BLACKLIST)) || []);
@@ -1596,6 +1614,10 @@
                     const itemSet = new Set(itemsList.value);
                     const paySet = new Set(paymentMethodsList.value);
 
+                    // 類別對照表裡有的類別與項目，也要出現在選項清單（使用者刪除過的不補）
+                    const cmap = (appSettings.value && appSettings.value.categoryItems) || {};
+                    Object.keys(cmap).forEach(c => { if (!blacklistedOptions.value.includes(c)) catSet.add(c); });
+                    Object.values(cmap).forEach(a => { if (Array.isArray(a)) a.forEach(it => { if (it && !blacklistedOptions.value.includes(it)) itemSet.add(it); }); });
                     expenses.value.forEach(e => {
                         if (e.category && !blacklistedOptions.value.includes(e.category)) catSet.add(e.category);
                         if (e.item && !blacklistedOptions.value.includes(e.item)) itemSet.add(e.item);
@@ -1621,6 +1643,7 @@
                         st.fundingRules.forEach(r => { if (r.category === oldVal) r.category = clean; });
                         st.nonConsumptionCategories = st.nonConsumptionCategories.map(c => c === oldVal ? clean : c);
                         st.passThroughCategories = (st.passThroughCategories || []).map(c => c === oldVal ? clean : c);
+                        if (st.categoryColors && st.categoryColors[oldVal]) { st.categoryColors[clean] = st.categoryColors[oldVal]; delete st.categoryColors[oldVal]; }
                     } else if (type === 'item') {
                         Object.keys(st.categoryItems).forEach(k => { const a = st.categoryItems[k]; if (Array.isArray(a)) st.categoryItems[k] = Array.from(new Set(a.map(i => i === oldVal ? clean : i))); });
                         st.fundingRules.forEach(r => { if (r.item === oldVal) r.item = clean; });
@@ -1635,6 +1658,7 @@
                         delete st.categoryItems[val];
                         st.nonConsumptionCategories = st.nonConsumptionCategories.filter(c => c !== val);
                         st.passThroughCategories = (st.passThroughCategories || []).filter(c => c !== val);
+                        if (st.categoryColors) delete st.categoryColors[val];
                     } else if (type === 'item') {
                         Object.keys(st.categoryItems).forEach(k => { const a = st.categoryItems[k]; if (Array.isArray(a)) st.categoryItems[k] = a.filter(i => i !== val); });
                     } else if (type === 'payment') {
@@ -2157,6 +2181,28 @@
                     nonConsumptionCategories: ['投資儲蓄'],                                       // 不算消費支出的類別
                     passThroughCategories: ['墊付']                                              // 代墊：支出與回收都不算消費、也不算收入
                 };
+                // 類別固定顏色：預設對照；新類別從擴充色盤依序分配後固定（存在設定、跨裝置同步）
+                const DEFAULT_CATEGORY_COLORS = { '固定支出': '#6366f1', '變動支出': '#10b981', '保險': '#06b6d4', '儲值': '#a855f7', '墊付': '#ef4444',
+                    '固定收入': '#84cc16', '投資儲蓄': '#f97316', '投資': '#f59e0b', '儲蓄': '#ec4899', '其他': '#64748b' };
+                const EXTRA_PALETTE = ['#3b82f6', '#14b8a6', '#eab308', '#8b5cf6', '#f43f5e', '#22c55e', '#0ea5e9', '#d946ef', '#fb923c', '#a3e635', '#2dd4bf', '#94a3b8'];
+                const COLOR_CHOICES = ['#6366f1', '#10b981', '#06b6d4', '#a855f7', '#ef4444', '#84cc16', '#f97316', '#f59e0b', '#ec4899', '#3b82f6', '#14b8a6', '#64748b'];
+                // 幫還沒有顏色的類別分配顏色；有新增回傳 true
+                const assignCategoryColors = (st, cats) => {
+                    if (!st.categoryColors || typeof st.categoryColors !== 'object') st.categoryColors = {};
+                    let changed = false;
+                    cats.forEach(c => {
+                        if (!c || st.categoryColors[c]) return;
+                        let col = DEFAULT_CATEGORY_COLORS[c];
+                        if (!col) {
+                            const used = new Set(Object.values(st.categoryColors).map(x => String(x).toLowerCase()));
+                            col = EXTRA_PALETTE.find(x => !used.has(x)) || EXTRA_PALETTE[Object.keys(st.categoryColors).length % EXTRA_PALETTE.length];
+                        }
+                        st.categoryColors[c] = col; changed = true;
+                    });
+                    return changed;
+                };
+                // 類別屬性（三選一）：代墊 > 不算消費 > 一般消費；底層仍用兩個清單存，舊設定與舊裝置不需轉換
+                const categoryKindOf = (st, c) => (st.passThroughCategories || []).includes(c) ? 'pass' : (st.nonConsumptionCategories.includes(c) ? 'noncons' : 'normal');
                 const withDefaultSettings = (v) => ({
                     creditCards: Array.isArray(v && v.creditCards) ? v.creditCards : [],
                     prepaidMethods: Array.isArray(v && v.prepaidMethods) ? v.prepaidMethods : [...DEFAULT_FLOW.prepaidMethods],
@@ -2164,10 +2210,13 @@
                     nonConsumptionCategories: Array.isArray(v && v.nonConsumptionCategories) ? v.nonConsumptionCategories : [...DEFAULT_FLOW.nonConsumptionCategories],
                     passThroughCategories: Array.isArray(v && v.passThroughCategories) ? v.passThroughCategories : [...DEFAULT_FLOW.passThroughCategories],
                     hiddenOptions: Array.isArray(v && v.hiddenOptions) ? v.hiddenOptions : [],
+                    categoryColors: (v && v.categoryColors && typeof v.categoryColors === 'object' && !Array.isArray(v.categoryColors)) ? { ...v.categoryColors } : {},
                     categoryItems: (v && v.categoryItems && typeof v.categoryItems === 'object' && !Array.isArray(v.categoryItems) && Object.keys(v.categoryItems).length)
                         ? v.categoryItems : JSON.parse(JSON.stringify(DEFAULT_CATEGORY_ITEMS))
                 });
-                const isInvestExpense = (e, st) => e.item === 'ETF投資' || st.nonConsumptionCategories.includes(e.category) || (st.passThroughCategories || []).includes(e.category);
+                const isPassThrough = (e, st) => (st.passThroughCategories || []).includes(e.category);
+                // 投資＝ETF投資＋不算消費的類別；代墊不算投資（兩張圖表一律不顯示代墊）
+                const isInvestExpense = (e, st) => !isPassThrough(e, st) && (e.item === 'ETF投資' || st.nonConsumptionCategories.includes(e.category));
                 const isFundingEvent = (e, st) => st.fundingRules.some(r => r.category === e.category && r.item === e.item);
 
                 // 月收支表：用「金額」計算（錢實際流出／流入）
@@ -2190,10 +2239,15 @@
                             else if (st.nonConsumptionCategories.includes(e.category)) b.other += amt;
                             else b.consume += amt;
                         });
+                        // 代墊收回：墊付支出若填了結算日，該筆金額算在「結算日所在月份」的收回（與消費月份可不同月）
+                        if (e.type === '支出' && e.item !== 'ETF投資' && e.item !== 'ETF賣出' && pass.includes(e.category)) {
+                            const sd = String(e.settlementDate || '');
+                            if (/^\d{4}-\d{2}/.test(sd)) [bucket(months, sd.slice(0, 7)), bucket(years, sd.slice(0, 4))].forEach(b => { b.advanceIn += amt; });
+                        }
                     });
                     return { months, years };
                 };
-                // 結餘 = 收入 − 消費支出；代墊淨額 = 墊付支出 − 回收；投資後現金 = 結餘 − 投資淨投入 − 其他儲蓄 − 代墊淨額
+                // 結餘 = 收入 − 消費支出；代墊淨額 = 墊付支出（消費月）− 收回（結算日所在月）；投資後現金 = 結餘 − 投資淨投入 − 其他儲蓄 − 代墊淨額
                 const deriveLedger = (b) => ({ ...b, net: b.income - b.consume, invest: b.buy - b.sell, advance: (b.advanceOut || 0) - (b.advanceIn || 0),
                     after: b.income - b.consume - (b.buy - b.sell) - b.other - ((b.advanceOut || 0) - (b.advanceIn || 0)) });
 
@@ -2202,6 +2256,7 @@
                     const out = [];
                     list.forEach(e => {
                         if (e.type !== '支出') return;
+                        if (isPassThrough(e, st)) return;   // 代墊不出現在圖表
                         if (!includeInvest && isInvestExpense(e, st)) return;
                         if (isFundingEvent(e, st)) return;
                         const prepaid = st.prepaidMethods.includes(e.paymentMethod);
@@ -2237,6 +2292,7 @@
                     const m = {};
                     list.forEach(e => {
                         if (e.type !== '支出') return;
+                        if (isPassThrough(e, st)) return;   // 代墊不出現在圖表
                         if (!includeInvest && isInvestExpense(e, st)) return;
                         const amt = Number(e.amount || 0);
                         if (!(amt > 0)) return;
@@ -2275,6 +2331,10 @@
 
                 const appSettings = ref((() => { try { const v = JSON.parse(localStorage.getItem('findash_settings_v1')); return withDefaultSettings(v); } catch (e) { return withDefaultSettings(null); } })());
                 watch(appSettings, (v) => { localStorage.setItem('findash_settings_v1', JSON.stringify(v)); pushToCloud(); }, { deep: true });
+                // 新類別、或雲端設定還沒有顏色時，自動分配並固定
+                watch([categoriesList, () => Object.keys(appSettings.value.categoryItems).join('|'), () => Object.keys(appSettings.value.categoryColors || {}).length], () => {
+                    assignCategoryColors(appSettings.value, Array.from(new Set([...Object.keys(appSettings.value.categoryItems), ...categoriesList.value])));
+                }, { deep: true, immediate: true });
                 const showCardSettingsModal = ref(false);
                 const isCard = (name) => appSettings.value.creditCards.some(c => c.name === name);
                 const getCardDay = (name) => (appSettings.value.creditCards.find(c => c.name === name) || {}).closingDay || '';
@@ -2319,16 +2379,22 @@
 
                 // ---------- 支出圖表（項目長條＋付款管道） ----------
                 const includeInvest = ref(false);
-                const CAT_PALETTE = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#a855f7', '#ef4444', '#84cc16'];
+                // 設定裡存的顏色（色票與檢色器顯示用）；圖表用 catChartColor（太暗的顏色自動提亮，深色底才看得清）
                 const catColor = (cat) => {
                     if (!cat) return '#64748b';
-                    let i = categoriesList.value.indexOf(cat);
-                    if (i < 0) { i = 0; for (const ch of String(cat)) i = (i * 31 + ch.charCodeAt(0)) % 997; }
-                    return CAT_PALETTE[i % CAT_PALETTE.length];
+                    const c = appSettings.value.categoryColors && appSettings.value.categoryColors[cat];
+                    return /^#[0-9a-fA-F]{6}$/.test(c || '') ? c : (DEFAULT_CATEGORY_COLORS[cat] || '#64748b');
+                };
+                const catChartColor = (cat) => {
+                    const hex = catColor(cat), n = parseInt(hex.slice(1), 16);
+                    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+                    const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+                    if (lum < 0.3) { const t = 0.45; r = Math.round(r + (255 - r) * t); g = Math.round(g + (255 - g) * t); b = Math.round(b + (255 - b) * t); }
+                    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
                 };
                 const lightColor = (hex, a = 0.35) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`; };
                 const itemChartData = computed(() => aggregateItems(buildItemRows(monthlyExpensesFiltered.value, appSettings.value, includeInvest.value), 5));
-                const itemChartLegend = computed(() => Array.from(new Set(itemChartData.value.filter(x => !x.isOther).map(x => x.category))).map(name => ({ name, color: catColor(name) })));
+                const itemChartLegend = computed(() => Array.from(new Set(itemChartData.value.filter(x => !x.isOther).map(x => x.category))).map(name => ({ name, color: catChartColor(name) })));
                 const paymentChartData = computed(() => aggregatePayments(monthlyExpensesFiltered.value, appSettings.value, includeInvest.value));
                 const itemDetail = ref(null);
                 const openItemDetail = (it) => {
@@ -2385,6 +2451,7 @@
                     return out;
                 });
                 const showOtherCol = computed(() => ledgerMonthRows.value.some(r => r.other) || ledgerYearRows.value.some(r => r.other));
+                const showAdvanceCol = computed(() => ledgerMonthRows.value.some(r => r.advanceOut || r.advanceIn) || ledgerYearRows.value.some(r => r.advanceOut || r.advanceIn));
                 // 點月收支表的某個月 → 切到日常收支，顯示該月明細
                 const goToMonth = (key) => {
                     const [y, m] = key.split('-').map(Number);
@@ -2402,6 +2469,22 @@
 
                 // ---------- 預付與儲值設定 ----------
                 const showFlowSettingsModal = ref(false);
+                const categoryKind = (cat) => categoryKindOf(appSettings.value, cat);
+                const setCategoryKind = (cat, kind) => {
+                    const st = appSettings.value;
+                    st.nonConsumptionCategories = st.nonConsumptionCategories.filter(c => c !== cat);
+                    st.passThroughCategories = (st.passThroughCategories || []).filter(c => c !== cat);
+                    if (kind === 'noncons') st.nonConsumptionCategories.push(cat);
+                    else if (kind === 'pass') st.passThroughCategories.push(cat);
+                };
+                const colorPanelCat = ref('');
+                const toggleColorPanel = (cat) => { colorPanelCat.value = colorPanelCat.value === cat ? '' : cat; };
+                const setCategoryColor = (cat, color) => {
+                    if (!/^#[0-9a-fA-F]{6}$/.test(color || '')) return;
+                    const st = appSettings.value;
+                    if (!st.categoryColors) st.categoryColors = {};
+                    st.categoryColors[cat] = color.toLowerCase();
+                };
                 const toggleFlowList = (key, value) => {
                     const list = appSettings.value[key];
                     const i = list.indexOf(value);
@@ -3252,7 +3335,7 @@
                     if (itemCtx) {
                         if (categoryChartInstance) categoryChartInstance.destroy();
                         const items = itemChartData.value;
-                        const base = items.map(x => x.isOther ? '#64748b' : catColor(x.category));
+                        const base = items.map(x => x.isOther ? '#64748b' : catChartColor(x.category));
                         categoryChartInstance = new Chart(itemCtx, {
                             type: 'bar',
                             data: {
@@ -3375,10 +3458,10 @@
                     filterYears, filterMonths, dateFilterActive, expenseYearOptions,
                     stockSearch, stockFilterSymbols, stockFilterActions, stockFilterYears, stockFilterMonths, stockSymbolOptions, stockYearOptions, filteredStockTrades, stockFilterActive, resetStockFilters, syncLegacyStockExpenses,
                     monthSelectOptions, typeSelectOptions, expenseYearSelectOptions, stockYearSelectOptions, stockSymbolSelectOptions, stockActionSelectOptions,
-                    includeInvest, itemChartData, itemChartLegend, paymentChartData, itemDetail, monthlyInvestSummary, ledgerMonthRows, ledgerYearRows, showOtherCol, goToMonth, signedCurrency,
+                    includeInvest, itemChartData, itemChartLegend, paymentChartData, itemDetail, monthlyInvestSummary, ledgerMonthRows, ledgerYearRows, showOtherCol, showAdvanceCol, goToMonth, signedCurrency,
                     catTab, payTab, openCategorySettings, openPaymentSettings, showResetModal, resetConfirmText, openResetModal, confirmResetAll,
                     showCategoryMapModal, catMapKeys, formCategories, formItems, onCategoryChange, isAllItems, toggleAllItems, catHasItem, toggleCatItem, allKnownItems, mismatchGroups, mismatchTotal, fixTarget, getFixTarget, applyCategoryFix,
-                    showFlowSettingsModal, toggleFlowList, addFundingRule, removeFundingRule, fundingMatchCount, prepaidUseCount, itemGroups,
+                    showFlowSettingsModal, toggleFlowList, categoryKind, setCategoryKind, setCategoryColor, catColor, COLOR_CHOICES, colorPanelCat, toggleColorPanel, addFundingRule, removeFundingRule, fundingMatchCount, prepaidUseCount, itemGroups,
                     showImportPreviewModal, importPreview, importSummary, importIssues, commitImport,
                     requestClose, onBackdrop,
                     toasts, showToast, dismissToast, runToastAction, toastClass, dialog, submitDialog, cancelDialog,
