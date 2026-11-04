@@ -408,7 +408,7 @@
 
                         <div>
                             <multi-select v-model="filterMonths" id="f-month" :options="monthSelectOptions" all-label="全部交易月份" unit="個月份"></multi-select>
-                            <button @click="resetFilters" class="mt-1 w-full text-xs text-slate-400 hover:text-emerald-400 underline text-right block">重設篩選器</button>
+                            <button v-if="expenseFilterActive" @click="resetFilters" class="mt-1 w-full text-xs text-slate-400 hover:text-emerald-400 underline text-right block">重設篩選器</button>
                         </div>
                     </div>
 
@@ -2740,7 +2740,10 @@
 
                 const displayedExpenses = computed(() => filteredExpenses.value.slice(0, visibleCount.value));
 
+                const expenseFilterActive = computed(() => !!((expenseSearch.value || '').trim() || selectedCategoryFilters.value.length || selectedItemFilters.value.length
+                    || selectedPaymentFilters.value.length || selectedTypeFilters.value.length || filterYears.value.length || filterMonths.value.length));
                 const resetFilters = () => {
+                    selectedExpenseIds.value = [];
                     expenseSearch.value = '';
                     selectedCategoryFilters.value = [];
                     selectedItemFilters.value = [];
@@ -2775,7 +2778,16 @@
                     });
                 });
                 const stockFilterActive = computed(() => !!(stockSearch.value || stockFilterSymbols.value.length || stockFilterActions.value.length || stockFilterYears.value.length || stockFilterMonths.value.length));
-                const resetStockFilters = () => { stockSearch.value = ''; stockFilterSymbols.value = []; stockFilterActions.value = []; stockFilterYears.value = []; stockFilterMonths.value = []; };
+                const resetStockFilters = () => { selectedStockIds.value = []; stockSearch.value = ''; stockFilterSymbols.value = []; stockFilterActions.value = []; stockFilterYears.value = []; stockFilterMonths.value = []; };
+                // 篩選條件改變後，已經不在目前清單裡的勾選自動取消（合計也跟著更新）
+                const dropHiddenSelection = (selRef, list) => {
+                    if (!selRef.value.length) return;
+                    const vis = new Set(list.map(x => String(x.id)));
+                    const keep = selRef.value.filter(id => vis.has(String(id)));
+                    if (keep.length !== selRef.value.length) selRef.value = keep;
+                };
+                watch(filteredExpenses, (list) => dropHiddenSelection(selectedExpenseIds, list));
+                watch(filteredStockTrades, (list) => dropHiddenSelection(selectedStockIds, list));
                 const monthSelectOptions = Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} 月` }));
                 const typeSelectOptions = [{ value: '支出', label: '支出 (-)' }, { value: '收入', label: '收入 (+)' }];
                 const expenseYearSelectOptions = computed(() => expenseYearOptions.value.map(y => ({ value: y, label: `${y} 年` })));
@@ -3468,7 +3480,7 @@
                     undoToast, undoLast, displayedExpenses, loadMoreExpenses, onExpenseScroll, totalDividend,
                     expenses, stockTrades, activeTab, selectedYear, selectedMonth, isCurrentMonthOrFuture,
                     isFetchingPrices, lastPriceUpdate, expenseSearch, expenseMonthFilterScope,
-                    selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilters, resetFilters,
+                    selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilters, resetFilters, expenseFilterActive,
                     activeDropdown, toggleDropdown, closeAllDropdowns, categoryFilterLabel, itemFilterLabel, paymentFilterLabel,
                     selectedExpenseIds, selectedStockIds, categoriesList, itemsList, paymentMethodsList,
                     showExpenseModal, editingExpenseId, showStockModal, editingStockId, showBatchDateModal,
