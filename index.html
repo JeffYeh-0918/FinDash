@@ -5,26 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinDash 智慧資產管理系統</title>
     
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        slate: {
-                            850: '#131e32',
-                            900: '#0f172a',
-                            950: '#020617',
-                        }
-                    }
-                }
-            }
-        }
+    <!-- 版本對照表：改了哪個模組，就只把它後面的 v= 數字加 1（避免瀏覽器吃到舊快取）。其他檔案不用動。 -->
+    <script type="importmap">
+{
+  "imports": {
+    "./js/logic/symbol.js": "./js/logic/symbol.js?v=1",
+    "./js/logic/selection.js": "./js/logic/selection.js?v=1",
+    "./js/logic/settings-ops.js": "./js/logic/settings-ops.js?v=1",
+    "./js/logic/reorder.js": "./js/logic/reorder.js?v=1",
+    "./js/logic/trades.js": "./js/logic/trades.js?v=1",
+    "./js/logic/ledger.js": "./js/logic/ledger.js?v=1",
+    "./js/logic/importer.js": "./js/logic/importer.js?v=1"
+  }
+}
     </script>
-    <!-- Vue 3 CDN -->
-    <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.js"></script>
+
+    <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
+    <link rel="stylesheet" href="css/tailwind.css?v=1" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
+    <link rel="stylesheet" href="css/app.css?v=1">
+
+    <!-- Vue 3（正式版，版本固定） -->
+    <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.6.1"></script>
     <!-- Lucide Icons CDN -->
@@ -32,46 +33,6 @@
     <!-- SheetJS (XLSX) CDN -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
-    <style>
-        [v-cloak] { display: none !important; }
-        body {
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-        }
-        .glass-card {
-            background: rgba(30, 41, 59, 0.65);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
-        .glass-modal {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.6);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(100, 116, 139, 0.4);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(100, 116, 139, 0.7);
-        }
-        [data-modal]:focus, [data-dialog]:focus { outline: none; }
-        button:focus-visible, a:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
-        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
-        .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-    </style>
 </head>
 <body class="min-h-screen bg-slate-900 text-slate-100 antialiased selection:bg-emerald-500 selection:text-white" @click="closeAllDropdowns">
     <div id="app" v-cloak class="pb-12">
@@ -1452,7 +1413,15 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { cleanSymbol } from './js/logic/symbol.js';
+        import { dropHiddenSelection } from './js/logic/selection.js';
+        import { reorderWithGroup } from './js/logic/reorder.js';
+        import { sortTrades, calcRealized, calcDividends, ymd, cardPeriod } from './js/logic/trades.js';
+        import { DEFAULT_CATEGORY_COLORS, COLOR_CHOICES, assignCategoryColors, categoryKindOf, withDefaultSettings, isFundingEvent, calcLedger, deriveLedger, buildItemRows, aggregateItems, aggregatePayments, findCategoryMismatches, suggestCategoryFor } from './js/logic/ledger.js';
+        import { buildImportPreview } from './js/logic/importer.js';
+        import { renameInSettings as renameInSettingsOn, removeFromSettings as removeFromSettingsOn } from './js/logic/settings-ops.js';
+
         const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick, provide, inject } = Vue;
 
         // 多選下拉元件：外觀與操作方式和「類別／項目／付款方式」完全相同（空選＝全部）
@@ -1529,9 +1498,6 @@
                 const isSyncing = ref(false);
 
                 // 清理代碼格式（轉換為字串，維持純字串）
-                const cleanSymbol = (sym) => {
-                    return String(sym || '').replace(/^'/, '').replace(/\.(TW|TWO)$/i, '').trim().toUpperCase();
-                };
                 const parseSymbolFromCloud = (sym) => {
                     let str = String(sym || '').replace(/^'/, '').trim().toUpperCase();
                     return str;
@@ -1634,39 +1600,9 @@
                     localStorage.setItem(STORAGE_KEY_BLACKLIST, JSON.stringify(blacklistedOptions.value));
                 };
 
-                // <<SETTINGS-OPS-START>>
-                // 改名／刪除選項時，同步更新「類別對照、儲值事件、非消費類別、信用卡、預付類」等設定，避免設定指向已不存在的名稱
-                const renameInSettings = (type, oldVal, clean) => {
-                    const st = appSettings.value;
-                    if (type === 'category') {
-                        st.categoryItems = Object.fromEntries(Object.entries(st.categoryItems).map(([k, v]) => [k === oldVal ? clean : k, v]));
-                        st.fundingRules.forEach(r => { if (r.category === oldVal) r.category = clean; });
-                        st.nonConsumptionCategories = st.nonConsumptionCategories.map(c => c === oldVal ? clean : c);
-                        st.passThroughCategories = (st.passThroughCategories || []).map(c => c === oldVal ? clean : c);
-                        if (st.categoryColors && st.categoryColors[oldVal]) { st.categoryColors[clean] = st.categoryColors[oldVal]; delete st.categoryColors[oldVal]; }
-                    } else if (type === 'item') {
-                        Object.keys(st.categoryItems).forEach(k => { const a = st.categoryItems[k]; if (Array.isArray(a)) st.categoryItems[k] = Array.from(new Set(a.map(i => i === oldVal ? clean : i))); });
-                        st.fundingRules.forEach(r => { if (r.item === oldVal) r.item = clean; });
-                    } else if (type === 'payment') {
-                        st.creditCards.forEach(c => { if (c.name === oldVal) c.name = clean; });
-                        st.prepaidMethods = Array.from(new Set(st.prepaidMethods.map(p => p === oldVal ? clean : p)));
-                    }
-                };
-                const removeFromSettings = (type, val) => {
-                    const st = appSettings.value;
-                    if (type === 'category') {
-                        delete st.categoryItems[val];
-                        st.nonConsumptionCategories = st.nonConsumptionCategories.filter(c => c !== val);
-                        st.passThroughCategories = (st.passThroughCategories || []).filter(c => c !== val);
-                        if (st.categoryColors) delete st.categoryColors[val];
-                    } else if (type === 'item') {
-                        Object.keys(st.categoryItems).forEach(k => { const a = st.categoryItems[k]; if (Array.isArray(a)) st.categoryItems[k] = a.filter(i => i !== val); });
-                    } else if (type === 'payment') {
-                        st.prepaidMethods = st.prepaidMethods.filter(p => p !== val);
-                        st.creditCards = st.creditCards.filter(c => c.name !== val);
-                    }
-                };
-                // <<SETTINGS-OPS-END>>
+// 改名／刪除選項時的設定同步邏輯在 js/logic/settings-ops.js，這裡只負責帶入目前設定
+                const renameInSettings = (type, oldVal, clean) => renameInSettingsOn(appSettings.value, type, oldVal, clean);
+                const removeFromSettings = (type, val) => removeFromSettingsOn(appSettings.value, type, val);
 
                 const editOptionName = async (type, index) => {
                     let list = type === 'category' ? categoriesList.value : (type === 'item' ? itemsList.value : paymentMethodsList.value);
@@ -1908,22 +1844,7 @@
                     return stockForm.value.action === '買進' ? (price * shares) + fee : (price * shares) - fee - tax;
                 });
 
-                // <<REORDER-START>>
-                // 拖曳排序：被拖的列若已勾選，所有「目前畫面上、已勾選」的列會一起搬到目標位置；
-                // 若沒勾選就只搬這一列。永遠只調整順序，不增不減（即使畫面是篩選後的清單）。
-                const reorderWithGroup = (full, view, fromIdx, toIdx, selectedIds) => {
-                    const dragged = view[fromIdx], target = view[toIdx];
-                    if (!dragged || !target || String(dragged.id) === String(target.id)) return full;
-                    const sel = new Set((selectedIds || []).map(String));
-                    const group = sel.has(String(dragged.id)) ? view.filter(x => sel.has(String(x.id))) : [dragged];
-                    const groupIds = new Set(group.map(x => String(x.id)));
-                    if (groupIds.has(String(target.id))) return full;   // 放到自己人身上 → 不動
-                    const rest = full.filter(x => !groupIds.has(String(x.id)));
-                    const at = rest.findIndex(x => String(x.id) === String(target.id));
-                    rest.splice(fromIdx < toIdx ? at + 1 : at, 0, ...group);
-                    return rest;
-                };
-                // <<REORDER-END>>
+// （REORDER 區塊已移到 js/logic/，見檔頭 import）
                 const draggingIds = ref([]);
                 const onDragStart = (e, index, type) => {
                     draggedIndex.value = index;
@@ -2114,220 +2035,10 @@
                 const dividendBySymbol = computed(() => calcDividends(expenses.value));
                 const totalDividend = computed(() => roundTwo(Object.values(dividendBySymbol.value).reduce((a, b) => a + b, 0)));
 
-                // <<PURE-START>>
-                const sortTrades = (list) => [...list].sort((a, b) => {
-                    const d = String(a.date || '').localeCompare(String(b.date || ''));
-                    if (d !== 0) return d;
-                    return (a.action === '賣出' ? 1 : 0) - (b.action === '賣出' ? 1 : 0);  // 同一天先算買進、再算賣出
-                });
-                // 已實現損益（移動平均成本法）：賣出淨收入 −（賣出當下平均成本 × 賣出股數）
-                const calcRealized = (trades) => {
-                    const pos = {}; const by = {}; const rows = []; const ignored = []; let total = 0;
-                    sortTrades(trades).forEach(t => {
-                        const sym = cleanSymbol(t.symbol);
-                        if (!sym) return;
-                        const p = pos[sym] || (pos[sym] = { shares: 0, cost: 0 });
-                        const shares = Number(t.shares || 0), amt = Number(t.totalAmount || 0);
-                        if (t.action === '買進') { p.shares += shares; p.cost += amt; }
-                        else if (t.action === '賣出' && shares > 0) {
-                            if (p.shares <= 0) { ignored.push({ date: t.date, symbol: sym, shares, reason: '沒有對應的買進紀錄' }); return; }
-                            const sell = Math.min(shares, p.shares);
-                            if (sell < shares) ignored.push({ date: t.date, symbol: sym, shares: shares - sell, reason: '賣出股數超過持有，超出部分未計入' });
-                            const avg = p.cost / p.shares;
-                            const proceeds = amt * (sell / shares);
-                            const gain = proceeds - avg * sell;
-                            rows.push({ date: t.date, symbol: sym, name: t.name || '', shares: sell, avgCost: avg, proceeds, cost: avg * sell, gain });
-                            p.shares -= sell; p.cost -= avg * sell;
-                            if (p.shares <= 0) { p.shares = 0; p.cost = 0; }
-                            by[sym] = (by[sym] || 0) + gain; total += gain;
-                        }
-                    });
-                    return { total, by, rows, ignored };
-                };
-                // 股息：類別為「股息」，內容為股票代碼
-                const calcDividends = (list) => {
-                    const m = {};
-                    list.forEach(e => {
-                        if (e.item !== '股息' && e.category !== '股息') return;  // 項目或類別為「股息」皆可
-                        const sym = cleanSymbol(e.content);
-                        if (!sym) return;
-                        const amt = Number(e.amount || 0);
-                        m[sym] = (m[sym] || 0) + (e.type === '支出' ? -amt : amt);
-                    });
-                    return m;
-                };
-                // 信用卡帳期：k=0 為包含今天的那一期，k=1 為上一期…；結帳日 29~31 遇短月自動取月底
-                const lastDayOf = (y, m) => new Date(y, m + 1, 0).getDate();
-                const closingOf = (y, m, day) => new Date(y, m, Math.min(day, lastDayOf(y, m)));
-                const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                const cardPeriod = (closingDay, k, today) => {
-                    const y = today.getFullYear();
-                    let m = today.getMonth();
-                    if (today.getDate() > Math.min(closingDay, lastDayOf(y, m))) m += 1;
-                    m -= k;
-                    const end = closingOf(y, m, closingDay);
-                    const prevEnd = closingOf(y, m - 1, closingDay);
-                    const start = new Date(prevEnd.getFullYear(), prevEnd.getMonth(), prevEnd.getDate() + 1);
-                    return { start: ymd(start), end: ymd(end) };
-                };
-                // <<PURE-END>>
+// （PURE 區塊已移到 js/logic/，見檔頭 import）
 
                 // ---------- 設定（信用卡結帳日），會同步到雲端 ----------
-                // <<LEDGER-START>>
-                // 預付／儲值／非消費類別的預設設定（可在「工具 → 付款與帳單」修改）
-                const DEFAULT_FLOW = {
-                    prepaidMethods: ['每月預付', '悠遊卡儲值'],                                   // 這些付款方式的「使用」記在已付金額，金額為 0
-                    fundingRules: [{ category: '固定支出', item: '每月費用' }, { category: '儲值', item: '交通費' }], // 先出錢、之後才分項使用的「儲值事件」
-                    nonConsumptionCategories: ['投資儲蓄'],                                       // 不算消費支出的類別
-                    passThroughCategories: ['墊付']                                              // 代墊：支出與回收都不算消費、也不算收入
-                };
-                // 類別固定顏色：預設對照；新類別從擴充色盤依序分配後固定（存在設定、跨裝置同步）
-                const DEFAULT_CATEGORY_COLORS = { '固定支出': '#6366f1', '變動支出': '#10b981', '保險': '#06b6d4', '儲值': '#a855f7', '墊付': '#ef4444',
-                    '固定收入': '#84cc16', '投資儲蓄': '#f97316', '投資': '#f59e0b', '儲蓄': '#ec4899', '其他': '#64748b' };
-                const EXTRA_PALETTE = ['#3b82f6', '#14b8a6', '#eab308', '#8b5cf6', '#f43f5e', '#22c55e', '#0ea5e9', '#d946ef', '#fb923c', '#a3e635', '#2dd4bf', '#94a3b8'];
-                const COLOR_CHOICES = ['#6366f1', '#10b981', '#06b6d4', '#a855f7', '#ef4444', '#84cc16', '#f97316', '#f59e0b', '#ec4899', '#3b82f6', '#14b8a6', '#64748b'];
-                // 幫還沒有顏色的類別分配顏色；有新增回傳 true
-                const assignCategoryColors = (st, cats) => {
-                    if (!st.categoryColors || typeof st.categoryColors !== 'object') st.categoryColors = {};
-                    let changed = false;
-                    cats.forEach(c => {
-                        if (!c || st.categoryColors[c]) return;
-                        let col = DEFAULT_CATEGORY_COLORS[c];
-                        if (!col) {
-                            const used = new Set(Object.values(st.categoryColors).map(x => String(x).toLowerCase()));
-                            col = EXTRA_PALETTE.find(x => !used.has(x)) || EXTRA_PALETTE[Object.keys(st.categoryColors).length % EXTRA_PALETTE.length];
-                        }
-                        st.categoryColors[c] = col; changed = true;
-                    });
-                    return changed;
-                };
-                // 類別屬性（三選一）：代墊 > 不算消費 > 一般消費；底層仍用兩個清單存，舊設定與舊裝置不需轉換
-                const categoryKindOf = (st, c) => (st.passThroughCategories || []).includes(c) ? 'pass' : (st.nonConsumptionCategories.includes(c) ? 'noncons' : 'normal');
-                const withDefaultSettings = (v) => ({
-                    creditCards: Array.isArray(v && v.creditCards) ? v.creditCards : [],
-                    prepaidMethods: Array.isArray(v && v.prepaidMethods) ? v.prepaidMethods : [...DEFAULT_FLOW.prepaidMethods],
-                    fundingRules: Array.isArray(v && v.fundingRules) ? v.fundingRules : DEFAULT_FLOW.fundingRules.map(r => ({ ...r })),
-                    nonConsumptionCategories: Array.isArray(v && v.nonConsumptionCategories) ? v.nonConsumptionCategories : [...DEFAULT_FLOW.nonConsumptionCategories],
-                    passThroughCategories: Array.isArray(v && v.passThroughCategories) ? v.passThroughCategories : [...DEFAULT_FLOW.passThroughCategories],
-                    hiddenOptions: Array.isArray(v && v.hiddenOptions) ? v.hiddenOptions : [],
-                    categoryColors: (v && v.categoryColors && typeof v.categoryColors === 'object' && !Array.isArray(v.categoryColors)) ? { ...v.categoryColors } : {},
-                    categoryItems: (v && v.categoryItems && typeof v.categoryItems === 'object' && !Array.isArray(v.categoryItems) && Object.keys(v.categoryItems).length)
-                        ? v.categoryItems : JSON.parse(JSON.stringify(DEFAULT_CATEGORY_ITEMS))
-                });
-                const isPassThrough = (e, st) => (st.passThroughCategories || []).includes(e.category);
-                // 投資＝ETF投資＋不算消費的類別；代墊不算投資（兩張圖表一律不顯示代墊）
-                const isInvestExpense = (e, st) => !isPassThrough(e, st) && (e.item === 'ETF投資' || st.nonConsumptionCategories.includes(e.category));
-                const isFundingEvent = (e, st) => st.fundingRules.some(r => r.category === e.category && r.item === e.item);
-
-                // 月收支表：用「金額」計算（錢實際流出／流入）
-                //   收入 = 收入（不含 ETF賣出）；消費支出 = 支出且非投資、非「非消費類別」；投資淨投入 = ETF投資 − ETF賣出
-                //   非消費類別下、既不是 ETF 的支出（例如單純存錢）→ 「其他儲蓄」，不會從表上消失
-                const calcLedger = (list, st) => {
-                    const months = {}, years = {};
-                    const pass = st.passThroughCategories || [];
-                    const bucket = (m, key) => (m[key] = m[key] || { income: 0, consume: 0, buy: 0, sell: 0, other: 0, advanceOut: 0, advanceIn: 0 });
-                    list.forEach(e => {
-                        const d = String(e.date || '');
-                        if (!/^\d{4}-\d{2}/.test(d)) return;
-                        const amt = Number(e.amount || 0);
-                        if (!amt) return;
-                        [bucket(months, d.slice(0, 7)), bucket(years, d.slice(0, 4))].forEach(b => {
-                            if (e.item === 'ETF投資') b.buy += (e.type === '收入' ? -amt : amt);
-                            else if (e.item === 'ETF賣出') b.sell += (e.type === '支出' ? -amt : amt);
-                            else if (pass.includes(e.category)) { if (e.type === '收入') b.advanceIn += amt; else b.advanceOut += amt; }   // 代墊：不算消費、也不算收入
-                            else if (e.type === '收入') b.income += amt;
-                            else if (st.nonConsumptionCategories.includes(e.category)) b.other += amt;
-                            else b.consume += amt;
-                        });
-                        // 代墊收回：墊付支出若填了結算日，該筆金額算在「結算日所在月份」的收回（與消費月份可不同月）
-                        if (e.type === '支出' && e.item !== 'ETF投資' && e.item !== 'ETF賣出' && pass.includes(e.category)) {
-                            const sd = String(e.settlementDate || '');
-                            if (/^\d{4}-\d{2}/.test(sd)) [bucket(months, sd.slice(0, 7)), bucket(years, sd.slice(0, 4))].forEach(b => { b.advanceIn += amt; });
-                        }
-                    });
-                    return { months, years };
-                };
-                // 結餘 = 收入 − 消費支出；代墊淨額 = 墊付支出（消費月）− 收回（結算日所在月）；投資後現金 = 結餘 − 投資淨投入 − 其他儲蓄 − 代墊淨額
-                const deriveLedger = (b) => ({ ...b, net: b.income - b.consume, invest: b.buy - b.sell, advance: (b.advanceOut || 0) - (b.advanceIn || 0),
-                    after: b.income - b.consume - (b.buy - b.sell) - b.other - ((b.advanceOut || 0) - (b.advanceIn || 0)) });
-
-                // 項目圖：看「錢花在哪」。預付類付款方式用已付金額，其他用金額；排除儲值事件（避免和之後的分項使用重複）
-                const buildItemRows = (list, st, includeInvest) => {
-                    const out = [];
-                    list.forEach(e => {
-                        if (e.type !== '支出') return;
-                        if (isPassThrough(e, st)) return;   // 代墊不出現在圖表
-                        if (!includeInvest && isInvestExpense(e, st)) return;
-                        if (isFundingEvent(e, st)) return;
-                        const prepaid = st.prepaidMethods.includes(e.paymentMethod);
-                        const amt = Number(e.amount || 0), paid = Number(e.paidAmount || 0);
-                        const value = prepaid ? (paid > 0 ? paid : amt) : amt;
-                        if (!(value > 0)) return;
-                        out.push({ e, value, source: prepaid ? 'prepaid' : 'self' });
-                    });
-                    return out;
-                };
-                const aggregateItems = (rows, topN) => {
-                    const map = {};
-                    rows.forEach(r => {
-                        const key = r.e.item || '(未填項目)';
-                        const m = map[key] || (map[key] = { item: key, self: 0, prepaid: 0, cats: {}, rows: [] });
-                        m[r.source === 'prepaid' ? 'prepaid' : 'self'] += r.value;
-                        const c = r.e.category || '(未分類)';
-                        m.cats[c] = (m.cats[c] || 0) + r.value;
-                        m.rows.push(r);
-                    });
-                    const arr = Object.values(map).map(m => ({ ...m, total: m.self + m.prepaid, category: Object.entries(m.cats).sort((a, b) => b[1] - a[1])[0][0] }))
-                        .sort((a, b) => b.total - a.total);
-                    const top = arr.slice(0, topN);
-                    const rest = arr.slice(topN);
-                    if (rest.length) {
-                        const self = rest.reduce((a, x) => a + x.self, 0), prepaid = rest.reduce((a, x) => a + x.prepaid, 0);
-                        top.push({ item: '其他', isOther: true, self, prepaid, total: self + prepaid, category: '', rows: rest.flatMap(x => x.rows), parts: rest.map(x => ({ item: x.item, total: x.total })) });
-                    }
-                    return top;
-                };
-                // 付款管道圖：看「錢從哪裡流出」，用金額；預設不含投資
-                const aggregatePayments = (list, st, includeInvest) => {
-                    const m = {};
-                    list.forEach(e => {
-                        if (e.type !== '支出') return;
-                        if (isPassThrough(e, st)) return;   // 代墊不出現在圖表
-                        if (!includeInvest && isInvestExpense(e, st)) return;
-                        const amt = Number(e.amount || 0);
-                        if (!(amt > 0)) return;
-                        const k = e.paymentMethod || '未填';
-                        m[k] = (m[k] || 0) + amt;
-                    });
-                    return Object.entries(m).sort((a, b) => b[1] - a[1]);
-                };
-                // 類別 → 可選項目（'*' 代表全部項目）。新增收支時，項目只會列出所屬類別的項目。
-                const DEFAULT_CATEGORY_ITEMS = {
-                    '固定支出': ['交通費', '飲食費', '電話費', '剪頭髮', '採買費', '每月費用', '房租'],
-                    '變動支出': ['出遊', '購物', '醫療', '額外交通費', '額外飲食費'],
-                    '投資儲蓄': ['ETF投資', 'ETF賣出'],
-                    '保險': ['保險費'],
-                    '儲值': ['交通費'],
-                    '墊付': '*',
-                    '固定收入': ['薪資', '福利獎金', '年終', '年度獎金', '股息']
-                };
-                // 找出「類別／項目」不在對照表內的既有紀錄（類別不在表內也算）
-                const findCategoryMismatches = (list, map) => {
-                    const groups = {};
-                    list.forEach(e => {
-                        if (!e.category || !e.item) return;
-                        const allow = map[e.category];
-                        const ok = allow === '*' || (Array.isArray(allow) && allow.includes(e.item));
-                        if (ok) return;
-                        const key = `${e.category}||${e.item}`;
-                        const g = groups[key] || (groups[key] = { key, category: e.category, item: e.item, count: 0, ids: [] });
-                        g.count++; g.ids.push(e.id);
-                    });
-                    return Object.values(groups).sort((a, b) => b.count - a.count);
-                };
-                // 建議改成哪個類別：對照表中「允許這個項目」的第一個類別（不含目前的類別）
-                const suggestCategoryFor = (item, current, map) => Object.keys(map).find(c => c !== current && Array.isArray(map[c]) && map[c].includes(item)) || '';
-                // <<LEDGER-END>>
+// （LEDGER 區塊已移到 js/logic/，見檔頭 import）
 
                 const appSettings = ref((() => { try { const v = JSON.parse(localStorage.getItem('findash_settings_v1')); return withDefaultSettings(v); } catch (e) { return withDefaultSettings(null); } })());
                 watch(appSettings, (v) => { localStorage.setItem('findash_settings_v1', JSON.stringify(v)); pushToCloud(); }, { deep: true });
@@ -2779,13 +2490,6 @@
                 });
                 const stockFilterActive = computed(() => !!(stockSearch.value || stockFilterSymbols.value.length || stockFilterActions.value.length || stockFilterYears.value.length || stockFilterMonths.value.length));
                 const resetStockFilters = () => { selectedStockIds.value = []; stockSearch.value = ''; stockFilterSymbols.value = []; stockFilterActions.value = []; stockFilterYears.value = []; stockFilterMonths.value = []; };
-                // 篩選條件改變後，已經不在目前清單裡的勾選自動取消（合計也跟著更新）
-                const dropHiddenSelection = (selRef, list) => {
-                    if (!selRef.value.length) return;
-                    const vis = new Set(list.map(x => String(x.id)));
-                    const keep = selRef.value.filter(id => vis.has(String(id)));
-                    if (keep.length !== selRef.value.length) selRef.value = keep;
-                };
                 watch(filteredExpenses, (list) => dropHiddenSelection(selectedExpenseIds, list));
                 watch(filteredStockTrades, (list) => dropHiddenSelection(selectedStockIds, list));
                 const monthSelectOptions = Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} 月` }));
@@ -2884,75 +2588,7 @@
                     XLSX.writeFile(wb, `FinDash_財務報表_${todayStr()}.xlsx`);
                 };
 
-                // <<IMPORT-START>>
-                // 匯入檔的日期：支援 Excel 日期序號、2026/10/3、2026-10-03；無法辨識回傳 null，空白回傳 ''
-                const importDate = (v, ssf) => {
-                    if (v === null || v === undefined || v === '') return '';
-                    if (typeof v === 'number' && v > 20000 && v < 80000 && ssf && ssf.parse_date_code) {
-                        const p = ssf.parse_date_code(v);
-                        if (p) return `${p.y}-${String(p.m).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`;
-                    }
-                    const m = String(v).trim().match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
-                    return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : null;
-                };
-                const importExpKey = (e) => [e.date, e.category, e.item, String(e.content || ''), Number(e.amount || 0), e.paymentMethod].join('|');
-                const importStockKey = (t) => [t.date, t.symbol, t.action, Number(t.shares || 0), Number(t.price || 0)].join('|');
-                const importNum = (v) => Number(v === undefined || v === null || v === '' ? 0 : v);
-                // 解析（不寫入）：標出無效、疑似重複、不符合類別對照表的列
-                const buildImportPreview = (expRows, stockRows, existingExp, existingStocks, catItems, today, ssf) => {
-                    const expCount = {}, stCount = {}, stFirst = {};
-                    existingExp.forEach(e => { const k = importExpKey(e); expCount[k] = (expCount[k] || 0) + 1; });
-                    existingStocks.forEach(t => { const k = importStockKey({ ...t, symbol: cleanSymbol(t.symbol) }); stCount[k] = (stCount[k] || 0) + 1; if (!stFirst[k]) stFirst[k] = t.id; });
-                    const expenses = [], stocks = [];
-                    expRows.forEach((row, idx) => {
-                        if (!(row['金額'] || row['項目'])) return;
-                        const why = [];
-                        const typeRaw = String(row['收支類型'] || '支出').trim();
-                        const type = typeRaw === '收入' || typeRaw === '支出' ? typeRaw : null;
-                        if (!type) why.push('收支類型無法辨識');
-                        const date = (row['日期'] === undefined || row['日期'] === '') ? today : importDate(row['日期'], ssf);
-                        if (date === null) why.push('日期無法辨識');
-                        const amount = importNum(row['金額']), paidAmount = importNum(row['已付金額']);
-                        if (!isFinite(amount)) why.push('金額不是數字');
-                        if (!isFinite(paidAmount)) why.push('已付金額不是數字');
-                        const rec = {
-                            row: idx + 2, id: row['ID'] || '', stockId: row['關聯股票ID'] || '', type: type || '支出', date: date || '',
-                            category: String(row['類別'] || '變動支出'), item: String(row['項目'] || '其他'), content: row['內容'] === undefined ? '' : String(row['內容']),
-                            amount: isFinite(amount) ? amount : 0, paidAmount: isFinite(paidAmount) ? paidAmount : 0, paymentMethod: String(row['付款方式'] || '付現'),
-                            paymentDate: importDate(row['付款日'], ssf) || '', settlementDate: importDate(row['結算日'], ssf) || '', note: row['備註'] === undefined ? '' : String(row['備註'])
-                        };
-                        rec.invalid = why.join('、');
-                        const allow = catItems[rec.category];
-                        rec.mismatch = !rec.invalid && !(allow === '*' || (Array.isArray(allow) && allow.includes(rec.item)));
-                        const k = importExpKey(rec);
-                        rec.dup = !rec.invalid && (expCount[k] || 0) > 0;
-                        if (rec.dup) expCount[k]--;
-                        expenses.push(rec);
-                    });
-                    stockRows.forEach((row, idx) => {
-                        if (!(row['股票代碼'] || row['標的名稱'])) return;
-                        const why = [];
-                        const aRaw = String(row['交易類型'] || '買進').trim();
-                        const action = aRaw === '買進' || aRaw === '賣出' ? aRaw : null;
-                        if (!action) why.push('交易類型無法辨識');
-                        const date = (row['交易日期'] === undefined || row['交易日期'] === '') ? today : importDate(row['交易日期'], ssf);
-                        if (date === null) why.push('日期無法辨識');
-                        const symbol = cleanSymbol(row['股票代碼']);
-                        if (!symbol) why.push('缺少股票代碼');
-                        const price = importNum(row['成交單價']), shares = importNum(row['成交股數']), fee = importNum(row['手續費']), tax = importNum(row['交易稅']);
-                        if (![price, shares, fee, tax].every(isFinite)) why.push('單價、股數或費用不是數字');
-                        else if (!(shares > 0)) why.push('成交股數必須大於 0');
-                        const total = row['總金額'] ? Number(row['總金額']) : (action === '賣出' ? (price * shares) - fee - tax : (price * shares) + fee);
-                        const rec = { row: idx + 2, id: row['ID'] || '', action: action || '買進', date: date || '', symbol, name: String(row['標的名稱'] || 'ETF標的'), price, shares, fee, tax, totalAmount: isFinite(total) ? total : 0 };
-                        rec.invalid = why.join('、');
-                        const k = importStockKey(rec);
-                        rec.dup = !rec.invalid && (stCount[k] || 0) > 0;
-                        if (rec.dup) { stCount[k]--; rec.dupOfId = stFirst[k]; }
-                        stocks.push(rec);
-                    });
-                    return { expenses, stocks };
-                };
-                // <<IMPORT-END>>
+// （IMPORT 區塊已移到 js/logic/，見檔頭 import）
 
                 const showImportPreviewModal = ref(false);
                 const importPreview = ref(null);
@@ -3498,6 +3134,18 @@
                 };
             }
         }).component('multi-select', MultiSelect).mount('#app');
+    </script>
+    <div id="app-version" class="fixed bottom-1 left-2 text-[10px] text-slate-600 select-none"></div>
+    <script>
+        (function () {
+            var APP = 'V13';
+            try {
+                var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
+                var el = document.getElementById('app-version');
+                el.textContent = APP;
+                el.title = Object.keys(map).map(function (k) { return k.split('/').pop() + ' v' + (map[k].split('?v=')[1] || '?'); }).join('\n');
+            } catch (e) { /* 版本標示失敗不影響使用 */ }
+        })();
     </script>
 </body>
 </html>

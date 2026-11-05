@@ -1,0 +1,14 @@
+{
+  "name": "findash",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:css": "tailwindcss -c tailwind.config.cjs -i src/tailwind.input.css -o css/tailwind.css --minify",
+    "watch:css": "tailwindcss -c tailwind.config.cjs -i src/tailwind.input.css -o css/tailwind.css --watch",
+    "test": "node --test",
+    "smoke": "node tests/smoke.mjs"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}
