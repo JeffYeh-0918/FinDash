@@ -10,6 +10,9 @@
 | `css/app.css` | 手寫樣式 |
 | `css/tailwind.css` | Tailwind 預先編譯結果（**要先 build 並提交**） |
 | `js/logic/*.js` | 純邏輯模組（不碰畫面，可直接測試） |
+| `js/data/api.js` | **唯一與後端溝通的介面**（Apps Script、FinMind）；之後換資料庫只重寫它與 `convert.js` |
+| `js/data/convert.js` | 本機資料 ↔ 雲端資料的轉換（日期統一、股票代碼清理、上傳格式） |
+| `js/data/sync.js` | 同步引擎（版本號、未同步旗標、延遲上傳、衝突／縮水／雲端為空的保護），不含畫面 |
 | `tests/` | 自動測試 |
 
 ## 第一次設定（VS Code 終端機）

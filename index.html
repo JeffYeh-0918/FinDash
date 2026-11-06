@@ -15,7 +15,10 @@
     "./js/logic/reorder.js": "./js/logic/reorder.js?v=1",
     "./js/logic/trades.js": "./js/logic/trades.js?v=1",
     "./js/logic/ledger.js": "./js/logic/ledger.js?v=1",
-    "./js/logic/importer.js": "./js/logic/importer.js?v=1"
+    "./js/logic/importer.js": "./js/logic/importer.js?v=1",
+    "./js/data/convert.js": "./js/data/convert.js?v=1",
+    "./js/data/api.js": "./js/data/api.js?v=1",
+    "./js/data/sync.js": "./js/data/sync.js?v=1"
   }
 }
     </script>
@@ -1420,6 +1423,9 @@
         import { sortTrades, calcRealized, calcDividends, ymd, cardPeriod } from './js/logic/trades.js';
         import { DEFAULT_CATEGORY_COLORS, COLOR_CHOICES, assignCategoryColors, categoryKindOf, withDefaultSettings, isFundingEvent, calcLedger, deriveLedger, buildItemRows, aggregateItems, aggregatePayments, findCategoryMismatches, suggestCategoryFor } from './js/logic/ledger.js';
         import { buildImportPreview } from './js/logic/importer.js';
+        import { createApi } from './js/data/api.js';
+        import { createSyncEngine } from './js/data/sync.js';
+        import { parseSymbolFromCloud } from './js/data/convert.js';
         import { renameInSettings as renameInSettingsOn, removeFromSettings as removeFromSettingsOn } from './js/logic/settings-ops.js';
 
         const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick, provide, inject } = Vue;
@@ -1481,12 +1487,6 @@
                     const d = new Date();
                     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 };
-                // 統一日期格式為 YYYY-MM-DD（避免 2026/10/3 這類格式讓「當月」篩選漏掉資料）
-                const normDate = (v) => {
-                    if (!v) return '';
-                    const m = String(v).trim().match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
-                    return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : String(v).split('T')[0];
-                };
 
                 const fileInputRef = ref(null);
                 const draggedIndex = ref(null);
@@ -1497,11 +1497,6 @@
                 const showOptionManagerModal = ref(false);
                 const isSyncing = ref(false);
 
-                // 清理代碼格式（轉換為字串，維持純字串）
-                const parseSymbolFromCloud = (sym) => {
-                    let str = String(sym || '').replace(/^'/, '').trim().toUpperCase();
-                    return str;
-                };
 
                 const rawExpenses = JSON.parse(localStorage.getItem(STORAGE_KEY_EXPENSES)) || [];
                 const rawStocks = JSON.parse(localStorage.getItem(STORAGE_KEY_STOCKS)) || [];
@@ -1652,15 +1647,39 @@
                 const stockForm = ref({ action: '買進', date: todayStr(), symbol: '0050', name: '', price: null, shares: null, fee: 0, tax: 0 });
 
                 // ================= 雲端同步（版本號 + 安全保護） =================
-                const STORAGE_KEY_REV = 'findash_cloud_rev_v1';
-                const STORAGE_KEY_DIRTY = 'findash_dirty_v1';
-                let cloudRev = localStorage.getItem(STORAGE_KEY_REV);   // 本機所依據的雲端版本；null = 從未成功同步過
-                let dirty = localStorage.getItem(STORAGE_KEY_DIRTY) === '1'; // 有尚未上傳的本機修改
-                let suppressDirty = false;  // 套用雲端資料時，不要把它當成「使用者修改」
-                let pushTimer = null;
-                let pushing = false;
-                let editSeq = 0;
-                const syncState = ref(gasApiUrl.value ? (dirty ? 'dirty' : 'idle') : 'local');
+                // 同步流程與狀態在 js/data/sync.js，與後端溝通在 js/data/api.js，資料轉換在 js/data/convert.js。
+                // 這裡只負責接到畫面：狀態徽章、確認視窗、失敗提示、把雲端資料套用到畫面。
+                const api = createApi();
+                const engine = createSyncEngine({
+                    api,
+                    storage: localStorage,
+                    getUrl: () => gasApiUrl.value,
+                    getData: () => ({ expenses: expenses.value, settings: appSettings.value, stockTrades: stockTrades.value }),
+                    hooks: {
+                        onState: (s) => { syncState.value = s; },
+                        onBusy: (b) => { isSyncing.value = b; },
+                        confirm: (kind, info) => {
+                            if (kind === 'conflict') return askConfirm({ title: '另一台裝置已更新過資料', message: '要載入雲端最新資料嗎？\n本機尚未同步的修改會被取代。', confirmText: '載入雲端資料', cancelText: '先保留本機', danger: true });
+                            if (kind === 'shrink') return askConfirm({ title: '⚠️ 上傳筆數明顯變少', message: `雲端目前有 ${info.cloudCount} 筆紀錄，但這次只要上傳 ${info.newCount} 筆。\n這通常代表本機資料不完整。\n\n建議按「取消」，改按「同步」載入雲端資料。`, confirmText: '仍要覆蓋雲端', danger: true });
+                            return askConfirm({ title: '雲端是空的', message: '雲端試算表目前是空的，但本機有資料。\n要把本機資料上傳到雲端嗎？', confirmText: '上傳' });
+                        },
+                        applyData: (data) => {
+                            expenses.value = data.expenses || [];
+                            stockTrades.value = data.stockTrades || [];
+                            if (data.settings && typeof data.settings === 'object' && Object.keys(data.settings).length) {
+                                appSettings.value = withDefaultSettings(data.settings);
+                                if (Array.isArray(data.settings.hiddenOptions)) blacklistedOptions.value = [...appSettings.value.hiddenOptions];   // 雲端為準
+                                else appSettings.value.hiddenOptions = [...blacklistedOptions.value];                                             // 雲端還沒有這項設定：沿用本機的
+                            }
+                            clearUndo();
+                        },
+                        nextTick: () => nextTick(),
+                        afterApply: () => { refreshDynamicOptions(); nextTick(() => renderCharts()); },
+                        afterSync: () => { fetchStockPrices(true); },
+                        onFailure: (silent) => notifySyncFailure(silent)
+                    }
+                });
+                const syncState = ref(engine.initialState());
                 const syncBadge = computed(() => ({
                     idle:     { text: '雲端已連線', cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
                     ok:       { text: '雲端已同步', cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
@@ -1670,133 +1689,15 @@
                     conflict: { text: '需處理衝突', cls: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
                     local:    { text: '', cls: '' }
                 }[syncState.value] || { text: '', cls: '' }));
-                const setDirty = (v) => { dirty = v; localStorage.setItem(STORAGE_KEY_DIRTY, v ? '1' : '0'); };
-                const setRev = (r) => { cloudRev = (r === null || r === undefined) ? null : String(r); if (cloudRev === null) localStorage.removeItem(STORAGE_KEY_REV); else localStorage.setItem(STORAGE_KEY_REV, cloudRev); };
-                const cloudUrl = (query) => gasApiUrl.value + (gasApiUrl.value.includes('?') ? '&' : '?') + query + '&_=' + Date.now();
 
-                // 使用者有修改 → 標記未同步，並延遲 0.8 秒上傳（合併連續操作）
-                const pushToCloud = () => {
-                    if (suppressDirty) return;
-                    editSeq++;
-                    setDirty(true);
-                    if (!gasApiUrl.value) return;
-                    syncState.value = 'dirty';
-                    clearTimeout(pushTimer);
-                    pushTimer = setTimeout(() => { pushNow(); }, 800);
-                };
-
-                const applyCloudData = async (data) => {
-                    suppressDirty = true;
-                    expenses.value = (data.expenses || []).map(e => ({
-                        ...e, date: normDate(e.date), paymentDate: normDate(e.paymentDate), settlementDate: normDate(e.settlementDate)
-                    }));
-                    stockTrades.value = (data.stockTrades || []).map(t => ({ ...t, date: normDate(t.date), symbol: parseSymbolFromCloud(t.symbol) }));
-                    setRev(data.rev || 0);
-                    setDirty(false);
-                    if (data.settings && typeof data.settings === 'object' && Object.keys(data.settings).length) {
-                        appSettings.value = withDefaultSettings(data.settings);
-                        if (Array.isArray(data.settings.hiddenOptions)) blacklistedOptions.value = [...appSettings.value.hiddenOptions];   // 雲端為準
-                        else appSettings.value.hiddenOptions = [...blacklistedOptions.value];                                             // 雲端還沒有這項設定：沿用本機的
-                    }
-                    clearUndo();
-                    await nextTick();
-                    suppressDirty = false;
-                    refreshDynamicOptions();
-                    nextTick(() => renderCharts());
-                };
-
-                const pushNow = async (force = false) => {
-                    if (!gasApiUrl.value || pushing) return false;
-                    if (cloudRev === null && !force) return false;  // 從未拉過雲端資料前，絕不上傳（避免空資料覆蓋雲端）
-                    pushing = true;
-                    const seq = editSeq;
-                    syncState.value = 'syncing';
-                    try {
-                        const res = await fetch(gasApiUrl.value, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 不觸發 CORS 預檢，且能讀回結果
-                            redirect: 'follow',
-                            body: JSON.stringify({
-                                baseRev: cloudRev === null ? null : Number(cloudRev),
-                                force: !!force,
-                                expenses: expenses.value,
-                                settings: appSettings.value,
-                                stockTrades: stockTrades.value.map(t => ({ ...t, symbol: cleanSymbol(t.symbol) }))
-                            })
-                        });
-                        const r = await res.json();
-                        if (r.status === 'success') {
-                            setRev(r.rev);
-                            if (seq === editSeq) { setDirty(false); syncState.value = 'ok'; }
-                            else { syncState.value = 'dirty'; clearTimeout(pushTimer); pushTimer = setTimeout(() => { pushNow(); }, 300); }
-                            return true;
-                        }
-                        if (r.status === 'conflict') {
-                            syncState.value = 'conflict';
-                            pushing = false;
-                            if (await askConfirm({ title: '另一台裝置已更新過資料', message: '要載入雲端最新資料嗎？\n本機尚未同步的修改會被取代。', confirmText: '載入雲端資料', cancelText: '先保留本機', danger: true })) {
-                                const data = await (await fetch(cloudUrl('action=data'), { redirect: 'follow' })).json();
-                                if (data.status === 'success') { await applyCloudData(data); syncState.value = 'ok'; fetchStockPrices(true); }
-                            }
-                            return false;
-                        }
-                        if (r.status === 'shrink') {
-                            pushing = false;
-                            if (await askConfirm({ title: '⚠️ 上傳筆數明顯變少', message: `雲端目前有 ${r.cloudCount} 筆紀錄，但這次只要上傳 ${r.newCount} 筆。\n這通常代表本機資料不完整。\n\n建議按「取消」，改按「同步」載入雲端資料。`, confirmText: '仍要覆蓋雲端', danger: true })) {
-                                return await pushNow(true);
-                            }
-                            syncState.value = 'dirty';
-                            return false;
-                        }
-                        throw new Error(r.message || '未知錯誤');
-                    } catch (e) {
-                        console.warn('上傳雲端失敗:', e);
-                        syncState.value = 'error';
-                        notifySyncFailure(true);
-                        return false;
-                    } finally {
-                        pushing = false;
-                    }
-                };
-
+                // 使用者有修改 → 標記未同步並延遲上傳（22 處呼叫點沿用這個名稱）
+                const pushToCloud = () => engine.markEdited();
+                const pushNow = (force = false) => engine.pushNow(force);
                 const syncFromCloud = async (silent = false) => {
                     silent = (silent === true);   // 避免 @click 傳入事件物件
-                    if (!gasApiUrl.value) {
-                        if (!silent) { showToast('請先在右上角「工具 → API 設定」輸入 Google Apps Script 網址。', 'error'); showApiConfigModal.value = true; }
-                        return;
-                    }
-                    if (isSyncing.value) return;
-                    isSyncing.value = true;
-                    syncState.value = 'syncing';
-                    try {
-                        // 本機有尚未上傳的修改 → 先上傳，再拉取
-                        if (dirty && cloudRev !== null) {
-                            const ok = await pushNow();
-                            if (!ok) return;
-                        }
-                        const res = await fetch(cloudUrl('action=data'), { method: 'GET', redirect: 'follow' });
-                        const data = await res.json();
-                        if (data.status !== 'success') throw new Error(data.message || '雲端回傳格式錯誤');
-                        const cloudCount = (data.expenses || []).length + (data.stockTrades || []).length;
-                        const localCount = expenses.value.length + stockTrades.value.length;
-                        if (cloudCount === 0 && localCount > 0 && cloudRev === null) {
-                            if (await askConfirm({ title: '雲端是空的', message: '雲端試算表目前是空的，但本機有資料。\n要把本機資料上傳到雲端嗎？', confirmText: '上傳' })) {
-                                setRev(data.rev || 0);
-                                await pushNow();
-                                return;
-                            }
-                        }
-                        await applyCloudData(data);
-                        syncState.value = 'ok';
-                        fetchStockPrices(true);
-                        if (!silent) showToast('已從 Google 試算表同步資料');
-                    } catch (e) {
-                        console.warn('同步失敗:', e);
-                        syncState.value = 'error';
-                        notifySyncFailure(silent);
-                    } finally {
-                        isSyncing.value = false;
-                    }
+                    const r = await engine.syncFromCloud({ silent });
+                    if (r === 'no-url' && !silent) { showToast('請先在右上角「工具 → API 設定」輸入 Google Apps Script 網址。', 'error'); showApiConfigModal.value = true; }
+                    else if (r === 'synced' && !silent) showToast('已從 Google 試算表同步資料');
                 };
 
                 watch(expenses, (val) => {
@@ -1811,7 +1712,7 @@
                 watch(livePricesMap, (val) => localStorage.setItem(STORAGE_KEY_PRICES, JSON.stringify(val)), { deep: true });
                 const saveApiUrl = () => {
                     const newUrl = inputApiUrl.value.trim();
-                    if (newUrl !== gasApiUrl.value) setRev(null);   // 換了雲端，舊版本號作廢
+                    if (newUrl !== gasApiUrl.value) engine.resetRev();   // 換了雲端，舊版本號作廢
                     gasApiUrl.value = newUrl;
                     localStorage.setItem(STORAGE_KEY_GAS_URL, gasApiUrl.value);
                     showApiConfigModal.value = false;
@@ -1829,7 +1730,7 @@
                         localStorage.removeItem(STORAGE_KEY_EXPENSES);
                         localStorage.removeItem(STORAGE_KEY_STOCKS);
                         localStorage.removeItem(STORAGE_KEY_PRICES);
-                        setDirty(true);
+                        engine.setDirty(true);
                         pushNow(true);
                         showToast('已清空所有紀錄');
                         nextTick(() => renderCharts());
@@ -1907,8 +1808,7 @@
                     // 1) 優先：經由自己的 GAS 取得「盤中即時價」（TWSE 即時 → Yahoo 備援）
                     if (gasApiUrl.value) {
                         try {
-                            const res = await fetch(cloudUrl('action=prices&symbols=' + encodeURIComponent(symbols.join(','))), { redirect: 'follow' });
-                            const data = await res.json();
+                            const data = await api.fetchPrices(gasApiUrl.value, symbols);
                             if (data.status === 'success' && data.prices) {
                                 Object.entries(data.prices).forEach(([sym, p]) => {
                                     const price = Number(p && p.price);
@@ -1928,9 +1828,8 @@
                     const startDateStr = startDateObj.toISOString().split('T')[0];
                     for (const sym of symbols.filter(x => !got[x])) {
                         try {
-                            const res = await fetch(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${sym}&start_date=${startDateStr}`);
-                            if (res.ok) {
-                                const data = await res.json();
+                            const data = await api.fetchFinMindClose(sym, startDateStr);
+                            if (data) {
                                 if (data.data && data.data.length > 0) {
                                     const latest = data.data[data.data.length - 1];
                                     const closePrice = Number(latest.close);
@@ -3138,7 +3037,7 @@
     <div id="app-version" class="fixed bottom-1 left-2 text-[10px] text-slate-600 select-none"></div>
     <script>
         (function () {
-            var APP = 'V13';
+            var APP = 'V14';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');
