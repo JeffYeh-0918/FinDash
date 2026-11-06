@@ -18,7 +18,11 @@
     "./js/logic/importer.js": "./js/logic/importer.js?v=1",
     "./js/data/convert.js": "./js/data/convert.js?v=1",
     "./js/data/api.js": "./js/data/api.js?v=1",
-    "./js/data/sync.js": "./js/data/sync.js?v=1"
+    "./js/data/sync.js": "./js/data/sync.js?v=1",
+    "./js/features/charts.js": "./js/features/charts.js?v=1",
+    "./js/features/ui.js": "./js/features/ui.js?v=1",
+    "./js/features/import-export.js": "./js/features/import-export.js?v=1",
+    "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1"
   }
 }
     </script>
@@ -1426,6 +1430,10 @@
         import { createApi } from './js/data/api.js';
         import { createSyncEngine } from './js/data/sync.js';
         import { parseSymbolFromCloud } from './js/data/convert.js';
+        import { useCharts } from './js/features/charts.js';
+        import { useUi } from './js/features/ui.js';
+        import { useImportExport } from './js/features/import-export.js';
+        import { useSettingsUi } from './js/features/settings-ui.js';
         import { renameInSettings as renameInSettingsOn, removeFromSettings as removeFromSettingsOn } from './js/logic/settings-ops.js';
 
         const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick, provide, inject } = Vue;
@@ -2077,146 +2085,6 @@
                 };
                 const signedCurrency = (n) => `${n >= 0 ? '+' : '-'}${formatCurrency(Math.abs(n))}`;
 
-                // ---------- 預付與儲值設定 ----------
-                const showFlowSettingsModal = ref(false);
-                const categoryKind = (cat) => categoryKindOf(appSettings.value, cat);
-                const setCategoryKind = (cat, kind) => {
-                    const st = appSettings.value;
-                    st.nonConsumptionCategories = st.nonConsumptionCategories.filter(c => c !== cat);
-                    st.passThroughCategories = (st.passThroughCategories || []).filter(c => c !== cat);
-                    if (kind === 'noncons') st.nonConsumptionCategories.push(cat);
-                    else if (kind === 'pass') st.passThroughCategories.push(cat);
-                };
-                const colorPanelCat = ref('');
-                const toggleColorPanel = (cat) => { colorPanelCat.value = colorPanelCat.value === cat ? '' : cat; };
-                const setCategoryColor = (cat, color) => {
-                    if (!/^#[0-9a-fA-F]{6}$/.test(color || '')) return;
-                    const st = appSettings.value;
-                    if (!st.categoryColors) st.categoryColors = {};
-                    st.categoryColors[cat] = color.toLowerCase();
-                };
-                const toggleFlowList = (key, value) => {
-                    const list = appSettings.value[key];
-                    const i = list.indexOf(value);
-                    if (i >= 0) list.splice(i, 1); else list.push(value);
-                };
-                const addFundingRule = () => appSettings.value.fundingRules.push({ category: categoriesList.value[0] || '', item: itemsList.value[0] || '' });
-                const removeFundingRule = (i) => appSettings.value.fundingRules.splice(i, 1);
-                const fundingMatchCount = computed(() => expenses.value.filter(e => e.type === '支出' && isFundingEvent(e, appSettings.value)).length);
-                const prepaidUseCount = computed(() => expenses.value.filter(e => appSettings.value.prepaidMethods.includes(e.paymentMethod)).length);
-
-                // ---------- 新增收支：依類別分組顯示項目，避免選錯 ----------
-                const itemsByCategory = computed(() => {
-                    const m = {};
-                    expenses.value.forEach(e => { if (e.category && e.item) { const c = (m[e.category] = m[e.category] || {}); c[e.item] = (c[e.item] || 0) + 1; } });
-                    return m;
-                });
-                const itemGroups = (cat) => {
-                    const counts = itemsByCategory.value[cat] || {};
-                    const common = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).filter(i => itemsList.value.includes(i));
-                    return { common, others: itemsList.value.filter(i => !common.includes(i)) };
-                };
-
-                // ---------- 類別與項目對照 ----------
-                const showCategoryMapModal = ref(false);
-                const catMapKeys = computed(() => Object.keys(appSettings.value.categoryItems));
-                const allowedItems = (cat) => { const m = appSettings.value.categoryItems[cat]; return (m === undefined || m === '*') ? itemsList.value : m; };
-                const formCategories = computed(() => {
-                    const keys = catMapKeys.value, cur = expenseForm.value && expenseForm.value.category;
-                    return cur && !keys.includes(cur) ? [...keys, cur] : keys;     // 編輯舊紀錄時，保留它原本的（不在表內的）類別
-                });
-                const formItems = computed(() => {
-                    const list = allowedItems(expenseForm.value.category), cur = expenseForm.value.item;
-                    return { list, legacy: cur && !list.includes(cur) ? cur : '' };
-                });
-                const onCategoryChange = (ev) => {
-                    const list = allowedItems(ev.target.value);
-                    if (list.length && !list.includes(expenseForm.value.item)) expenseForm.value.item = list[0];
-                };
-                const isAllItems = (cat) => appSettings.value.categoryItems[cat] === '*';
-                const toggleAllItems = (cat) => {
-                    const m = appSettings.value.categoryItems;
-                    if (m[cat] === '*') m[cat] = Array.from(new Set(expenses.value.filter(e => e.category === cat && e.item).map(e => e.item)));
-                    else m[cat] = '*';
-                };
-                const catHasItem = (cat, it) => { const m = appSettings.value.categoryItems[cat]; return m === '*' || (Array.isArray(m) && m.includes(it)); };
-                const toggleCatItem = (cat, it) => {
-                    const m = appSettings.value.categoryItems[cat];
-                    if (!Array.isArray(m)) return;
-                    const i = m.indexOf(it);
-                    if (i >= 0) m.splice(i, 1); else m.push(it);
-                };
-                const allKnownItems = computed(() => Array.from(new Set([...itemsList.value, ...Object.values(appSettings.value.categoryItems).filter(Array.isArray).flat()])));
-                const mismatchGroups = computed(() => findCategoryMismatches(expenses.value, appSettings.value.categoryItems));
-                const mismatchTotal = computed(() => mismatchGroups.value.reduce((a, g) => a + g.count, 0));
-                const fixTarget = ref({});
-                const getFixTarget = (g) => fixTarget.value[g.key] !== undefined ? fixTarget.value[g.key] : suggestCategoryFor(g.item, g.category, appSettings.value.categoryItems);
-                const applyCategoryFix = (g) => {
-                    const target = getFixTarget(g);
-                    if (!target) return;
-                    const ids = new Set(g.ids.map(String));
-                    captureUndo();
-                    expenses.value.forEach(e => { if (ids.has(String(e.id))) e.category = target; });
-                    pushToCloud();
-                    armUndo(`已將 ${g.count} 筆「${g.item}」的類別改成「${target}」`);
-                    nextTick(() => renderCharts());
-                };
-
-                // ---------- 設定視窗（分頁）與清空重來 ----------
-                const catTab = ref('map');          // 類別與項目：'map' 類別涵蓋的項目｜'options' 選項增刪
-                const payTab = ref('methods');      // 付款與帳單：'methods' 付款方式｜'rules' 儲值事件與消費定義
-                const openCategorySettings = (tab = 'map') => { catTab.value = tab; showCategoryMapModal.value = true; };
-                const openPaymentSettings = (tab = 'methods') => { payTab.value = tab; showCardSettingsModal.value = true; };
-                const showResetModal = ref(false);
-                const resetConfirmText = ref('');
-                const openResetModal = () => { resetConfirmText.value = ''; showResetModal.value = true; };
-                const confirmResetAll = () => {
-                    if (resetConfirmText.value.trim() !== '清空') return;
-                    showResetModal.value = false;
-                    resetAllData();
-                };
-
-                // ---------- 統一的提示條、確認視窗、輸入視窗（取代瀏覽器內建的 alert / confirm / prompt） ----------
-                const toasts = ref([]);
-                let toastSeq = 0;
-                const dismissToast = (id) => { toasts.value = toasts.value.filter(t => t.id !== id); };
-                const showToast = (text, type = 'success', opts = {}) => {
-                    const id = ++toastSeq;
-                    toasts.value.push({ id, text, type, action: opts.action || null, actionLabel: opts.actionLabel || '' });
-                    if (toasts.value.length > 3) toasts.value.shift();
-                    setTimeout(() => dismissToast(id), opts.ms !== undefined ? opts.ms : (type === 'error' ? 9000 : 3500));
-                };
-                const runToastAction = (t) => { dismissToast(t.id); if (t.action) t.action(); };
-                const toastClass = (type) => ({
-                    success: 'border-emerald-500/40 text-emerald-200',
-                    error: 'border-rose-500/40 text-rose-200',
-                    info: 'border-sky-500/40 text-sky-200'
-                }[type] || 'border-slate-600 text-slate-200');
-                const dialog = ref(null);
-                const askConfirm = (o) => new Promise(resolve => {
-                    dialog.value = { kind: 'confirm', title: o.title || '請確認', message: o.message || '', confirmText: o.confirmText || '確定', cancelText: o.cancelText || '取消', danger: !!o.danger, hideCancel: !!o.hideCancel, resolve };
-                });
-                const askInput = (o) => new Promise(resolve => {
-                    dialog.value = { kind: 'input', title: o.title || '', label: o.label || '', value: o.value || '', confirmText: o.confirmText || '確定', cancelText: '取消', danger: false, hideCancel: false, resolve };
-                });
-                const closeDialog = (result) => { const d = dialog.value; dialog.value = null; if (d) d.resolve(result); };
-                const submitDialog = () => { const d = dialog.value; if (!d) return; closeDialog(d.kind === 'confirm' ? true : ((d.value || '').trim() || null)); };
-                const cancelDialog = () => { const d = dialog.value; if (!d) return; closeDialog(d.kind === 'confirm' ? false : null); };
-                // 同步／報價失敗提示（背景自動同步時，每分鐘最多提示一次，避免洗版）
-                let lastSyncFailToast = 0, lastPriceFailToast = 0;
-                const notifySyncFailure = (silent) => {
-                    const now = Date.now();
-                    if (silent && now - lastSyncFailToast < 60000) return;
-                    lastSyncFailToast = now;
-                    showToast('同步失敗：請確認網路與 API 網址。你的變更仍保留在這台裝置。', 'error', { action: () => syncFromCloud(), actionLabel: '重試' });
-                };
-                const notifyPriceFailure = (missing, silent) => {
-                    const now = Date.now();
-                    if (silent && now - lastPriceFailToast < 120000) return;
-                    lastPriceFailToast = now;
-                    showToast(`${missing.length} 檔（${missing.join('、')}）無法取得最新報價，已保留舊價並標示。`, 'error', { action: () => fetchStockPrices(), actionLabel: '重試' });
-                };
-
                 // ---------- 彈窗規則 ----------
                 //  資訊型／設定型：Esc 與點背景都可關閉；表單型：Esc 可關閉、點背景不關，有未儲存內容時先詢問；危險型：只有明確按鈕或 Esc
                 let expenseSnap = '', stockSnap = '';
@@ -2289,30 +2157,6 @@
                         if (lastFocusEl && document.contains(lastFocusEl)) { try { lastFocusEl.focus({ preventScroll: true }); } catch (e) {} }
                         lastFocusEl = null;
                     }
-                };
-
-                // ---------- 復原 ----------
-                let undoSnap = null, undoTimer = null;
-                const undoToast = ref(null);
-                const captureUndo = () => { undoSnap = { e: JSON.stringify(expenses.value), s: JSON.stringify(stockTrades.value) }; };
-                const armUndo = (msg) => {
-                    if (!undoSnap) return;
-                    undoToast.value = msg;
-                    clearTimeout(undoTimer);
-                    undoTimer = setTimeout(() => { undoToast.value = null; undoSnap = null; }, 10000);
-                };
-                const clearUndo = () => { clearTimeout(undoTimer); undoToast.value = null; undoSnap = null; };
-                const withUndo = (msg, fn) => { captureUndo(); fn(); armUndo(msg); };
-                const undoLast = () => {
-                    if (!undoSnap) return;
-                    const snap = undoSnap;
-                    clearUndo();
-                    expenses.value = JSON.parse(snap.e);
-                    stockTrades.value = JSON.parse(snap.s);
-                    selectedExpenseIds.value = [];
-                    selectedStockIds.value = [];
-                    pushToCloud();
-                    nextTick(() => renderCharts());
                 };
 
                 // ---------- 分頁（預設 100 筆，捲到底再載入） ----------
@@ -2438,152 +2282,6 @@
                     pushToCloud();
                     armUndo(`已複製 ${newItems.length} 筆資料至 ${targetCopyDate.value}`);
                     nextTick(() => renderCharts());
-                };
-
-                const exportToExcel = () => {
-                    if (typeof XLSX === 'undefined') {
-                        showToast('Excel 套件還在載入，請稍後再試。', 'error');
-                        return;
-                    }
-                    const wb = XLSX.utils.book_new();
-                    
-                    const formatSlashDate = (dateStr) => {
-                        if (!dateStr) return '';
-                        return String(dateStr).replace(/-/g, '/');
-                    };
-                    const reversedExpenses = [...expenses.value].reverse();
-                    const expData = reversedExpenses.map(e => ({
-                        'ID': e.id,
-                        '收支類型': e.type, 
-                        '日期': formatSlashDate(e.date), 
-                        '類別': e.category, 
-                        '項目': e.item,
-                        '內容': e.content, 
-                        '金額': e.amount, 
-                        '已付金額': e.paidAmount, 
-                        '付款方式': e.paymentMethod,
-                        '付款日': formatSlashDate(e.paymentDate), 
-                        '結算日': formatSlashDate(e.settlementDate),
-                        '備註': e.note,
-                        '關聯股票ID': e.stockId || ''
-                    }));
-                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expData), '日常收支紀錄');
-
-                    const reversedStockTrades = [...stockTrades.value].reverse();
-                    const stockData = reversedStockTrades.map(s => ({
-                        'ID': s.id,
-                        '交易類型': s.action, 
-                        '交易日期': formatSlashDate(s.date), 
-                        '股票代碼': cleanSymbol(s.symbol), 
-                        '標的名稱': s.name,
-                        '成交單價': s.price, 
-                        '成交股數': s.shares, 
-                        '手續費': s.fee, 
-                        '交易稅': s.tax, 
-                        '總金額': s.totalAmount
-                    }));
-                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stockData), 'ETF股票交易歷史');
-
-                    XLSX.writeFile(wb, `FinDash_財務報表_${todayStr()}.xlsx`);
-                };
-
-// （IMPORT 區塊已移到 js/logic/，見檔頭 import）
-
-                const showImportPreviewModal = ref(false);
-                const importPreview = ref(null);
-                const importSummary = computed(() => {
-                    const p = importPreview.value;
-                    if (!p) return null;
-                    const f = (list) => ({ total: list.length, invalid: list.filter(r => r.invalid).length, dup: list.filter(r => r.dup).length, mismatch: list.filter(r => r.mismatch).length,
-                        will: list.filter(r => !r.invalid && !(p.skipDup && r.dup)).length });
-                    return { exp: f(p.expenses), stock: f(p.stocks) };
-                });
-                const importIssues = computed(() => {
-                    const p = importPreview.value;
-                    if (!p) return [];
-                    const out = [];
-                    p.expenses.forEach(r => { const why = r.invalid || (r.dup ? '疑似重複（已有相同紀錄）' : (r.mismatch ? `不在類別對照表內（${r.category}／${r.item}）` : '')); if (why) out.push({ key: 'e' + r.row, kind: '收支', row: r.row, text: `${r.date} ${r.item} ${r.amount}`, why, bad: !!r.invalid }); });
-                    p.stocks.forEach(r => { const why = r.invalid || (r.dup ? '疑似重複（已有相同交易）' : ''); if (why) out.push({ key: 's' + r.row, kind: '股票', row: r.row, text: `${r.date} ${r.action} ${r.symbol} ${r.shares} 股`, why, bad: !!r.invalid }); });
-                    return out.sort((a, b) => Number(b.bad) - Number(a.bad));
-                });
-                const handleFileUpload = (e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    if (typeof XLSX === 'undefined') { showToast('Excel 套件還在載入，請稍後再試。', 'error'); e.target.value = ''; return; }
-                    const reader = new FileReader();
-                    reader.onload = (evt) => {
-                        try {
-                            const workbook = XLSX.read(new Uint8Array(evt.target.result), { type: 'array' });
-                            const sheetRows = (i) => workbook.SheetNames.length > i ? XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[i]]) : [];
-                            const p = buildImportPreview(sheetRows(0), sheetRows(1), expenses.value, stockTrades.value, appSettings.value.categoryItems, todayStr(), XLSX.SSF);
-                            if (!p.expenses.length && !p.stocks.length) { showToast('檔案裡沒有可匯入的資料，請確認欄位名稱（可看「匯入說明」）。', 'error'); return; }
-                            importPreview.value = { fileName: file.name, ...p, skipDup: true, createLinked: false };
-                            showImportPreviewModal.value = true;
-                        } catch (err) {
-                            console.warn('匯入解析失敗', err);
-                            showToast('解析檔案失敗，請確認是標準的 XLSX 或 CSV 格式。', 'error');
-                        }
-                    };
-                    reader.readAsArrayBuffer(file);
-                    e.target.value = '';
-                };
-                const commitImport = () => {
-                    const p = importPreview.value;
-                    if (!p) return;
-                    const keep = (r) => !r.invalid && !(p.skipDup && r.dup);
-                    captureUndo();
-                    const usedExp = new Set(expenses.value.map(e => String(e.id)));
-                    const usedTrade = new Set(stockTrades.value.map(t => String(t.id)));
-                    let seq = Date.now();
-                    const nextId = (used) => { while (used.has(String(seq))) seq++; used.add(String(seq)); return seq++; };
-                    const idMap = {};
-                    p.stocks.forEach(r => { if (r.dup && r.dupOfId !== undefined && r.id) idMap[String(r.id)] = r.dupOfId; });   // 重複而被略過的交易：連動收支改指向既有那筆
-                    const stocksToAdd = p.stocks.filter(keep).map(r => {
-                        const id = (r.id && !usedTrade.has(String(r.id))) ? r.id : nextId(usedTrade);
-                        usedTrade.add(String(id));
-                        if (r.id) idMap[String(r.id)] = id;
-                        return { id, action: r.action, date: r.date, symbol: r.symbol, name: r.name, price: r.price, shares: r.shares, fee: r.fee, tax: r.tax, totalAmount: r.totalAmount };
-                    });
-                    const expToAdd = p.expenses.filter(keep).map(r => {
-                        const id = (r.id && !usedExp.has(String(r.id))) ? r.id : nextId(usedExp);
-                        usedExp.add(String(id));
-                        let stockId = '';
-                        if (r.stockId) stockId = idMap[String(r.stockId)] !== undefined ? idMap[String(r.stockId)] : (stockTrades.value.some(t => String(t.id) === String(r.stockId)) ? r.stockId : '');
-                        return { id, type: r.type, date: r.date, category: r.category, item: r.item, content: r.content, amount: r.amount, paidAmount: r.paidAmount, stockId,
-                            paymentMethod: r.paymentMethod, paymentDate: r.paymentDate, settlementDate: r.settlementDate, note: r.note };
-                    });
-                    let linkedN = 0;
-                    if (p.createLinked) {
-                        const linkedIds = new Set(expToAdd.filter(e => e.stockId !== '').map(e => String(e.stockId)));
-                        const fresh = [];
-                        stocksToAdd.forEach(t => {
-                            if (linkedIds.has(String(t.id))) return;
-                            fresh.push({ id: nextId(usedExp), ...stockExpenseFields(t), stockId: t.id, paidAmount: 0, paymentMethod: DEFAULT_STOCK_PAY, paymentDate: '', settlementDate: '' });
-                        });
-                        linkedN = fresh.length;
-                        expToAdd.push(...fresh);
-                    }
-                    expenses.value = [...expToAdd, ...expenses.value];
-                    stockTrades.value = [...stocksToAdd, ...stockTrades.value];
-                    refreshDynamicOptions();
-                    pushToCloud();
-                    showImportPreviewModal.value = false;
-                    importPreview.value = null;
-                    armUndo(`已匯入 ${expToAdd.length - linkedN} 筆收支、${stocksToAdd.length} 筆股票` + (linkedN ? `，並產生 ${linkedN} 筆連動收支` : ''));
-                    nextTick(() => renderCharts());
-                };
-
-                const downloadTemplateExcel = () => {
-                    const wb = XLSX.utils.book_new();
-                    const sampleExpenses = [
-                        { 'ID': Date.now(), '收支類型': '支出', '日期': '2026/09/02', '類別': '變動支出', '項目': '飲食費', '內容': '全聯採買', '金額': 1850, '已付金額': 0, '付款方式': '國泰信用卡', '付款日': '2026/09/02', '結算日': '', '備註': '一週食材' }
-                    ];
-                    const sampleStocks = [
-                        { 'ID': Date.now() + 1000, '交易類型': '買進', '交易日期': '2026/03/15', '股票代碼': '0050', '標的名稱': '元大台灣50', '成交單價': 165.0, '成交股數': 2000, '手續費': 142, '交易稅': 0, '總金額': 330142 }
-                    ];
-                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sampleExpenses), '日常收支紀錄');
-                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sampleStocks), 'ETF股票交易歷史');
-                    XLSX.writeFile(wb, 'FinDash_匯入範例檔.xlsx');
                 };
 
                 const promptAddOption = async (type) => {
@@ -2845,121 +2543,6 @@
 
                 const formatCurrency = (val) => 'NT$ ' + Math.round(val || 0).toLocaleString('zh-TW');
 
-                let categoryChartInstance = null;
-                let paymentChartInstance = null;
-                let stockPLChartInstance = null;
-                let stockAllocationChartInstance = null;
-
-                // ---------- 圖表共用樣式：格線、刻度顏色、數值標籤（所有長條圖一致） ----------
-                const CHART_GRID = 'rgba(148,163,184,0.1)';
-                const valueAxisStyle = (extra = {}) => ({ beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: CHART_GRID }, ...extra });
-                const categoryAxisStyle = (extra = {}) => ({ ticks: { color: '#e2e8f0' }, grid: { display: false }, ...extra });
-                const valueLabelPlugin = {
-                    id: 'valueLabels',
-                    afterDatasetsDraw(chart, args, opts) {
-                        if (!opts || opts.display === false) return;
-                        const { ctx, scales } = chart;
-                        const horizontal = chart.options.indexAxis === 'y';
-                        ctx.save();
-                        ctx.font = '12px sans-serif';
-                        ctx.fillStyle = '#e2e8f0';
-                        ctx.textBaseline = 'middle';
-                        chart.data.labels.forEach((_, i) => {
-                            let total = 0, visible = false;
-                            chart.data.datasets.forEach((ds, di) => { if (chart.isDatasetVisible(di)) { total += Number(ds.data[i] || 0); visible = true; } });
-                            const bar = chart.getDatasetMeta(0).data[i];
-                            if (!visible || !bar || total === 0) return;
-                            const text = Math.round(total).toLocaleString();
-                            if (horizontal) { ctx.textAlign = 'left'; ctx.fillText(text, scales.x.getPixelForValue(total) + 6, bar.y); }
-                            else { ctx.textAlign = 'center'; ctx.fillText(text, bar.x, scales.y.getPixelForValue(total) + (total >= 0 ? -10 : 12)); }
-                        });
-                        ctx.restore();
-                    }
-                };
-
-                const renderCharts = () => {
-                    const itemCtx = document.getElementById('itemChart')?.getContext('2d');
-                    if (itemCtx) {
-                        if (categoryChartInstance) categoryChartInstance.destroy();
-                        const items = itemChartData.value;
-                        const base = items.map(x => x.isOther ? '#64748b' : catChartColor(x.category));
-                        categoryChartInstance = new Chart(itemCtx, {
-                            type: 'bar',
-                            data: {
-                                labels: items.map(x => x.item),
-                                datasets: [
-                                    { label: '自己付', data: items.map(x => x.self), backgroundColor: base, borderRadius: 4 },
-                                    { label: '每月預付', data: items.map(x => x.prepaid), backgroundColor: base.map(c => lightColor(c)), borderColor: base, borderWidth: 1, borderRadius: 4 }
-                                ]
-                            },
-                            options: {
-                                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                                layout: { padding: { right: 64 } },
-                                plugins: {
-                                    legend: { display: false },
-                                    valueLabels: { display: true },
-                                    tooltip: { callbacks: { label: (c) => `${c.dataset.label}：NT$ ${Number(c.raw || 0).toLocaleString()}` } }
-                                },
-                                scales: { x: valueAxisStyle({ stacked: true }), y: categoryAxisStyle({ stacked: true }) },
-                                onClick: (evt, els) => { if (els.length) openItemDetail(itemChartData.value[els[0].index]); },
-                                onHover: (evt, els) => { if (evt.native && evt.native.target) evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; }
-                            },
-                            plugins: [valueLabelPlugin]
-                        });
-                    }
-
-                    const paymentCtx = document.getElementById('paymentChart')?.getContext('2d');
-                    if (paymentCtx) {
-                        if (paymentChartInstance) paymentChartInstance.destroy();
-                        const pay = paymentChartData.value;
-                        paymentChartInstance = new Chart(paymentCtx, {
-                            type: 'bar',
-                            data: { labels: pay.map(p => p[0]), datasets: [{ label: '支出 (NT$)', data: pay.map(p => p[1]), backgroundColor: 'rgba(99, 102, 241, 0.7)', borderRadius: 4 }] },
-                            options: {
-                                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                                layout: { padding: { right: 64 } },
-                                plugins: { legend: { display: false }, valueLabels: { display: true } },
-                                scales: { x: valueAxisStyle(), y: categoryAxisStyle() }
-                            },
-                            plugins: [valueLabelPlugin]
-                        });
-                    }
-
-                    const stockPLCtx = document.getElementById('stockPLChart')?.getContext('2d');
-                    if (stockPLCtx) {
-                        if (stockPLChartInstance) stockPLChartInstance.destroy();
-                        const holdings = stockHoldings.value;
-                        stockPLChartInstance = new Chart(stockPLCtx, {
-                            type: 'bar',
-                            data: {
-                                labels: holdings.map(h => h.symbol),
-                                datasets: [{ label: '未實現損益 (NT$)', data: holdings.map(h => h.unrealizedPL), backgroundColor: holdings.map(h => h.unrealizedPL >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(244, 63, 94, 0.7)'), borderRadius: 4 }]
-                            },
-                            options: {
-                                responsive: true, maintainAspectRatio: false,
-                                layout: { padding: { top: 18, bottom: 6 } },
-                                plugins: { legend: { display: false }, valueLabels: { display: true } },
-                                scales: { x: categoryAxisStyle(), y: valueAxisStyle({ beginAtZero: false }) }
-                            },
-                            plugins: [valueLabelPlugin]
-                        });
-                    }
-
-                    const stockAllocCtx = document.getElementById('stockAllocationChart')?.getContext('2d');
-                    if (stockAllocCtx) {
-                        if (stockAllocationChartInstance) stockAllocationChartInstance.destroy();
-                        const holdings = stockHoldings.value;
-                        stockAllocationChartInstance = new Chart(stockAllocCtx, {
-                            type: 'doughnut',
-                            data: {
-                                labels: holdings.map(h => `${h.symbol} ${h.name}`),
-                                datasets: [{ data: holdings.map(h => h.marketValue), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'], borderWidth: 0 }]
-                            },
-                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
-                        });
-                    }
-                };
-
                 // 新增明細、載入更多、開啟彈窗後，補建新出現的圖示（不用再重新整理）
                 let iconRaf = 0;
                 onUpdated(() => {
@@ -2997,6 +2580,54 @@
                     window.addEventListener('online', () => { if (gasApiUrl.value) syncFromCloud(true); });
                     // 盤中每 60 秒自動更新市價
                     setInterval(() => { if (document.visibilityState === 'visible' && isMarketOpen()) fetchStockPrices(true); }, 60000);
+                });
+
+                // ================= 功能模組（js/features/）：把共用環境交給各模組，取回它們對外提供的成員 =================
+                const ctx = {
+                    itemChartData, catChartColor, lightColor, openItemDetail, paymentChartData, stockHoldings,
+                    syncFromCloud, fetchStockPrices, expenses, stockTrades, selectedExpenseIds, selectedStockIds,
+                    pushToCloud, todayStr, appSettings, stockExpenseFields, DEFAULT_STOCK_PAY, refreshDynamicOptions,
+                    categoriesList, itemsList, expenseForm, showCardSettingsModal, resetAllData
+                };
+                const {
+                    renderCharts
+                } = useCharts(ctx);
+                Object.assign(ctx, {
+                    renderCharts
+                });
+                const {
+                    toasts, dismissToast, showToast, runToastAction, toastClass, dialog,
+                    askConfirm, askInput, submitDialog, cancelDialog, notifySyncFailure, notifyPriceFailure,
+                    undoToast, captureUndo, armUndo, clearUndo, withUndo, undoLast
+                } = useUi(ctx);
+                Object.assign(ctx, {
+                    toasts, dismissToast, showToast, runToastAction, toastClass, dialog,
+                    askConfirm, askInput, submitDialog, cancelDialog, notifySyncFailure, notifyPriceFailure,
+                    undoToast, captureUndo, armUndo, clearUndo, withUndo, undoLast
+                });
+                const {
+                    exportToExcel, showImportPreviewModal, importPreview, importSummary, importIssues, handleFileUpload,
+                    commitImport, downloadTemplateExcel
+                } = useImportExport(ctx);
+                Object.assign(ctx, {
+                    exportToExcel, showImportPreviewModal, importPreview, importSummary, importIssues, handleFileUpload,
+                    commitImport, downloadTemplateExcel
+                });
+                const {
+                    showFlowSettingsModal, categoryKind, setCategoryKind, colorPanelCat, toggleColorPanel, setCategoryColor,
+                    toggleFlowList, addFundingRule, removeFundingRule, fundingMatchCount, prepaidUseCount, itemGroups,
+                    showCategoryMapModal, catMapKeys, allowedItems, formCategories, formItems, onCategoryChange,
+                    isAllItems, toggleAllItems, catHasItem, toggleCatItem, allKnownItems, mismatchGroups,
+                    mismatchTotal, fixTarget, getFixTarget, applyCategoryFix, catTab, payTab,
+                    openCategorySettings, openPaymentSettings, showResetModal, resetConfirmText, openResetModal, confirmResetAll
+                } = useSettingsUi(ctx);
+                Object.assign(ctx, {
+                    showFlowSettingsModal, categoryKind, setCategoryKind, colorPanelCat, toggleColorPanel, setCategoryColor,
+                    toggleFlowList, addFundingRule, removeFundingRule, fundingMatchCount, prepaidUseCount, itemGroups,
+                    showCategoryMapModal, catMapKeys, allowedItems, formCategories, formItems, onCategoryChange,
+                    isAllItems, toggleAllItems, catHasItem, toggleCatItem, allKnownItems, mismatchGroups,
+                    mismatchTotal, fixTarget, getFixTarget, applyCategoryFix, catTab, payTab,
+                    openCategorySettings, openPaymentSettings, showResetModal, resetConfirmText, openResetModal, confirmResetAll
                 });
 
                 return {
@@ -3037,7 +2668,7 @@
     <div id="app-version" class="fixed bottom-1 left-2 text-[10px] text-slate-600 select-none"></div>
     <script>
         (function () {
-            var APP = 'V14';
+            var APP = 'V15';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');

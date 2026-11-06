@@ -13,14 +13,29 @@
 | `js/data/api.js` | **唯一與後端溝通的介面**（Apps Script、FinMind）；之後換資料庫只重寫它與 `convert.js` |
 | `js/data/convert.js` | 本機資料 ↔ 雲端資料的轉換（日期統一、股票代碼清理、上傳格式） |
 | `js/data/sync.js` | 同步引擎（版本號、未同步旗標、延遲上傳、衝突／縮水／雲端為空的保護），不含畫面 |
+| `js/features/*.js` | 功能模組：從主程式搬出的 JS 邏輯，一個檔案管一塊功能（見下） |
 | `tests/` | 自動測試 |
+| `tools/` | 開發用檢查工具（變數宣告檢查、介面契約檢查、拆檔產生器） |
+
+## 功能模組（js/features/）
+
+| 檔案 | 管什麼 |
+|---|---|
+| `ui.js` | 提示條、確認／輸入視窗、復原 |
+| `charts.js` | 所有圖表（Chart.js） |
+| `import-export.js` | Excel 匯入／匯出、匯入預覽 |
+| `settings-ui.js` | 設定視窗：類別與項目（屬性、顏色）、付款與帳單、清空重來 |
+
+每個檔案是一個函式 `useXxx(ctx)`：`ctx` 是共用環境（主程式與其他模組的成員），函式開頭用 `const { … } = ctx` 取用需要的東西，最後 `return` 提供給別人的東西。
+**要在模組裡用到新的外部成員**：先確認它在 `index.html` 的 `const ctx = { … }` 清單裡（或是前面模組已提供），再加進該檔案開頭的 `const { … } = ctx`。跑 `npm run verify` 會告訴你有沒有漏接。
 
 ## 第一次設定（VS Code 終端機）
 
 ```
 npm install
 npm run build:css      # 產生 css/tailwind.css
-npm test               # 跑測試
+npm test               # 跑單元測試
+npm run verify         # 一次跑：單元測試＋變數宣告檢查＋介面契約檢查＋煙霧測試
 ```
 
 ## 本機預覽
@@ -33,4 +48,4 @@ npm test               # 跑測試
 - 改了畫面或任何 `index.html` 內的 Tailwind class → `npm run build:css`（或開著 `npm run watch:css`）→ 一起提交 `css/tailwind.css`。
 - 改了某個 `js/logic/xxx.js` → 到 `index.html` 的 import map 把該檔案的 `?v=` 數字加 1。
 - 改了 `css/app.css` 或重新編譯 Tailwind → 把 `<link>` 後面的 `?v=` 加 1。
-- 提交前 `npm test`。
+- 提交前 `npm run verify`。
