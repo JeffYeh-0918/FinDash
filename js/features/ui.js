@@ -1,10 +1,19 @@
 // FinDash 功能模組：提示條、確認／輸入視窗、復原
-// 由 index.html 的 setup() 原文搬出；ctx 是共用環境（主程式與其他模組的成員）。
+// 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
 
 const { ref, nextTick } = Vue;
 
 export const useUi = (ctx) => {
-    const { syncFromCloud, fetchStockPrices, expenses, stockTrades, selectedExpenseIds, selectedStockIds, pushToCloud, renderCharts } = ctx;
+    // 取用前面模組已建立的成員
+    const {
+        expenses, stockTrades, selectedExpenseIds, selectedStockIds
+    } = ctx;
+
+    // 取用「較晚建立」的模組成員（模組之間互相呼叫）：用到的當下才去 ctx 找
+    const syncFromCloud = (...args) => ctx.syncFromCloud(...args);
+    const fetchStockPrices = (...args) => ctx.fetchStockPrices(...args);
+    const pushToCloud = (...args) => ctx.pushToCloud(...args);
+    const renderCharts = (...args) => ctx.renderCharts(...args);
 
     // ---------- 統一的提示條、確認視窗、輸入視窗（取代瀏覽器內建的 alert / confirm / prompt） ----------
     const toasts = ref([]);
@@ -70,5 +79,9 @@ export const useUi = (ctx) => {
         nextTick(() => renderCharts());
     };
 
-    return { toasts, dismissToast, showToast, runToastAction, toastClass, dialog, askConfirm, askInput, submitDialog, cancelDialog, notifySyncFailure, notifyPriceFailure, undoToast, captureUndo, armUndo, clearUndo, withUndo, undoLast };
+    return {
+        toasts, dismissToast, showToast, runToastAction, toastClass, dialog,
+        askConfirm, askInput, submitDialog, cancelDialog, notifySyncFailure, notifyPriceFailure,
+        undoToast, captureUndo, armUndo, clearUndo, withUndo, undoLast
+    };
 };

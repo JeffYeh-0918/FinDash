@@ -7,7 +7,7 @@
     "watch:css": "tailwindcss -c tailwind.config.cjs -i src/tailwind.input.css -o css/tailwind.css --watch",
     "test": "node --test",
     "smoke": "node tests/smoke.mjs",
-    "check": "node --expose-internals tools/freevars.mjs && node --expose-internals tools/contract.mjs",
+    "check": "node --expose-internals tools/freevars.mjs && node --expose-internals tools/contract.mjs && node --expose-internals tools/letcheck.mjs",
     "verify": "npm test && npm run check && npm run smoke"
   },
   "devDependencies": {

@@ -1,12 +1,19 @@
 // FinDash 功能模組：Excel 匯入／匯出
-// 由 index.html 的 setup() 原文搬出；ctx 是共用環境（主程式與其他模組的成員）。
+// 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
 import { cleanSymbol } from '../logic/symbol.js';
 import { buildImportPreview } from '../logic/importer.js';
 
 const { ref, computed, nextTick } = Vue;
 
 export const useImportExport = (ctx) => {
-    const { expenses, stockTrades, todayStr, appSettings, stockExpenseFields, DEFAULT_STOCK_PAY, refreshDynamicOptions, pushToCloud, showToast, captureUndo, armUndo, renderCharts } = ctx;
+    // 取用前面模組已建立的成員
+    const {
+        showToast, expenses, stockTrades, todayStr, appSettings, captureUndo,
+        DEFAULT_STOCK_PAY, refreshDynamicOptions, pushToCloud, armUndo, renderCharts
+    } = ctx;
+
+    // 取用「較晚建立」的模組成員（模組之間互相呼叫）：用到的當下才去 ctx 找
+    const stockExpenseFields = (...args) => ctx.stockExpenseFields(...args);
 
     const exportToExcel = () => {
         if (typeof XLSX === 'undefined') {
@@ -151,5 +158,8 @@ export const useImportExport = (ctx) => {
         XLSX.writeFile(wb, 'FinDash_匯入範例檔.xlsx');
     };
 
-    return { exportToExcel, showImportPreviewModal, importPreview, importSummary, importIssues, handleFileUpload, commitImport, downloadTemplateExcel };
+    return {
+        exportToExcel, showImportPreviewModal, importPreview, importSummary, importIssues, handleFileUpload,
+        commitImport, downloadTemplateExcel
+    };
 };

@@ -1,11 +1,15 @@
 // FinDash 功能模組：設定視窗：類別與項目、付款與帳單、清空重來
-// 由 index.html 的 setup() 原文搬出；ctx 是共用環境（主程式與其他模組的成員）。
+// 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
 import { categoryKindOf, isFundingEvent, findCategoryMismatches, suggestCategoryFor } from '../logic/ledger.js';
 
 const { ref, computed, nextTick } = Vue;
 
 export const useSettingsUi = (ctx) => {
-    const { appSettings, categoriesList, itemsList, expenses, expenseForm, pushToCloud, showCardSettingsModal, resetAllData, captureUndo, armUndo, renderCharts } = ctx;
+    // 取用前面模組已建立的成員
+    const {
+        appSettings, categoriesList, itemsList, expenses, expenseForm, captureUndo,
+        pushToCloud, armUndo, renderCharts, showCardSettingsModal, resetAllData
+    } = ctx;
 
     // ---------- 預付與儲值設定 ----------
     const showFlowSettingsModal = ref(false);
@@ -105,5 +109,12 @@ export const useSettingsUi = (ctx) => {
         resetAllData();
     };
 
-    return { showFlowSettingsModal, categoryKind, setCategoryKind, colorPanelCat, toggleColorPanel, setCategoryColor, toggleFlowList, addFundingRule, removeFundingRule, fundingMatchCount, prepaidUseCount, itemGroups, showCategoryMapModal, catMapKeys, allowedItems, formCategories, formItems, onCategoryChange, isAllItems, toggleAllItems, catHasItem, toggleCatItem, allKnownItems, mismatchGroups, mismatchTotal, fixTarget, getFixTarget, applyCategoryFix, catTab, payTab, openCategorySettings, openPaymentSettings, showResetModal, resetConfirmText, openResetModal, confirmResetAll };
+    return {
+        showFlowSettingsModal, categoryKind, setCategoryKind, colorPanelCat, toggleColorPanel, setCategoryColor,
+        toggleFlowList, addFundingRule, removeFundingRule, fundingMatchCount, prepaidUseCount, itemGroups,
+        showCategoryMapModal, catMapKeys, allowedItems, formCategories, formItems, onCategoryChange,
+        isAllItems, toggleAllItems, catHasItem, toggleCatItem, allKnownItems, mismatchGroups,
+        mismatchTotal, fixTarget, getFixTarget, applyCategoryFix, catTab, payTab,
+        openCategorySettings, openPaymentSettings, showResetModal, resetConfirmText, openResetModal, confirmResetAll
+    };
 };

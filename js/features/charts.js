@@ -1,8 +1,14 @@
 // FinDash 功能模組：圖表（Chart.js）
-// 由 index.html 的 setup() 原文搬出；ctx 是共用環境（主程式與其他模組的成員）。
+// 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
 
 export const useCharts = (ctx) => {
-    const { itemChartData, catChartColor, lightColor, openItemDetail, paymentChartData, stockHoldings } = ctx;
+    // 取用「較晚建立」的模組成員（模組之間互相呼叫）：用到的當下才去 ctx 找
+    const itemChartData = { get value() { return ctx.itemChartData.value; }, set value(v) { ctx.itemChartData.value = v; } };
+    const catChartColor = (...args) => ctx.catChartColor(...args);
+    const lightColor = (...args) => ctx.lightColor(...args);
+    const openItemDetail = (...args) => ctx.openItemDetail(...args);
+    const paymentChartData = { get value() { return ctx.paymentChartData.value; }, set value(v) { ctx.paymentChartData.value = v; } };
+    const stockHoldings = { get value() { return ctx.stockHoldings.value; }, set value(v) { ctx.stockHoldings.value = v; } };
 
     let categoryChartInstance = null;
     let paymentChartInstance = null;
@@ -117,5 +123,7 @@ export const useCharts = (ctx) => {
         }
     };
 
-    return { renderCharts };
+    return {
+        renderCharts
+    };
 };
