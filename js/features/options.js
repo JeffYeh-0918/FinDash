@@ -66,9 +66,12 @@ export const useOptions = (ctx) => {
             if (e.paymentMethod && !blacklistedOptions.value.includes(e.paymentMethod)) paySet.add(e.paymentMethod);
         });
 
-        categoriesList.value = Array.from(catSet);
-        itemsList.value = Array.from(itemSet);
-        paymentMethodsList.value = Array.from(paySet);
+        // 「已刪除」黑名單是唯一準則：連本機清單裡殘留的（例如別台裝置刪除後同步過來的）也要拿掉。
+        // 本機清單只存在各裝置自己的瀏覽器，不會同步；黑名單才會同步，兩邊要以黑名單為準。
+        const hidden = new Set(blacklistedOptions.value);
+        categoriesList.value = Array.from(catSet).filter(x => !hidden.has(x));
+        itemsList.value = Array.from(itemSet).filter(x => !hidden.has(x));
+        paymentMethodsList.value = Array.from(paySet).filter(x => !hidden.has(x));
 
         localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(categoriesList.value));
         localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(itemsList.value));

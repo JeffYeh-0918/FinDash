@@ -20,7 +20,7 @@
     "./js/data/api.js": "./js/data/api.js?v=1",
     "./js/data/sync.js": "./js/data/sync.js?v=1",
     "./js/features/state.js": "./js/features/state.js?v=1",
-    "./js/features/options.js": "./js/features/options.js?v=1",
+    "./js/features/options.js": "./js/features/options.js?v=2",
     "./js/features/ui.js": "./js/features/ui.js?v=1",
     "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=1",
     "./js/features/modals.js": "./js/features/modals.js?v=1",
@@ -29,14 +29,15 @@
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
     "./js/features/expenses.js": "./js/features/expenses.js?v=1",
     "./js/features/stocks.js": "./js/features/stocks.js?v=1",
-    "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=1"
+    "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=2",
+    "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=2"
   }
 }
     </script>
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=1" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=1">
+    <link rel="stylesheet" href="css/app.css?v=3">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -197,7 +198,7 @@
                             <span>淨儲蓄率</span>
                             <span class="text-slate-200 font-bold">{{ monthlySavingsRate }}%</span>
                         </p>
-                        <p class="text-xs sm:text-xs text-slate-400 mt-0.5 flex justify-between"><span>投資淨投入</span><span class="text-slate-300">{{ formatCurrency(monthlyInvestNet) }}</span></p>
+                        <p class="text-xs sm:text-xs text-slate-400 mt-0.5 flex justify-between"><span>{{ monthlyInvestNet < 0 ? '投資淨回收' : '投資淨投入' }}</span><span :class="monthlyInvestNet < 0 ? 'text-emerald-400' : 'text-slate-300'">{{ formatCurrency(Math.abs(monthlyInvestNet)) }}</span></p>
                     </div>
                 </div>
                 <div class="glass-card rounded-2xl p-3 sm:p-5">
@@ -301,9 +302,9 @@
                     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-200">日常交易明細清單</h3>
-                            <p class="text-xs text-slate-400">點選可修改；<span class="text-emerald-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>；勾選可批次複製、填日期或刪除</p>
+                            <p class="fd-desktop text-xs text-slate-400">點選可修改；<span class="text-emerald-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>；勾選可批次複製、填日期或刪除</p>
                         </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto lg:grid-cols-[repeat(4,7.5rem)]">
+                        <div class="fd-desktop grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto lg:grid-cols-[repeat(4,7.5rem)]">
                             <button @click="openBatchCopyModal" :disabled="selectedExpenseIds.length === 0" class="w-full h-10 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-emerald-600 hover:bg-emerald-500">批次複製 ({{ selectedExpenseIds.length }})</button>
                             <button @click="openBatchDateModal('payment')" :disabled="selectedExpenseIds.length === 0" class="w-full h-10 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-indigo-600 hover:bg-indigo-500">填付款日 ({{ selectedExpenseIds.length }})</button>
                             <button @click="openBatchDateModal('settlement')" :disabled="selectedExpenseIds.length === 0" class="w-full h-10 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-amber-600 hover:bg-amber-500">填結算日 ({{ selectedExpenseIds.length }})</button>
@@ -387,7 +388,41 @@
                         </div>
                     </div>
 
-                    <div @scroll="onExpenseScroll" class="overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800">
+                    <!-- 手機版：卡片列表（長按選取、點一下修改） -->
+                    <div class="fd-mobile fdm" style="--fdm-accent:#34d399;--fdm-accent-bg:rgba(52,211,153,.15)">
+                        <div class="fdm-sec">
+                            <span class="fdm-sq"><i data-lucide="receipt" class="w-4 h-4"></i></span>
+                            <div style="min-width:0"><div class="fdm-title">日常交易明細</div><div class="fdm-sub">{{ filteredExpenses.length }} 筆<span v-if="expenseFilterActive"> · 已套用篩選</span> · 可長按卡片選取</div></div>
+                            <button type="button" class="fdm-sel-btn" @click="fdmSelecting('expense') ? fdmDone('expense') : fdmEnter('expense')">{{ fdmSelecting('expense') ? '完成' : '選取' }}</button>
+                        </div>
+                        <div v-if="filteredExpenses.length === 0" class="fdm-empty">無符合條件的收支紀錄</div>
+                        <template v-for="g in expenseDayGroups" :key="g.id">
+                            <div class="fdm-day"><span>{{ g.label }}</span><span><template v-if="g.exp">支出 {{ formatCurrency(g.exp) }}</template><template v-if="g.exp && g.inc"> ・ </template><template v-if="g.inc">收入 {{ formatCurrency(g.inc) }}</template></span></div>
+                            <div class="fdm-list">
+                                <div v-for="item in g.items" :key="item.id" class="fdm-item" :class="{ 'is-selected': fdmIsSel('expense', item.id) }"
+                                    role="button" tabindex="0" :aria-pressed="fdmIsSel('expense', item.id)" :aria-label="'選取或編輯：' + (item.item || item.symbol)"
+                                    @pointerdown="fdmPressStart('expense', item.id, $event)" @pointermove="fdmPressMove($event)" @pointerup="fdmPressEnd" @pointercancel="fdmPressEnd" @pointerleave="fdmPressEnd" @contextmenu.prevent
+                                    @click="fdmTap('expense', item)" @keydown.enter.self="fdmTap('expense', item)">
+                                    <span v-if="fdmIsSel('expense', item.id)" class="fdm-check"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
+                                    <span class="fdm-ic" :style="catCircleStyle(item.category)"><span :key="expenseIconName(item)"><i :data-lucide="expenseIconName(item)">{{ (item.item || '?').slice(0, 1) }}</i></span></span>
+                                    <div class="fdm-mid">
+                                        <div class="fdm-t1">{{ item.item }}<span v-if="item.content" style="font-weight:400;color:#cbd5e1"> · {{ item.content }}</span></div>
+                                        <div class="fdm-t2">{{ item.paymentMethod || '未填付款方式' }}<span v-if="item.note"> · {{ item.note }}</span></div>
+                                        <div v-if="item.paidAmount > 0 || item.paymentDate || item.settlementDate || item.stockId" class="fdm-chips">
+                                            <span v-if="item.stockId" class="fdm-chip" style="color:#a5b4fc">股票連動</span>
+                                            <span v-if="item.paidAmount > 0" class="fdm-chip">已付 {{ formatCurrency(item.paidAmount) }}</span>
+                                            <span v-if="item.paymentDate" class="fdm-chip">付 {{ item.paymentDate.slice(5) }}</span>
+                                            <span v-if="item.settlementDate" class="fdm-chip">結 {{ item.settlementDate.slice(5) }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="fdm-amt" :class="{ 'is-in': item.type === '收入' }">{{ item.type === '收入' ? '+' : '-' }}{{ formatCurrency(item.amount) }}</div>
+                                </div>
+                            </div>
+                        </template>
+                        <button v-if="filteredExpenses.length > displayedExpenses.length" @click="loadMoreExpenses" class="fdm-more">顯示更多（還有 {{ filteredExpenses.length - displayedExpenses.length }} 筆）</button>
+                    </div>
+
+                    <div @scroll="onExpenseScroll" class="fd-desktop overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800">
                         <table class="w-full text-left text-xs sm:text-sm">
                             <thead class="bg-slate-800/90 text-slate-400 border-b border-slate-700/60 uppercase sticky top-0 z-10 backdrop-blur-md">
                                 <tr>
@@ -459,7 +494,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="mt-2 px-4 py-3 rounded-xl border text-xs flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-1" :class="selectedExpenseStats.n ? 'bg-emerald-500/10 border-emerald-500/30 text-slate-200' : 'bg-slate-900/50 border-slate-800 text-slate-400'">
+                    <div class="fd-desktop mt-2 px-4 py-3 rounded-xl border text-xs flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-1" :class="selectedExpenseStats.n ? 'bg-emerald-500/10 border-emerald-500/30 text-slate-200' : 'bg-slate-900/50 border-slate-800 text-slate-400'">
                         <span v-if="!selectedExpenseStats.n">勾選明細後，這裡會顯示筆數與金額合計</span>
                         <div v-if="selectedExpenseStats.n" class="font-bold text-emerald-400">已勾選 {{ selectedExpenseStats.n }} 筆<span v-if="selectedExpenseStats.hidden" class="font-normal text-amber-300">（含 {{ selectedExpenseStats.hidden }} 筆目前未顯示）</span></div>
                         <div v-if="selectedExpenseStats.n" class="flex items-center justify-between sm:justify-start sm:gap-1.5"><span class="text-slate-400 sm:text-slate-200">支出合計</span><span><b class="text-rose-300">-{{ formatCurrency(selectedExpenseStats.exp) }}</b><span class="text-slate-400">（已付 {{ formatCurrency(selectedExpenseStats.paidExp) }}）</span></span></div>
@@ -467,7 +502,7 @@
                         <div v-if="selectedExpenseStats.n" class="flex items-center justify-between sm:justify-start sm:gap-1.5"><span class="text-slate-400 sm:text-slate-200">淨額</span><b :class="selectedExpenseStats.inc - selectedExpenseStats.exp >= 0 ? 'text-emerald-300' : 'text-rose-300'">{{ selectedExpenseStats.inc - selectedExpenseStats.exp >= 0 ? '+' : '-' }}{{ formatCurrency(Math.abs(selectedExpenseStats.inc - selectedExpenseStats.exp)) }}</b></div>
                         <button v-if="selectedExpenseStats.n" @click="selectedExpenseIds = []" class="self-end sm:self-auto sm:ml-auto text-slate-400 hover:text-slate-200 underline">清除勾選</button>
                     </div>
-                    <div v-if="filteredExpenses.length > displayedExpenses.length" class="text-center text-xs text-slate-400 py-1">
+                    <div v-if="filteredExpenses.length > displayedExpenses.length" class="fd-desktop text-center text-xs text-slate-400 py-1">
                         已顯示 {{ displayedExpenses.length }} / 共 {{ filteredExpenses.length }} 筆，捲到底會自動載入更多
                         <button @click="loadMoreExpenses" class="ml-2 text-emerald-400 underline">立即載入更多</button>
                     </div>
@@ -483,9 +518,46 @@
                             <i data-lucide="sliders-horizontal" class="w-3 h-3"></i>規則
                         </button>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">以「金額」計算。收入＝薪資等收入＋股息（不含 ETF賣出與代墊回收）；消費支出＝支出且不屬於投資、代墊；結餘＝收入 − 消費支出；投資淨投入＝ETF投資 − ETF賣出；代墊淨額＝墊付支出（算在消費月份）− 收回（以結算日所在月份為準，沒填結算日就是還沒收回）；投資後現金＝結餘 − 投資淨投入 − 代墊淨額。點任一個月可跳到該月明細。</p>
+                    <p class="text-xs text-slate-400 mt-1">以「金額」計算。收入＝薪資等收入＋股息（不含 ETF賣出與代墊回收）；消費支出＝支出且不屬於投資、代墊；結餘＝收入 − 消費支出；投資淨投入＝ETF投資 − ETF賣出（為負代表賣出多於買進，稱為淨回收，現金會增加）；代墊淨額＝墊付支出（算在消費月份）− 收回（以結算日所在月份為準，沒填結算日就是還沒收回）；投資後現金＝結餘 − 投資淨投入 − 代墊淨額。點任一個月可跳到該月明細。</p>
                 </div>
-                <div class="glass-card rounded-2xl overflow-hidden">
+                <!-- 手機版：一月一張卡片 -->
+                <div class="fd-mobile fdm" style="--fdm-accent:#fbbf24;--fdm-accent-bg:rgba(251,191,36,.15)">
+                    <div class="fdm-sec">
+                        <span class="fdm-sq"><i data-lucide="calendar" class="w-4 h-4"></i></span>
+                        <div><div class="fdm-title">月收支表</div><div class="fdm-sub">近 {{ ledgerMonthRows.length }} 個月 · 點卡片看該月明細</div></div>
+                    </div>
+                    <div class="fdm-legend"><span><i class="fdm-dot" style="background:#818cf8"></i>消費</span><span><i class="fdm-dot" style="background:#fbbf24"></i>投資</span><span><i class="fdm-dot" style="background:#34d399"></i>剩餘</span></div>
+                    <div v-for="r in ledgerMonthRows" :key="r.key" class="fdm-month" role="button" tabindex="0" :aria-label="'查看 ' + r.label + ' 的明細'" @click="goToMonth(r.key)" @keydown.enter.self="goToMonth(r.key)">
+                        <div class="fdm-m1">
+                            <span class="fdm-mlabel">{{ r.label }}<span v-if="r.isNow" class="fdm-now">本月</span></span>
+                            <span class="fdm-net" :class="{ 'is-neg': r.net < 0 }"><small>結餘</small>{{ signedCurrency(r.net) }}</span>
+                        </div>
+                        <div v-if="monthBar(r)" class="fdm-track" :class="{ 'is-over': monthBar(r).over }" aria-hidden="true">
+                            <span :style="{ width: monthBar(r).consume + '%', background: '#818cf8' }"></span><span :style="{ width: monthBar(r).invest + '%', background: '#fbbf24' }"></span><span :style="{ width: monthBar(r).rest + '%', background: '#34d399' }"></span>
+                        </div>
+                        <div class="fdm-m3"><span>收入 {{ formatCurrency(r.income) }}</span><span>消費 {{ formatCurrency(r.consume) }}<template v-if="r.invest > 0"> · 淨投入 {{ formatCurrency(r.invest) }}</template></span></div>
+                        <div v-if="r.invest < 0" class="fdm-note">ETF 賣出多於買進：淨回收 {{ formatCurrency(-r.invest) }}，現金增加（投資後現金 {{ signedCurrency(r.after) }}）</div>
+                        <button type="button" class="fdm-toggle" :aria-expanded="!!expandedMonths[r.key]" @click.stop="toggleMonthDetail(r.key)">{{ expandedMonths[r.key] ? '收合 ▲' : '詳細 ▼' }}</button>
+                        <div v-if="expandedMonths[r.key]" class="fdm-detail" @click.stop>
+                            <div>投資後現金<b :class="r.after < 0 ? 'is-bad' : ''">{{ signedCurrency(r.after) }}</b></div>
+                            <div>{{ r.invest < 0 ? '投資淨回收' : '投資淨投入' }}<b :class="r.invest < 0 ? 'is-good' : ''">{{ formatCurrency(Math.abs(r.invest)) }}</b></div>
+                            <div v-if="showAdvanceCol">代墊淨額<b>{{ formatCurrency(r.advance) }}</b><span v-if="r.advanceOut || r.advanceIn">墊 {{ formatCurrency(r.advanceOut) }}／收 {{ formatCurrency(r.advanceIn) }}</span></div>
+                            <div v-if="showOtherCol">其他儲蓄<b>{{ formatCurrency(r.other) }}</b></div>
+                            <div v-if="r.prev">消費較上月<b :class="r.consume - r.prev.consume > 0 ? 'is-bad' : 'is-good'">{{ signedCurrency(r.consume - r.prev.consume) }}</b></div>
+                            <div v-if="r.prev">結餘較上月<b :class="r.net - r.prev.net >= 0 ? 'is-good' : 'is-bad'">{{ signedCurrency(r.net - r.prev.net) }}</b></div>
+                            <div v-if="r.yoy">消費較去年同月<b :class="r.consume - r.yoy.consume > 0 ? 'is-bad' : 'is-good'">{{ signedCurrency(r.consume - r.yoy.consume) }}</b></div>
+                            <div v-if="r.yoy">結餘較去年同月<b :class="r.net - r.yoy.net >= 0 ? 'is-good' : 'is-bad'">{{ signedCurrency(r.net - r.yoy.net) }}</b></div>
+                        </div>
+                    </div>
+                    <div v-if="ledgerYearRows.length" class="fdm-subhead">年度合計（日曆年）與月均</div>
+                    <div v-for="r in ledgerYearRows" :key="r.key" class="fdm-month" style="cursor:default">
+                        <div class="fdm-m1"><span class="fdm-mlabel" :style="r.kind === 'avg' ? 'font-weight:400;color:#cbd5e1' : ''">{{ r.label }}</span><span class="fdm-net" :class="{ 'is-neg': r.net < 0 }"><small>結餘</small>{{ signedCurrency(r.net) }}</span></div>
+                        <div class="fdm-m3" style="margin-top:.375rem"><span>收入 {{ formatCurrency(r.income) }}</span><span>消費 {{ formatCurrency(r.consume) }}</span></div>
+                        <div class="fdm-m3" style="margin-top:.125rem"><span>{{ r.invest < 0 ? '投資淨回收 ' : '投資淨投入 ' }}{{ formatCurrency(Math.abs(r.invest)) }}</span><span>投資後現金 {{ signedCurrency(r.after) }}</span></div>
+                    </div>
+                </div>
+
+                <div class="fd-desktop glass-card rounded-2xl overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs sm:text-sm whitespace-nowrap">
                             <thead class="bg-slate-800/90 text-slate-400">
@@ -494,7 +566,7 @@
                                     <th scope="col" class="py-3 px-4 text-right">收入</th>
                                     <th scope="col" class="py-3 px-4 text-right">消費支出</th>
                                     <th scope="col" class="py-3 px-4 text-right">結餘</th>
-                                    <th scope="col" class="py-3 px-4 text-right">投資淨投入</th>
+                                    <th scope="col" class="py-3 px-4 text-right">投資淨投入／回收</th>
                                     <th v-if="showAdvanceCol" scope="col" class="py-3 px-4 text-right">代墊淨額</th>
                                     <th v-if="showOtherCol" scope="col" class="py-3 px-4 text-right">其他儲蓄</th>
                                     <th scope="col" class="py-3 px-4 text-right">投資後現金</th>
@@ -514,7 +586,7 @@
                                         <div v-if="r.prev" class="text-xs mt-0.5" :class="(r.net - r.prev.net >= 0) === true ? 'text-emerald-400' : 'text-rose-400'">較上月 {{ signedCurrency(r.net - r.prev.net) }}</div>
                                         <div v-if="r.yoy" class="text-xs" :class="(r.net - r.yoy.net >= 0) === true ? 'text-emerald-400' : 'text-rose-400'">較去年同月 {{ signedCurrency(r.net - r.yoy.net) }}</div>
                                     </td>
-                                    <td class="py-2.5 px-4 text-right text-slate-300">{{ formatCurrency(r.invest) }}</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-300"><span v-if="r.invest < 0" class="text-emerald-400">回收 {{ formatCurrency(-r.invest) }}</span><template v-else>{{ formatCurrency(r.invest) }}</template></td>
                                     <td v-if="showAdvanceCol" class="py-2.5 px-4 text-right text-slate-300">
                                         <div>{{ formatCurrency(r.advance) }}</div>
                                         <div v-if="r.advanceOut || r.advanceIn" class="text-xs text-slate-400 mt-0.5">墊 {{ formatCurrency(r.advanceOut) }}／收 {{ formatCurrency(r.advanceIn) }}</div>
@@ -528,7 +600,7 @@
                                     <td class="py-2.5 px-4 text-right text-emerald-300" :class="r.kind === 'total' ? 'font-semibold' : ''">{{ formatCurrency(r.income) }}</td>
                                     <td class="py-2.5 px-4 text-right text-rose-300" :class="r.kind === 'total' ? 'font-semibold' : ''">{{ formatCurrency(r.consume) }}</td>
                                     <td class="py-2.5 px-4 text-right font-bold" :class="r.net >= 0 ? 'text-emerald-400' : 'text-rose-400'">{{ signedCurrency(r.net) }}</td>
-                                    <td class="py-2.5 px-4 text-right text-slate-300">{{ formatCurrency(r.invest) }}</td>
+                                    <td class="py-2.5 px-4 text-right text-slate-300"><span v-if="r.invest < 0" class="text-emerald-400">回收 {{ formatCurrency(-r.invest) }}</span><template v-else>{{ formatCurrency(r.invest) }}</template></td>
                                     <td v-if="showAdvanceCol" class="py-2.5 px-4 text-right text-slate-300">{{ formatCurrency(r.advance) }}</td>
                                     <td v-if="showOtherCol" class="py-2.5 px-4 text-right text-slate-300">{{ formatCurrency(r.other) }}</td>
                                     <td class="py-2.5 px-4 text-right" :class="r.after >= 0 ? 'text-slate-200' : 'text-rose-400'">{{ signedCurrency(r.after) }}</td>
@@ -669,9 +741,9 @@
                     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-200">ETF & 股票交易歷史紀錄</h3>
-                            <p class="text-xs text-slate-400"><span class="text-indigo-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>，系統自動依買賣計算總市值與平均成本</p>
+                            <p class="fd-desktop text-xs text-slate-400"><span class="text-indigo-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>，系統自動依買賣計算總市值與平均成本</p>
                         </div>
-                        <div class="w-full lg:w-auto lg:ml-auto">
+                        <div class="fd-desktop w-full lg:w-auto lg:ml-auto">
                             <button @click="confirmBatchDeleteStockTrades" :disabled="selectedStockIds.length === 0" class="w-full h-10 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap lg:w-[7.5rem] bg-rose-600 hover:bg-rose-500">批次刪除 ({{ selectedStockIds.length }})</button>
                         </div>
                     </div>
@@ -686,7 +758,34 @@
                             <button v-if="stockFilterActive" @click="resetStockFilters" class="underline hover:text-slate-200">重設篩選器</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800">
+                    <!-- 手機版：卡片列表（長按選取、點一下修改） -->
+                    <div class="fd-mobile fdm" style="--fdm-accent:#818cf8;--fdm-accent-bg:rgba(129,140,248,.17)">
+                        <div class="fdm-sec">
+                            <span class="fdm-sq"><i data-lucide="trending-up" class="w-4 h-4"></i></span>
+                            <div style="min-width:0"><div class="fdm-title">ETF ＆ 股票交易</div><div class="fdm-sub">{{ filteredStockTrades.length }} / {{ stockTrades.length }} 筆<span v-if="stockFilterActive"> · 已套用篩選</span> · 可長按卡片選取</div></div>
+                            <button type="button" class="fdm-sel-btn" @click="fdmSelecting('stock') ? fdmDone('stock') : fdmEnter('stock')">{{ fdmSelecting('stock') ? '完成' : '選取' }}</button>
+                        </div>
+                        <div v-if="filteredStockTrades.length === 0" class="fdm-empty">無符合條件的交易紀錄</div>
+                        <template v-for="g in stockDayGroups" :key="g.id">
+                            <div class="fdm-day"><span>{{ g.label }}</span><span>{{ g.items.length }} 筆</span></div>
+                            <div class="fdm-list">
+                                <div v-for="t in g.items" :key="t.id" class="fdm-item" :class="{ 'is-selected': fdmIsSel('stock', t.id) }"
+                                    role="button" tabindex="0" :aria-pressed="fdmIsSel('stock', t.id)" :aria-label="'選取或編輯：' + (t.item || t.symbol)"
+                                    @pointerdown="fdmPressStart('stock', t.id, $event)" @pointermove="fdmPressMove($event)" @pointerup="fdmPressEnd" @pointercancel="fdmPressEnd" @pointerleave="fdmPressEnd" @contextmenu.prevent
+                                    @click="fdmTap('stock', t)" @keydown.enter.self="fdmTap('stock', t)">
+                                    <span v-if="fdmIsSel('stock', t.id)" class="fdm-check"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
+                                    <span class="fdm-ic" :style="t.action === '買進' ? { background: 'rgba(129,140,248,.18)', borderColor: 'rgba(129,140,248,.4)', color: '#c7d2fe' } : { background: 'rgba(251,191,36,.16)', borderColor: 'rgba(251,191,36,.4)', color: '#fde68a' }" style="font-size:.8rem;font-weight:700">{{ t.action === '買進' ? '買' : '賣' }}</span>
+                                    <div class="fdm-mid">
+                                        <div class="fdm-t1"><b style="color:#a5b4fc">{{ t.symbol }}</b> {{ t.name }}</div>
+                                        <div class="fdm-t2">NT$ {{ t.price }} × {{ (t.shares || 0).toLocaleString() }} 股 · 費用 {{ ((t.fee || 0) + (t.tax || 0)).toLocaleString() }}</div>
+                                    </div>
+                                    <div class="fdm-amt" :class="{ 'is-in': t.action === '賣出' }">{{ t.action === '賣出' ? '+' : '-' }}{{ formatCurrency(t.totalAmount) }}</div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="fd-desktop overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800">
                         <table class="w-full text-left text-xs sm:text-sm whitespace-nowrap">
                             <thead class="bg-slate-800/90 text-slate-400 border-b border-slate-700/60 uppercase sticky top-0 z-10 backdrop-blur-md">
                                 <tr>
@@ -747,7 +846,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="mt-2 px-4 py-3 rounded-xl border text-xs flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-1" :class="selectedStockStats.n ? 'bg-indigo-500/10 border-indigo-500/30 text-slate-200' : 'bg-slate-900/50 border-slate-800 text-slate-400'">
+                    <div class="fd-desktop mt-2 px-4 py-3 rounded-xl border text-xs flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-1" :class="selectedStockStats.n ? 'bg-indigo-500/10 border-indigo-500/30 text-slate-200' : 'bg-slate-900/50 border-slate-800 text-slate-400'">
                         <span v-if="!selectedStockStats.n">勾選交易後，這裡會顯示筆數與金額合計</span>
                         <div v-if="selectedStockStats.n" class="font-bold text-indigo-300">已勾選 {{ selectedStockStats.n }} 筆<span v-if="selectedStockStats.hidden" class="font-normal text-amber-300">（含 {{ selectedStockStats.hidden }} 筆目前未顯示）</span></div>
                         <div v-if="selectedStockStats.n" class="flex items-center justify-between sm:justify-start sm:gap-1.5"><span class="text-slate-400 sm:text-slate-200">買進 {{ selectedStockStats.buyN }} 筆</span><span><b class="text-rose-300">{{ formatCurrency(selectedStockStats.buyAmt) }}</b><span class="text-slate-400">（{{ selectedStockStats.buyShares.toLocaleString() }} 股）</span></span></div>
@@ -759,6 +858,32 @@
                 </div>
             </div>
         </main>
+
+        <!-- 手機版：長按選取後，畫面底部的批次操作列 -->
+        <div v-if="activeTab === 'expenses' && fdmSelecting('expense')" class="fdm-bar" style="--fdm-accent:#34d399;--fdm-accent-bg:rgba(52,211,153,.15)" role="region" aria-label="批次操作">
+            <div class="fdm-bar-info"><b>已選 {{ selectedExpenseStats.n }} 筆</b><span v-if="selectedExpenseStats.exp" style="color:#fb7185">支出 -{{ formatCurrency(selectedExpenseStats.exp) }}</span><span v-if="selectedExpenseStats.exp && selectedExpenseStats.inc"> ・ </span><span v-if="selectedExpenseStats.inc" style="color:#34d399">收入 +{{ formatCurrency(selectedExpenseStats.inc) }}</span><span v-if="!selectedExpenseStats.n">點卡片來選取</span></div>
+            <div class="fdm-bar-actions">
+                <button type="button" class="fdm-btn" @click="fdmToggleAll('expense')">{{ fdmAllSelected('expense') ? '取消全選' : '全選' }}</button>
+                <button type="button" class="fdm-btn" @click="fdmDone('expense')">完成</button>
+                <div class="fdm-menu-wrap">
+                    <button type="button" class="fdm-btn is-primary" :disabled="!selectedExpenseStats.n" :aria-expanded="batchMenuOpen" @click="batchMenuOpen = !batchMenuOpen">批次 ▲</button>
+                    <div v-if="batchMenuOpen && selectedExpenseStats.n" class="fdm-menu">
+                        <button type="button" @click="batchMenuOpen = false; openBatchCopyModal()">批次複製</button>
+                        <button type="button" @click="batchMenuOpen = false; openBatchDateModal('payment')">填付款日</button>
+                        <button type="button" @click="batchMenuOpen = false; openBatchDateModal('settlement')">填結算日</button>
+                        <button type="button" class="is-danger" @click="batchMenuOpen = false; confirmBatchDeleteExpenses()">批次刪除</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div v-if="activeTab === 'investments' && fdmSelecting('stock')" class="fdm-bar" style="--fdm-accent:#818cf8;--fdm-accent-bg:rgba(129,140,248,.17)" role="region" aria-label="批次操作">
+            <div class="fdm-bar-info"><b>已選 {{ selectedStockStats.n }} 筆</b><span v-if="selectedStockStats.n">買進 {{ selectedStockStats.buyN }} 筆 ・ 賣出 {{ selectedStockStats.sellN }} 筆</span><span v-else>點卡片來選取</span></div>
+            <div class="fdm-bar-actions">
+                <button type="button" class="fdm-btn" @click="fdmToggleAll('stock')">{{ fdmAllSelected('stock') ? '取消全選' : '全選' }}</button>
+                <button type="button" class="fdm-btn" @click="fdmDone('stock')">完成</button>
+                <button type="button" class="fdm-btn is-danger" :disabled="!selectedStockStats.n" @click="confirmBatchDeleteStockTrades()">批次刪除</button>
+            </div>
+        </div>
 
         <!-- API Config Modal -->
         <div v-if="showApiConfigModal" data-modal="showApiConfigModal" @click.self="onBackdrop('showApiConfigModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
@@ -1005,7 +1130,22 @@
                     </div>
                     <button @click="requestClose('cardDetail')" class="text-slate-400 hover:text-white text-lg leading-none" aria-label="關閉">✕</button>
                 </div>
-                <div class="overflow-x-auto max-h-[60vh] overflow-y-auto rounded-lg border border-slate-800">
+                <!-- 手機版：一筆一列，欄位不再被切斷 -->
+                <div class="fd-mobile fdm" style="--fdm-accent:#38bdf8;--fdm-accent-bg:rgba(56,189,248,.15)">
+                    <div v-if="cardDetail.rows.length === 0" class="fdm-empty">這個帳期沒有消費紀錄</div>
+                    <div v-else class="fdm-list" style="max-height:60vh;overflow-y:auto">
+                        <div v-for="r in cardDetail.rows" :key="r.id" class="fdm-item" style="cursor:default">
+                            <span class="fdm-ic" :style="catCircleStyle(r.category)"><span :key="expenseIconName(r)"><i :data-lucide="expenseIconName(r)">{{ (r.item || '?').slice(0, 1) }}</i></span></span>
+                            <div class="fdm-mid">
+                                <div class="fdm-t1">{{ r.item }}<span v-if="r.content" style="font-weight:400;color:#cbd5e1"> · {{ r.content }}</span></div>
+                                <div class="fdm-t2">{{ r.date }}<span v-if="r.note"> · {{ r.note }}</span></div>
+                                <div class="fdm-chips"><span class="fdm-chip">付 {{ r.paymentDate ? r.paymentDate.slice(5) : '未填' }}</span><span class="fdm-chip">結 {{ r.settlementDate ? r.settlementDate.slice(5) : '未填' }}</span></div>
+                            </div>
+                            <div class="fdm-amt">{{ formatCurrency(r.amount) }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fd-desktop overflow-x-auto max-h-[60vh] overflow-y-auto rounded-lg border border-slate-800">
                     <table class="w-full text-left text-xs sm:text-sm">
                         <thead class="bg-slate-800/90 text-slate-400 sticky top-0">
                             <tr><th scope="col" class="py-2 px-3">日期</th><th scope="col" class="py-2 px-3">項目 / 類別</th><th scope="col" class="py-2 px-3">內容</th><th scope="col" class="py-2 px-3">備註</th><th scope="col" class="py-2 px-3 text-right">金額</th><th scope="col" class="py-2 px-3">付款日</th><th scope="col" class="py-2 px-3">結算日</th></tr>
@@ -1072,7 +1212,7 @@
         </div>
 
         <!-- 手機版浮動新增鈕（頂部工具列捲走後，仍可隨時記收支／記股票） -->
-        <div v-show="activeDropdown !== 'tools'" class="lg:hidden fixed right-4 z-40 flex flex-col items-end gap-2" :class="undoToast ? 'bottom-24' : 'bottom-6'" @click.stop>
+        <div v-show="activeDropdown !== 'tools'" class="fdm-fab lg:hidden fixed right-4 z-40 flex flex-col items-end gap-2" :class="undoToast ? 'bottom-24' : 'bottom-6'" @click.stop>
             <div v-show="activeDropdown === 'fab'" class="flex flex-col items-end gap-2">
                 <button @click="closeAllDropdowns(); openStockModal()" class="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-4 h-10 rounded-full text-xs font-bold shadow-xl whitespace-nowrap">
                     <i data-lucide="trending-up" class="w-4 h-4"></i><span>記股票</span>
@@ -1448,6 +1588,7 @@
         import { useExpenses } from './js/features/expenses.js';
         import { useStocks } from './js/features/stocks.js';
         import { useLedgerView } from './js/features/ledger-view.js';
+        import { useMobileCards } from './js/features/mobile-cards.js';
         import { renameInSettings as renameInSettingsOn, removeFromSettings as removeFromSettingsOn } from './js/logic/settings-ops.js';
 
         const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick, provide, inject } = Vue;
@@ -1504,6 +1645,7 @@
                 Object.assign(ctx, useExpenses(ctx));
                 Object.assign(ctx, useStocks(ctx));
                 Object.assign(ctx, useLedgerView(ctx));
+                Object.assign(ctx, useMobileCards(ctx));
                 Object.assign(ctx, { COLOR_CHOICES });   // 範本用到的 import 進來的常數
 
                 const {
@@ -1553,46 +1695,50 @@
 
                 // 範本（HTML）會用到的成員。範本新增用到的名稱時，要加在這裡；npm run check 會檢查每一個都存在。
                 const TEMPLATE_MEMBERS = [
-                    'COLOR_CHOICES', 'activeDropdown', 'activeTab', 'addFundingRule', 'allKnownItems',
-                    'appSettings', 'applyBatchCopy', 'applyBatchDate', 'applyCategoryFix', 'batchDateType',
-                    'calculatedStockTotal', 'cancelDialog', 'cardDetail', 'cardOffset', 'cardStatements',
-                    'catColor', 'catHasItem', 'catMapKeys', 'catTab', 'categoriesList',
-                    'categoryFilterLabel', 'categoryKind', 'changeMonth', 'closeAllDropdowns', 'colorPanelCat',
-                    'commitImport', 'confirmBatchDeleteExpenses', 'confirmBatchDeleteStockTrades', 'confirmDeleteExpense', 'confirmDeleteStockTrade',
-                    'confirmResetAll', 'dateFilterActive', 'deleteOptionItem', 'dialog', 'dismissToast',
-                    'displayedExpenses', 'downloadTemplateExcel', 'draggingIds', 'editOptionName', 'editingExpenseId',
-                    'editingStockId', 'expenseFilterActive', 'expenseForm', 'expenseMonthFilterScope', 'expenseSearch',
-                    'expenseYearOptions', 'expenseYearSelectOptions', 'expenses', 'exportToExcel', 'fetchStockPrices',
-                    'fileInputRef', 'filterMonths', 'filterYears', 'filteredExpenses', 'filteredStockTrades',
-                    'fixTarget', 'formCategories', 'formItems', 'formatCurrency', 'fundingMatchCount',
-                    'gasApiUrl', 'getCardDay', 'getFixTarget', 'goToMonth', 'handleFileUpload',
-                    'importIssues', 'importPreview', 'importSummary', 'includeInvest', 'inputApiUrl',
-                    'isAllExpensesSelected', 'isAllItems', 'isAllStocksSelected', 'isCard', 'isCurrentMonthOrFuture',
-                    'isFetchingPrices', 'isSyncing', 'itemChartData', 'itemChartLegend', 'itemDetail',
-                    'itemFilterLabel', 'itemGroups', 'itemsList', 'lastPriceUpdate', 'ledgerMonthRows',
-                    'ledgerYearRows', 'loadMoreExpenses', 'mismatchGroups', 'mismatchTotal', 'monthSelectOptions',
-                    'monthlyInvestNet', 'monthlyInvestSummary', 'monthlySavingsRate', 'monthlyTotalExpense', 'monthlyTotalIncome',
-                    'onBackdrop', 'onCategoryChange', 'onDragEnd', 'onDragOver', 'onDragStart',
-                    'onDrop', 'onExpenseScroll', 'openBatchCopyModal', 'openBatchDateModal', 'openCardDetail',
-                    'openCategorySettings', 'openExpenseModal', 'openPaymentSettings', 'openResetModal', 'openStockModal',
-                    'payTab', 'paymentChartData', 'paymentFilterLabel', 'paymentMethodsList', 'prepaidUseCount',
-                    'promptAddOption', 'realizedBySymbolList', 'realizedInfo', 'realizedRowsDesc', 'removeFundingRule',
-                    'requestClose', 'resetAllData', 'resetConfirmText', 'resetFilters', 'resetStockFilters',
-                    'runToastAction', 'saveApiUrl', 'saveExpenseSubmit', 'saveStockTradeSubmit', 'selectedCategoryFilters',
-                    'selectedExpenseIds', 'selectedExpenseStats', 'selectedItemFilters', 'selectedMonth', 'selectedPaymentFilters',
-                    'selectedStockIds', 'selectedStockStats', 'selectedTypeFilters', 'selectedYear', 'setCardDay',
-                    'setCategoryColor', 'setCategoryKind', 'showAdvanceCol', 'showApiConfigModal', 'showBatchCopyModal',
-                    'showBatchDateModal', 'showCardSettingsModal', 'showCategoryMapModal', 'showExpenseModal', 'showFlowSettingsModal',
-                    'showImportHelpModal', 'showImportPreviewModal', 'showOptionManagerModal', 'showOtherCol', 'showRealizedModal',
-                    'showResetModal', 'showStockModal', 'showToast', 'signedCurrency', 'stockActionSelectOptions',
-                    'stockFilterActions', 'stockFilterActive', 'stockFilterMonths', 'stockFilterSymbols', 'stockFilterYears',
-                    'stockForm', 'stockHoldings', 'stockSearch', 'stockSymbolOptions', 'stockSymbolSelectOptions',
-                    'stockTrades', 'stockYearOptions', 'stockYearSelectOptions', 'submitDialog', 'syncBadge',
-                    'syncFromCloud', 'syncLegacyStockExpenses', 'syncState', 'targetBatchDate', 'targetCopyDate',
-                    'toastClass', 'toasts', 'toggleAllItems', 'toggleCard', 'toggleCatItem',
-                    'toggleColorPanel', 'toggleDropdown', 'toggleFlowList', 'toggleSelectAllExpenses', 'toggleSelectAllStocks',
-                    'totalDividend', 'totalInvestmentMarketValue', 'totalRealizedPL', 'totalUnrealizedPL', 'totalUnrealizedPLRate',
-                    'typeSelectOptions', 'undoLast', 'undoToast'
+                'COLOR_CHOICES', 'activeDropdown', 'activeTab', 'addFundingRule', 'allKnownItems',
+                'appSettings', 'applyBatchCopy', 'applyBatchDate', 'applyCategoryFix', 'batchDateType',
+                'calculatedStockTotal', 'cancelDialog', 'cardDetail', 'cardOffset', 'cardStatements',
+                'catColor', 'catHasItem', 'catMapKeys', 'catTab', 'categoriesList',
+                'categoryFilterLabel', 'categoryKind', 'changeMonth', 'closeAllDropdowns', 'colorPanelCat',
+                'commitImport', 'confirmBatchDeleteExpenses', 'confirmBatchDeleteStockTrades', 'confirmDeleteExpense', 'confirmDeleteStockTrade',
+                'confirmResetAll', 'dateFilterActive', 'deleteOptionItem', 'dialog', 'dismissToast',
+                'displayedExpenses', 'downloadTemplateExcel', 'draggingIds', 'editOptionName', 'editingExpenseId',
+                'editingStockId', 'expenseFilterActive', 'expenseForm', 'expenseMonthFilterScope', 'expenseSearch',
+                'expenseYearOptions', 'expenseYearSelectOptions', 'expenses', 'exportToExcel', 'fetchStockPrices',
+                'fileInputRef', 'filterMonths', 'filterYears', 'filteredExpenses', 'filteredStockTrades',
+                'fixTarget', 'formCategories', 'formItems', 'formatCurrency', 'fundingMatchCount',
+                'gasApiUrl', 'getCardDay', 'getFixTarget', 'goToMonth', 'handleFileUpload',
+                'importIssues', 'importPreview', 'importSummary', 'includeInvest', 'inputApiUrl',
+                'isAllExpensesSelected', 'isAllItems', 'isAllStocksSelected', 'isCard', 'isCurrentMonthOrFuture',
+                'isFetchingPrices', 'isSyncing', 'itemChartData', 'itemChartLegend', 'itemDetail',
+                'itemFilterLabel', 'itemGroups', 'itemsList', 'lastPriceUpdate', 'ledgerMonthRows',
+                'ledgerYearRows', 'loadMoreExpenses', 'mismatchGroups', 'mismatchTotal', 'monthSelectOptions',
+                'monthlyInvestNet', 'monthlyInvestSummary', 'monthlySavingsRate', 'monthlyTotalExpense', 'monthlyTotalIncome',
+                'onBackdrop', 'onCategoryChange', 'onDragEnd', 'onDragOver', 'onDragStart',
+                'onDrop', 'onExpenseScroll', 'openBatchCopyModal', 'openBatchDateModal', 'openCardDetail',
+                'openCategorySettings', 'openExpenseModal', 'openPaymentSettings', 'openResetModal', 'openStockModal',
+                'payTab', 'paymentChartData', 'paymentFilterLabel', 'paymentMethodsList', 'prepaidUseCount',
+                'promptAddOption', 'realizedBySymbolList', 'realizedInfo', 'realizedRowsDesc', 'removeFundingRule',
+                'requestClose', 'resetAllData', 'resetConfirmText', 'resetFilters', 'resetStockFilters',
+                'runToastAction', 'saveApiUrl', 'saveExpenseSubmit', 'saveStockTradeSubmit', 'selectedCategoryFilters',
+                'selectedExpenseIds', 'selectedExpenseStats', 'selectedItemFilters', 'selectedMonth', 'selectedPaymentFilters',
+                'selectedStockIds', 'selectedStockStats', 'selectedTypeFilters', 'selectedYear', 'setCardDay',
+                'setCategoryColor', 'setCategoryKind', 'showAdvanceCol', 'showApiConfigModal', 'showBatchCopyModal',
+                'showBatchDateModal', 'showCardSettingsModal', 'showCategoryMapModal', 'showExpenseModal', 'showFlowSettingsModal',
+                'showImportHelpModal', 'showImportPreviewModal', 'showOptionManagerModal', 'showOtherCol', 'showRealizedModal',
+                'showResetModal', 'showStockModal', 'showToast', 'signedCurrency', 'stockActionSelectOptions',
+                'stockFilterActions', 'stockFilterActive', 'stockFilterMonths', 'stockFilterSymbols', 'stockFilterYears',
+                'stockForm', 'stockHoldings', 'stockSearch', 'stockSymbolOptions', 'stockSymbolSelectOptions',
+                'stockTrades', 'stockYearOptions', 'stockYearSelectOptions', 'submitDialog', 'syncBadge',
+                'syncFromCloud', 'syncLegacyStockExpenses', 'syncState', 'targetBatchDate', 'targetCopyDate',
+                'toastClass', 'toasts', 'toggleAllItems', 'toggleCard', 'toggleCatItem',
+                'toggleColorPanel', 'toggleDropdown', 'toggleFlowList', 'toggleSelectAllExpenses', 'toggleSelectAllStocks',
+                'totalDividend', 'totalInvestmentMarketValue', 'totalRealizedPL', 'totalUnrealizedPL', 'totalUnrealizedPLRate',
+                'typeSelectOptions', 'undoLast', 'undoToast', 'batchMenuOpen', 'catCircleStyle',
+                'expandedMonths', 'expenseDayGroups', 'fdmIsSel', 'fdmPressEnd', 'fdmPressMove',
+                'fdmPressStart', 'fdmTap', 'monthBar', 'stockDayGroups', 'toggleMonthDetail',
+                'expenseIconName', 'fdmSelecting', 'fdmEnter', 'fdmDone', 'fdmAllSelected',
+                'fdmToggleAll'
                 ];
                 return Object.fromEntries(TEMPLATE_MEMBERS.map(k => [k, ctx[k]]));
             }
@@ -1601,7 +1747,7 @@
     <div id="app-version" class="fixed bottom-1 left-2 text-[10px] text-slate-600 select-none"></div>
     <script>
         (function () {
-            var APP = 'V16';
+            var APP = 'V17';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');
