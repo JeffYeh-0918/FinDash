@@ -37,7 +37,7 @@
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=1" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=3">
+    <link rel="stylesheet" href="css/app.css?v=4">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -532,7 +532,7 @@
                             <span class="fdm-mlabel">{{ r.label }}<span v-if="r.isNow" class="fdm-now">本月</span></span>
                             <span class="fdm-net" :class="{ 'is-neg': r.net < 0 }"><small>結餘</small>{{ signedCurrency(r.net) }}</span>
                         </div>
-                        <div v-if="monthBar(r)" class="fdm-track" :class="{ 'is-over': monthBar(r).over }" aria-hidden="true">
+                        <div v-if="monthBar(r)" class="fdm-track" aria-hidden="true">
                             <span :style="{ width: monthBar(r).consume + '%', background: '#818cf8' }"></span><span :style="{ width: monthBar(r).invest + '%', background: '#fbbf24' }"></span><span :style="{ width: monthBar(r).rest + '%', background: '#34d399' }"></span>
                         </div>
                         <div class="fdm-m3"><span>收入 {{ formatCurrency(r.income) }}</span><span>消費 {{ formatCurrency(r.consume) }}<template v-if="r.invest > 0"> · 淨投入 {{ formatCurrency(r.invest) }}</template></span></div>
@@ -1331,7 +1331,7 @@
         </div>
 
         <!-- 復原提示 -->
-        <div v-if="undoToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center space-x-4 bg-slate-800 border border-slate-600 text-slate-100 text-sm rounded-xl shadow-2xl px-4 py-3">
+        <div v-if="undoToast" class="fdm-undo fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center space-x-4 bg-slate-800 border border-slate-600 text-slate-100 text-sm rounded-xl shadow-2xl px-4 py-3">
             <span>{{ undoToast }}</span>
             <button @click="undoLast" class="font-bold text-emerald-400 hover:text-emerald-300">復原</button>
         </div>

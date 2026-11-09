@@ -101,7 +101,6 @@ button:focus-visible, a:focus-visible, select:focus-visible, [tabindex]:focus-vi
 .fdm-net small { font-size: 0.65rem; font-weight: 400; color: #94a3b8; margin-right: 0.25rem; }
 .fdm-net.is-neg { color: #fda4af; }
 .fdm-track { display: flex; height: 0.375rem; border-radius: 0.1875rem; overflow: hidden; margin: 0.5rem 0 0.375rem; background: rgba(148, 163, 184, 0.15); }
-.fdm-track.is-over { box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.7); }
 .fdm-m3 { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.7rem; color: #94a3b8; }
 .fdm-toggle { display: block; width: 100%; margin-top: 0.5rem; padding: 0.25rem 0; font-size: 0.7rem; color: #94a3b8; text-align: center; border-top: 1px solid rgba(148, 163, 184, 0.1); background: transparent; }
 .fdm-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(148, 163, 184, 0.1); font-size: 0.7rem; color: #94a3b8; }
@@ -115,3 +114,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, [tabindex]:focus-vi
 .fdm-sel-btn:active { background: var(--fdm-accent-bg); }
 .fdm-btn:disabled { opacity: 0.4; }
 .fdm-note { margin-top: 0.375rem; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.7rem; color: #6ee7b7; background: rgba(52, 211, 153, 0.1); }
+
+/* 復原提示條：寬度依內容決定。原本只有 left-1/2 定位、沒設寬度，會被限制在螢幕一半寬，文字被擠成多行、「復原」變直排 */
+.fdm-undo { width: max-content; max-width: calc(100vw - 1.5rem); }
+.fdm-undo > span { min-width: 0; }
+.fdm-undo > button { flex: none; white-space: nowrap; }
