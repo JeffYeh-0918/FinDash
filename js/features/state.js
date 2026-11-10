@@ -23,7 +23,6 @@ export const useState = (ctx) => {
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     };
     const fileInputRef = ref(null);
-    const draggedIndex = ref(null);
     const gasApiUrl = ref(localStorage.getItem(STORAGE_KEY_GAS_URL) || '');
     const inputApiUrl = ref(gasApiUrl.value);
     const showApiConfigModal = ref(false);
@@ -101,7 +100,7 @@ export const useState = (ctx) => {
 
     return {
         STORAGE_KEY_EXPENSES, STORAGE_KEY_STOCKS, STORAGE_KEY_PRICES, STORAGE_KEY_GAS_URL, STORAGE_KEY_CATEGORIES, STORAGE_KEY_ITEMS,
-        STORAGE_KEY_PAYMENTS, STORAGE_KEY_BLACKLIST, todayStr, fileInputRef, draggedIndex, gasApiUrl,
+        STORAGE_KEY_PAYMENTS, STORAGE_KEY_BLACKLIST, todayStr, fileInputRef, gasApiUrl,
         inputApiUrl, showApiConfigModal, showOptionManagerModal, isSyncing, expenses, stockTrades,
         livePricesMap, activeTab, selectedYear, selectedMonth, isFetchingPrices, lastPriceUpdate,
         expenseSearch, expenseMonthFilterScope, selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilters,

@@ -31,9 +31,11 @@
 | `charts.js` | 所有圖表（Chart.js） |
 | `import-export.js` | Excel 匯入／匯出、匯入預覽 |
 | `settings-ui.js` | 設定視窗：類別與項目（屬性、顏色）、付款與帳單 |
-| `expenses.js` | 日常收支：篩選、分頁、勾選合計、拖曳排序、新增／編輯／刪除、批次操作 |
+| `expenses.js` | 日常收支：篩選、分頁、勾選合計、新增／編輯／刪除、批次操作 |
 | `stocks.js` | 股票：持股與損益、報價、篩選、交易新增／編輯／刪除、與收支連動 |
 | `ledger-view.js` | 月收支表、頁面上方卡片、信用卡待結算、圖表資料 |
+| `mobile-cards.js` | 手機與平板（< 1024px）的卡片：依日期分組、類別圖示、選取、月收支比例條 |
+| `card-drag.js` | 拖曳排序（Pointer Events，手機／平板卡片與電腦表格共用）：長按選取、浮動卡片堆、插入指示線、邊緣自動捲動、Esc 取消。排序與幾何邏輯在 `js/logic/reorder.js`（`moveGroup`）、`js/logic/drag.js` |
 
 **找功能**：想改哪個畫面的行為，就開對應的檔案；畫面本身（HTML）仍在 `index.html`。
 

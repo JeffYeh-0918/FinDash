@@ -1,4 +1,4 @@
-import test, { mock } from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 
 globalThis.Vue = { ref: v => ({ value: v }), computed: fn => ({ get value() { return fn(); } }), watch() {}, onMounted() {} };
@@ -40,23 +40,6 @@ test('類別圖示（lucide 名稱）：先看項目、再看類別，找不到�
 });
 test('圓圈顏色取自該類別的設定顏色', () => assert.deepEqual(setup().api.catCircleStyle('固定支出'), { background: '#6366f12b', borderColor: '#6366f166', color: '#6366f1' }));
 
-test('長按 450ms 選取；放開後的那一次點擊要略過，不能同時打開編輯', () => {
-    mock.timers.enable({ apis: ['setTimeout'] });
-    try {
-        const { api, ctx, opened } = setup({ expenses: [E({ id: 1 })] });
-        api.fdmPressStart('expense', 1, { clientX: 5, clientY: 5 }); mock.timers.tick(449); assert.deepEqual(ctx.selectedExpenseIds.value, []);
-        mock.timers.tick(1); assert.deepEqual(ctx.selectedExpenseIds.value, [1]); assert.equal(api.fdmIsSel('expense', 1), true);
-        api.fdmPressEnd(); api.fdmTap('expense', E({ id: 1 })); assert.deepEqual(opened, []); assert.deepEqual(ctx.selectedExpenseIds.value, [1]);
-    } finally { mock.timers.reset(); }
-});
-test('手指移動超過一點點（在捲動）就不算長按', () => {
-    mock.timers.enable({ apis: ['setTimeout'] });
-    try {
-        const { api, ctx } = setup();
-        api.fdmPressStart('expense', 1, { clientX: 0, clientY: 0 }); api.fdmPressMove({ clientX: 3, clientY: 4 }); mock.timers.tick(449); api.fdmPressMove({ clientX: 0, clientY: 30 }); mock.timers.tick(100);
-        assert.deepEqual(ctx.selectedExpenseIds.value, []);
-    } finally { mock.timers.reset(); }
-});
 test('點一下：沒有選取時開啟編輯；選取模式中改為加選／取消', () => {
     const { api, ctx, opened } = setup();
     api.fdmTap('expense', E({ id: 7 })); api.fdmTap('stock', { id: 9 }); assert.deepEqual(opened, [['expense', 7], ['stock', 9]]);

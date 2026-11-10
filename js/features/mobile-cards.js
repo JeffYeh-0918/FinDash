@@ -1,5 +1,5 @@
-// FinDash 功能模組：手機版卡片（畫面寬度 < 640px 才會顯示；電腦版仍是表格）
-// 內容：依日期分組、類別圖示、長按選取／取消選取、月收支表比例條。
+// FinDash 功能模組：手機與平板的卡片（畫面寬度 < 1024px 才會顯示；電腦版仍是表格）
+// 內容：依日期分組、類別圖示、選取／取消選取、月收支表比例條。（V18：畫面寬度 < 1024px 顯示卡片；長按選取與拖曳排序在 card-drag.js）
 // 卡片的 HTML 在 index.html（class 以 fdm- 開頭），樣式在 css/app.css。
 const { ref, computed, watch, onMounted } = Vue;
 
@@ -44,27 +44,12 @@ export const useMobileCards = (ctx) => {
         return { background: c + '2b', borderColor: c + '66', color: c };   // 線條圖示用 currentColor，所以也要設文字色
     };
 
-    /* ---------- 長按選取、點一下修改 ---------- */
-    const LONG_MS = 450, MOVE_PX = 10;
-    let timer = null, startX = 0, startY = 0, longFired = false;
+    /* ---------- 選取、點一下修改（長按選取與拖曳在 card-drag.js） ---------- */
     const listOf = (kind) => (kind === 'stock' ? selectedStockIds : selectedExpenseIds);
     const fdmIsSel = (kind, id) => listOf(kind).value.includes(id);
-    const toggleSel = (kind, id) => { const r = listOf(kind); r.value = r.value.includes(id) ? r.value.filter(x => x !== id) : [...r.value, id]; };
-    const fdmPressStart = (kind, id, ev) => {
-        longFired = false; clearTimeout(timer);
-        startX = ev.clientX; startY = ev.clientY;
-        timer = setTimeout(() => {
-            timer = null; longFired = true; toggleSel(kind, id);
-            if (typeof navigator !== 'undefined' && navigator.vibrate) { try { navigator.vibrate(15); } catch (e) { /* 不支援震動就算了 */ } }
-        }, LONG_MS);
-    };
-    const fdmPressMove = (ev) => {   // 手指移動超過一點點就是在捲動，不算長按
-        if (timer && (Math.abs(ev.clientX - startX) > MOVE_PX || Math.abs(ev.clientY - startY) > MOVE_PX)) { clearTimeout(timer); timer = null; }
-    };
-    const fdmPressEnd = () => { clearTimeout(timer); timer = null; };
+    const fdmToggleSel = (kind, id) => { const r = listOf(kind); r.value = r.value.includes(id) ? r.value.filter(x => x !== id) : [...r.value, id]; };
     const fdmTap = (kind, item) => {
-        if (longFired) { longFired = false; return; }          // 長按放開時瀏覽器還會送一次點擊，要略過
-        if (fdmSelecting(kind)) { toggleSel(kind, item.id); return; }   // 選取模式中：點一下＝加選／取消
+        if (fdmSelecting(kind)) { fdmToggleSel(kind, item.id); return; }   // 選取模式中：點一下＝加選／取消
         if (kind === 'stock') openStockModal(item); else openExpenseModal(item);
     };
     const batchMenuOpen = ref(false);
@@ -109,7 +94,7 @@ export const useMobileCards = (ctx) => {
 
     return {
         expenseDayGroups, stockDayGroups, expenseIconName, catCircleStyle,
-        fdmIsSel, fdmPressStart, fdmPressMove, fdmPressEnd, fdmTap, fdmSelecting, fdmEnter, fdmDone, fdmAllSelected, fdmToggleAll, batchMenuOpen,
+        fdmIsSel, fdmToggleSel, fdmTap, fdmSelecting, fdmEnter, fdmDone, fdmAllSelected, fdmToggleAll, batchMenuOpen,
         monthBar, expandedMonths, toggleMonthDetail
     };
 };

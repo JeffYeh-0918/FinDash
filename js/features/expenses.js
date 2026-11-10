@@ -1,6 +1,5 @@
 // FinDash 功能模組：日常收支：篩選、分頁、勾選合計、拖曳排序、新增／編輯／刪除、批次操作
 // 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
-import { reorderWithGroup } from '../logic/reorder.js';
 import { dropHiddenSelection } from '../logic/selection.js';
 
 const { ref, nextTick, computed, watch } = Vue;
@@ -8,7 +7,7 @@ const { ref, nextTick, computed, watch } = Vue;
 export const useExpenses = (ctx) => {
     // 取用前面模組已建立的成員
     const {
-        draggedIndex, selectedExpenseIds, selectedStockIds, expenses, stockTrades, pushToCloud,
+        selectedExpenseIds, selectedStockIds, expenses, stockTrades, pushToCloud,
         renderCharts, visibleCount, PAGE_SIZE, expenseSearch, selectedCategoryFilters, selectedItemFilters,
         selectedPaymentFilters, selectedTypeFilters, selectedYear, selectedMonth, expenseMonthFilterScope, filterYears,
         filterMonths, targetCopyDate, todayStr, showBatchCopyModal, showToast, captureUndo,
@@ -17,34 +16,8 @@ export const useExpenses = (ctx) => {
         batchDateType, showBatchDateModal, targetBatchDate
     } = ctx;
 
-    // 取用「較晚建立」的模組成員（模組之間互相呼叫）：用到的當下才去 ctx 找
-    const filteredStockTrades = { get value() { return ctx.filteredStockTrades.value; }, set value(v) { ctx.filteredStockTrades.value = v; } };
-
-    // （REORDER 區塊已移到 js/logic/，見檔頭 import）
-    const draggingIds = ref([]);
-    const onDragStart = (e, index, type) => {
-        draggedIndex.value = index;
-        const list = type === 'expense' ? filteredExpenses.value : filteredStockTrades.value;
-        const sel = (type === 'expense' ? selectedExpenseIds.value : selectedStockIds.value).map(String);
-        const dragged = list[index];
-        draggingIds.value = !dragged ? [] : (sel.includes(String(dragged.id)) ? list.filter(x => sel.includes(String(x.id))).map(x => String(x.id)) : [String(dragged.id)]);
-        e.dataTransfer.effectAllowed = 'move';
-        try { e.dataTransfer.setData('text/plain', String(draggingIds.value.length)); } catch (err) {}
-    };
-    const onDragEnd = () => { draggingIds.value = []; };
-    const onDragOver = (e, index) => {};
-    const onDrop = (e, targetIndex, type) => {
-        if (draggedIndex.value === null) return;
-        if (type === 'expense') {
-            expenses.value = reorderWithGroup(expenses.value, filteredExpenses.value, draggedIndex.value, targetIndex, selectedExpenseIds.value);
-        } else if (type === 'stock') {
-            stockTrades.value = reorderWithGroup(stockTrades.value, filteredStockTrades.value, draggedIndex.value, targetIndex, selectedStockIds.value);
-        }
-        draggedIndex.value = null;
-        draggingIds.value = [];
-        pushToCloud();
-        nextTick(() => renderCharts());
-    };
+    // 取用「較晚建立」的模組成員（模組之間互相呼叫）：用到的當下才去 ctx 找（V18 起拖曳已移出，這裡目前沒有用到）
+    // （拖曳排序 V18 起改由 card-drag.js 處理，使用 Pointer Events；排序邏輯在 js/logic/reorder.js）
     // ---------- 勾選紀錄的合計 ----------
     const selectedExpenseStats = computed(() => {
         const ids = new Set(selectedExpenseIds.value.map(String));
@@ -213,7 +186,7 @@ export const useExpenses = (ctx) => {
     };
 
     return {
-        draggingIds, onDragStart, onDragEnd, onDragOver, onDrop, selectedExpenseStats,
+        selectedExpenseStats,
         loadMoreExpenses, onExpenseScroll, dateFilterActive, yearsOf, expenseYearOptions, filteredExpenses,
         displayedExpenses, expenseFilterActive, resetFilters, monthSelectOptions, typeSelectOptions, expenseYearSelectOptions,
         isAllExpensesSelected, toggleSelectAllExpenses, openBatchCopyModal, applyBatchCopy, openExpenseModal, saveExpenseSubmit,

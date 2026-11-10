@@ -12,14 +12,15 @@
     "./js/logic/symbol.js": "./js/logic/symbol.js?v=1",
     "./js/logic/selection.js": "./js/logic/selection.js?v=1",
     "./js/logic/settings-ops.js": "./js/logic/settings-ops.js?v=1",
-    "./js/logic/reorder.js": "./js/logic/reorder.js?v=1",
+    "./js/logic/reorder.js": "./js/logic/reorder.js?v=2",
+    "./js/logic/drag.js": "./js/logic/drag.js?v=1",
     "./js/logic/trades.js": "./js/logic/trades.js?v=1",
     "./js/logic/ledger.js": "./js/logic/ledger.js?v=1",
     "./js/logic/importer.js": "./js/logic/importer.js?v=1",
     "./js/data/convert.js": "./js/data/convert.js?v=1",
     "./js/data/api.js": "./js/data/api.js?v=1",
     "./js/data/sync.js": "./js/data/sync.js?v=1",
-    "./js/features/state.js": "./js/features/state.js?v=1",
+    "./js/features/state.js": "./js/features/state.js?v=2",
     "./js/features/options.js": "./js/features/options.js?v=2",
     "./js/features/ui.js": "./js/features/ui.js?v=1",
     "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=1",
@@ -27,17 +28,18 @@
     "./js/features/charts.js": "./js/features/charts.js?v=1",
     "./js/features/import-export.js": "./js/features/import-export.js?v=1",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
-    "./js/features/expenses.js": "./js/features/expenses.js?v=1",
+    "./js/features/expenses.js": "./js/features/expenses.js?v=2",
     "./js/features/stocks.js": "./js/features/stocks.js?v=1",
     "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=2",
-    "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=2"
+    "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=3",
+    "./js/features/card-drag.js": "./js/features/card-drag.js?v=1"
   }
 }
     </script>
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=1" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=4">
+    <link rel="stylesheet" href="css/app.css?v=5">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -302,7 +304,7 @@
                     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-200">日常交易明細清單</h3>
-                            <p class="fd-desktop text-xs text-slate-400">點選可修改；<span class="text-emerald-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>；勾選可批次複製、填日期或刪除</p>
+                            <p class="fd-desktop text-xs text-slate-400">點選可修改；<span class="text-emerald-400 font-semibold">點左側圓形圖示可勾選，按住列並拖曳可調整順序</span>（勾選的會整疊一起搬，Esc 取消）；勾選後可批次複製、填日期或刪除</p>
                         </div>
                         <div class="fd-desktop grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto lg:grid-cols-[repeat(4,7.5rem)]">
                             <button @click="openBatchCopyModal" :disabled="selectedExpenseIds.length === 0" class="w-full h-10 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-emerald-600 hover:bg-emerald-500">批次複製 ({{ selectedExpenseIds.length }})</button>
@@ -388,20 +390,21 @@
                         </div>
                     </div>
 
-                    <!-- 手機版：卡片列表（長按選取、點一下修改） -->
+                    <!-- 手機／平板（< 1024px）：卡片列表（長按選取、長按後拖曳排序、點一下修改） -->
                     <div class="fd-mobile fdm" style="--fdm-accent:#34d399;--fdm-accent-bg:rgba(52,211,153,.15)">
                         <div class="fdm-sec">
                             <span class="fdm-sq"><i data-lucide="receipt" class="w-4 h-4"></i></span>
-                            <div style="min-width:0"><div class="fdm-title">日常交易明細</div><div class="fdm-sub">{{ filteredExpenses.length }} 筆<span v-if="expenseFilterActive"> · 已套用篩選</span> · 可長按卡片選取</div></div>
+                            <div style="min-width:0"><div class="fdm-title">日常交易明細</div><div class="fdm-sub">{{ filteredExpenses.length }} 筆<span v-if="expenseFilterActive"> · 已套用篩選</span> · 長按選取、拖曳排序</div></div>
                             <button type="button" class="fdm-sel-btn" @click="fdmSelecting('expense') ? fdmDone('expense') : fdmEnter('expense')">{{ fdmSelecting('expense') ? '完成' : '選取' }}</button>
                         </div>
                         <div v-if="filteredExpenses.length === 0" class="fdm-empty">無符合條件的收支紀錄</div>
                         <template v-for="g in expenseDayGroups" :key="g.id">
                             <div class="fdm-day"><span>{{ g.label }}</span><span><template v-if="g.exp">支出 {{ formatCurrency(g.exp) }}</template><template v-if="g.exp && g.inc"> ・ </template><template v-if="g.inc">收入 {{ formatCurrency(g.inc) }}</template></span></div>
                             <div class="fdm-list">
-                                <div v-for="item in g.items" :key="item.id" class="fdm-item" :class="{ 'is-selected': fdmIsSel('expense', item.id) }"
-                                    role="button" tabindex="0" :aria-pressed="fdmIsSel('expense', item.id)" :aria-label="'選取或編輯：' + (item.item || item.symbol)"
-                                    @pointerdown="fdmPressStart('expense', item.id, $event)" @pointermove="fdmPressMove($event)" @pointerup="fdmPressEnd" @pointercancel="fdmPressEnd" @pointerleave="fdmPressEnd" @contextmenu.prevent
+                                <div v-for="item in g.items" :key="item.id" class="fdm-item" :class="{ 'is-selected': fdmIsSel('expense', item.id), 'is-drag-src': isDragSrc('expense', item.id) }"
+                                    data-fd-row data-fd-kind="expense" :data-fd-id="item.id" :data-fd-label="(item.item || '') + (item.content ? ' · ' + item.content : '')" :data-fd-amt="(item.type === '收入' ? '+' : '-') + formatCurrency(item.amount)"
+                                    role="button" tabindex="0" :aria-pressed="fdmIsSel('expense', item.id)" :aria-label="'選取或編輯：' + (item.item || '')"
+                                    @pointerdown="rowDown('expense', item.id, $event)" @contextmenu.prevent
                                     @click="fdmTap('expense', item)" @keydown.enter.self="fdmTap('expense', item)">
                                     <span v-if="fdmIsSel('expense', item.id)" class="fdm-check"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
                                     <span class="fdm-ic" :style="catCircleStyle(item.category)"><span :key="expenseIconName(item)"><i :data-lucide="expenseIconName(item)">{{ (item.item || '?').slice(0, 1) }}</i></span></span>
@@ -411,10 +414,11 @@
                                         <div v-if="item.paidAmount > 0 || item.paymentDate || item.settlementDate || item.stockId" class="fdm-chips">
                                             <span v-if="item.stockId" class="fdm-chip" style="color:#a5b4fc">股票連動</span>
                                             <span v-if="item.paidAmount > 0" class="fdm-chip">已付 {{ formatCurrency(item.paidAmount) }}</span>
-                                            <span v-if="item.paymentDate" class="fdm-chip">付 {{ item.paymentDate.slice(5) }}</span>
-                                            <span v-if="item.settlementDate" class="fdm-chip">結 {{ item.settlementDate.slice(5) }}</span>
+                                            <span v-if="item.paymentDate" class="fdm-chip fdm-chip-date">付 {{ item.paymentDate.slice(5) }}</span>
+                                            <span v-if="item.settlementDate" class="fdm-chip fdm-chip-date">結 {{ item.settlementDate.slice(5) }}</span>
                                         </div>
                                     </div>
+                                    <div class="fdm-side"><span>付 {{ item.paymentDate ? item.paymentDate.slice(5) : '—' }}</span><span>結 {{ item.settlementDate ? item.settlementDate.slice(5) : '—' }}</span></div>
                                     <div class="fdm-amt" :class="{ 'is-in': item.type === '收入' }">{{ item.type === '收入' ? '+' : '-' }}{{ formatCurrency(item.amount) }}</div>
                                 </div>
                             </div>
@@ -422,12 +426,11 @@
                         <button v-if="filteredExpenses.length > displayedExpenses.length" @click="loadMoreExpenses" class="fdm-more">顯示更多（還有 {{ filteredExpenses.length - displayedExpenses.length }} 筆）</button>
                     </div>
 
-                    <div @scroll="onExpenseScroll" class="fd-desktop overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800">
+                    <div @scroll="onExpenseScroll" class="fd-desktop overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800" style="--fdm-accent:#34d399;--fdm-accent-bg:rgba(52,211,153,.15)">
                         <table class="w-full text-left text-xs sm:text-sm">
                             <thead class="bg-slate-800/90 text-slate-400 border-b border-slate-700/60 uppercase sticky top-0 z-10 backdrop-blur-md">
                                 <tr>
-                                    <th scope="col" class="whitespace-nowrap py-3 px-2 text-center w-10 whitespace-nowrap" title="按住拖曳調整順序"><i data-lucide="grip-vertical" class="w-4 h-4 inline-block text-slate-400"></i><span class="sr-only">拖曳</span></th>
-                                    <th scope="col" class="whitespace-nowrap py-3 px-3 text-center w-8">
+                                    <th scope="col" class="whitespace-nowrap py-3 px-2 text-center w-10" title="全選／取消全選">
                                         <input type="checkbox" @change="toggleSelectAllExpenses" :checked="isAllExpensesSelected" class="rounded bg-slate-900 border-slate-700 text-emerald-500" aria-label="全選目前清單的收支">
                                     </th>
                                     <th scope="col" class="whitespace-nowrap py-3 px-3 whitespace-nowrap">類型 / 日期</th>
@@ -442,22 +445,19 @@
                             </thead>
                             <tbody class="divide-y divide-slate-800/60">
                                 <tr 
-                                    v-for="(item, index) in displayedExpenses" 
+                                    v-for="item in displayedExpenses" 
                                     :key="item.id" 
-                                    draggable="true"
-                                    @dragstart="onDragStart($event, index, 'expense')"
-                                    @dragover.prevent="onDragOver($event, index)"
-                                    @drop="onDrop($event, index, 'expense')"
-                                    @dragend="onDragEnd"
-                                    :class="draggingIds.includes(String(item.id)) ? 'opacity-40' : ''"
-                                    class="hover:bg-slate-800/40 cursor-pointer transition select-none"
+                                    data-fd-row data-fd-kind="expense" :data-fd-id="item.id" :data-fd-label="(item.item || '') + (item.content ? ' · ' + item.content : '')" :data-fd-amt="(item.type === '收入' ? '+' : '-') + formatCurrency(item.amount)"
+                                    :class="{ 'is-selected': fdmIsSel('expense', item.id), 'is-drag-src': isDragSrc('expense', item.id) }"
+                                    class="fdd-row hover:bg-slate-800/40 cursor-pointer transition select-none"
+                                    @pointerdown="rowDown('expense', item.id, $event)" @contextmenu.prevent
                                     @click="openExpenseModal(item)" tabindex="0" @keydown.enter.self="openExpenseModal(item)"
                                 >
-                                    <td class="py-3 px-2 text-center text-slate-400 cursor-grab active:cursor-grabbing" @click.stop>
-                                        <i data-lucide="menu" class="w-4 h-4 inline"></i>
-                                    </td>
-                                    <td class="py-3 px-3 text-center" @click.stop>
-                                        <input type="checkbox" :value="item.id" v-model="selectedExpenseIds" class="rounded bg-slate-900 border-slate-700 text-emerald-500" aria-label="勾選這筆收支">
+                                    <td class="py-2 px-2 text-center" @click.stop>
+                                        <button type="button" class="fdd-ic" :class="{ 'is-sel': fdmIsSel('expense', item.id) }" :style="catCircleStyle(item.category)" :aria-pressed="fdmIsSel('expense', item.id)" :aria-label="'選取：' + (item.item || '')" title="點一下選取／取消" @click.stop="fdmToggleSel('expense', item.id)">
+                                            <span class="fdd-ic-icon"><span :key="expenseIconName(item)"><i :data-lucide="expenseIconName(item)">{{ (item.item || '?').slice(0, 1) }}</i></span></span>
+                                            <span class="fdd-ic-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
+                                        </button>
                                     </td>
                                     <td class="py-3 px-3 whitespace-nowrap">
                                         <span :class="item.type === '收入' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'" class="px-1.5 py-0.5 rounded text-xs border font-semibold mr-1.5">
@@ -489,7 +489,7 @@
                                     </td>
                                 </tr>
                                 <tr v-if="filteredExpenses.length === 0">
-                                    <td colspan="10" class="py-8 text-center text-slate-400">無符合條件的收支紀錄</td>
+                                    <td colspan="9" class="py-8 text-center text-slate-400">無符合條件的收支紀錄</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -741,7 +741,7 @@
                     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-200">ETF & 股票交易歷史紀錄</h3>
-                            <p class="fd-desktop text-xs text-slate-400"><span class="text-indigo-400 font-semibold">按住左側 ☰ 圖示可拖曳調整順序</span>，系統自動依買賣計算總市值與平均成本</p>
+                            <p class="fd-desktop text-xs text-slate-400"><span class="text-indigo-400 font-semibold">點左側圓形圖示可勾選，按住列並拖曳可調整順序</span>，系統自動依買賣計算總市值與平均成本</p>
                         </div>
                         <div class="fd-desktop w-full lg:w-auto lg:ml-auto">
                             <button @click="confirmBatchDeleteStockTrades" :disabled="selectedStockIds.length === 0" class="w-full h-10 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap lg:w-[7.5rem] bg-rose-600 hover:bg-rose-500">批次刪除 ({{ selectedStockIds.length }})</button>
@@ -758,20 +758,21 @@
                             <button v-if="stockFilterActive" @click="resetStockFilters" class="underline hover:text-slate-200">重設篩選器</button>
                         </div>
                     </div>
-                    <!-- 手機版：卡片列表（長按選取、點一下修改） -->
+                    <!-- 手機／平板（< 1024px）：卡片列表（長按選取、長按後拖曳排序、點一下修改） -->
                     <div class="fd-mobile fdm" style="--fdm-accent:#818cf8;--fdm-accent-bg:rgba(129,140,248,.17)">
                         <div class="fdm-sec">
                             <span class="fdm-sq"><i data-lucide="trending-up" class="w-4 h-4"></i></span>
-                            <div style="min-width:0"><div class="fdm-title">ETF ＆ 股票交易</div><div class="fdm-sub">{{ filteredStockTrades.length }} / {{ stockTrades.length }} 筆<span v-if="stockFilterActive"> · 已套用篩選</span> · 可長按卡片選取</div></div>
+                            <div style="min-width:0"><div class="fdm-title">ETF ＆ 股票交易</div><div class="fdm-sub">{{ filteredStockTrades.length }} / {{ stockTrades.length }} 筆<span v-if="stockFilterActive"> · 已套用篩選</span> · 長按選取、拖曳排序</div></div>
                             <button type="button" class="fdm-sel-btn" @click="fdmSelecting('stock') ? fdmDone('stock') : fdmEnter('stock')">{{ fdmSelecting('stock') ? '完成' : '選取' }}</button>
                         </div>
                         <div v-if="filteredStockTrades.length === 0" class="fdm-empty">無符合條件的交易紀錄</div>
                         <template v-for="g in stockDayGroups" :key="g.id">
                             <div class="fdm-day"><span>{{ g.label }}</span><span>{{ g.items.length }} 筆</span></div>
                             <div class="fdm-list">
-                                <div v-for="t in g.items" :key="t.id" class="fdm-item" :class="{ 'is-selected': fdmIsSel('stock', t.id) }"
-                                    role="button" tabindex="0" :aria-pressed="fdmIsSel('stock', t.id)" :aria-label="'選取或編輯：' + (t.item || t.symbol)"
-                                    @pointerdown="fdmPressStart('stock', t.id, $event)" @pointermove="fdmPressMove($event)" @pointerup="fdmPressEnd" @pointercancel="fdmPressEnd" @pointerleave="fdmPressEnd" @contextmenu.prevent
+                                <div v-for="t in g.items" :key="t.id" class="fdm-item" :class="{ 'is-selected': fdmIsSel('stock', t.id), 'is-drag-src': isDragSrc('stock', t.id) }"
+                                    data-fd-row data-fd-kind="stock" :data-fd-id="t.id" :data-fd-label="(t.symbol || '') + ' ' + (t.name || '')" :data-fd-amt="(t.action === '賣出' ? '+' : '-') + formatCurrency(t.totalAmount)"
+                                    role="button" tabindex="0" :aria-pressed="fdmIsSel('stock', t.id)" :aria-label="'選取或編輯：' + (t.name || t.symbol)"
+                                    @pointerdown="rowDown('stock', t.id, $event)" @contextmenu.prevent
                                     @click="fdmTap('stock', t)" @keydown.enter.self="fdmTap('stock', t)">
                                     <span v-if="fdmIsSel('stock', t.id)" class="fdm-check"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
                                     <span class="fdm-ic" :style="t.action === '買進' ? { background: 'rgba(129,140,248,.18)', borderColor: 'rgba(129,140,248,.4)', color: '#c7d2fe' } : { background: 'rgba(251,191,36,.16)', borderColor: 'rgba(251,191,36,.4)', color: '#fde68a' }" style="font-size:.8rem;font-weight:700">{{ t.action === '買進' ? '買' : '賣' }}</span>
@@ -785,12 +786,11 @@
                         </template>
                     </div>
 
-                    <div class="fd-desktop overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800">
+                    <div class="fd-desktop overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800" style="--fdm-accent:#818cf8;--fdm-accent-bg:rgba(129,140,248,.17)">
                         <table class="w-full text-left text-xs sm:text-sm whitespace-nowrap">
                             <thead class="bg-slate-800/90 text-slate-400 border-b border-slate-700/60 uppercase sticky top-0 z-10 backdrop-blur-md">
                                 <tr>
-                                    <th scope="col" class="whitespace-nowrap py-3 px-2 text-center w-10 whitespace-nowrap" title="按住拖曳調整順序"><i data-lucide="grip-vertical" class="w-4 h-4 inline-block text-slate-400"></i><span class="sr-only">拖曳</span></th>
-                                    <th scope="col" class="whitespace-nowrap py-3 px-4 text-center w-8">
+                                    <th scope="col" class="whitespace-nowrap py-3 px-2 text-center w-10" title="全選／取消全選">
                                         <input type="checkbox" @change="toggleSelectAllStocks" :checked="isAllStocksSelected" class="rounded bg-slate-900 border-slate-700 text-indigo-500" aria-label="全選目前清單的股票交易">
                                     </th>
                                     <th scope="col" class="whitespace-nowrap py-3 px-4">交易日期</th>
@@ -805,22 +805,19 @@
                             </thead>
                             <tbody class="divide-y divide-slate-800/60">
                                 <tr 
-                                    v-for="(trade, index) in filteredStockTrades" 
+                                    v-for="trade in filteredStockTrades" 
                                     :key="trade.id" 
-                                    draggable="true"
-                                    @dragstart="onDragStart($event, index, 'stock')"
-                                    @dragover.prevent="onDragOver($event, index)"
-                                    @drop="onDrop($event, index, 'stock')"
-                                    @dragend="onDragEnd"
-                                    :class="draggingIds.includes(String(trade.id)) ? 'opacity-40' : ''"
-                                    class="hover:bg-slate-800/40 cursor-pointer transition select-none"
+                                    data-fd-row data-fd-kind="stock" :data-fd-id="trade.id" :data-fd-label="(trade.symbol || '') + ' ' + (trade.name || '')" :data-fd-amt="(trade.action === '賣出' ? '+' : '-') + formatCurrency(trade.totalAmount)"
+                                    :class="{ 'is-selected': fdmIsSel('stock', trade.id), 'is-drag-src': isDragSrc('stock', trade.id) }"
+                                    class="fdd-row fdd-row-stock hover:bg-slate-800/40 cursor-pointer transition select-none"
+                                    @pointerdown="rowDown('stock', trade.id, $event)" @contextmenu.prevent
                                     @click="openStockModal(trade)" tabindex="0" @keydown.enter.self="openStockModal(trade)"
                                 >
-                                    <td class="py-3 px-2 text-center text-slate-400 cursor-grab active:cursor-grabbing" @click.stop>
-                                        <i data-lucide="menu" class="w-4 h-4 inline"></i>
-                                    </td>
-                                    <td class="py-3 px-4 text-center" @click.stop>
-                                        <input type="checkbox" :value="trade.id" v-model="selectedStockIds" class="rounded bg-slate-900 border-slate-700 text-indigo-500" aria-label="勾選這筆股票交易">
+                                    <td class="py-2 px-2 text-center" @click.stop>
+                                        <button type="button" class="fdd-ic" :class="{ 'is-sel': fdmIsSel('stock', trade.id) }" :style="trade.action === '買進' ? { background: 'rgba(129,140,248,.18)', borderColor: 'rgba(129,140,248,.4)', color: '#c7d2fe' } : { background: 'rgba(251,191,36,.16)', borderColor: 'rgba(251,191,36,.4)', color: '#fde68a' }" :aria-pressed="fdmIsSel('stock', trade.id)" :aria-label="'選取：' + (trade.symbol || '')" title="點一下選取／取消" @click.stop="fdmToggleSel('stock', trade.id)">
+                                            <span class="fdd-ic-icon" style="font-size:.8rem;font-weight:700">{{ trade.action === '買進' ? '買' : '賣' }}</span>
+                                            <span class="fdd-ic-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
+                                        </button>
                                     </td>
                                     <td class="py-3 px-4 text-slate-300 whitespace-nowrap">{{ trade.date }}</td>
                                     <td class="py-3 px-4 whitespace-nowrap">
@@ -1589,6 +1586,7 @@
         import { useStocks } from './js/features/stocks.js';
         import { useLedgerView } from './js/features/ledger-view.js';
         import { useMobileCards } from './js/features/mobile-cards.js';
+        import { useCardDrag } from './js/features/card-drag.js';
         import { renameInSettings as renameInSettingsOn, removeFromSettings as removeFromSettingsOn } from './js/logic/settings-ops.js';
 
         const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick, provide, inject } = Vue;
@@ -1646,6 +1644,7 @@
                 Object.assign(ctx, useStocks(ctx));
                 Object.assign(ctx, useLedgerView(ctx));
                 Object.assign(ctx, useMobileCards(ctx));
+                Object.assign(ctx, useCardDrag(ctx));
                 Object.assign(ctx, { COLOR_CHOICES });   // 範本用到的 import 進來的常數
 
                 const {
@@ -1702,7 +1701,7 @@
                 'categoryFilterLabel', 'categoryKind', 'changeMonth', 'closeAllDropdowns', 'colorPanelCat',
                 'commitImport', 'confirmBatchDeleteExpenses', 'confirmBatchDeleteStockTrades', 'confirmDeleteExpense', 'confirmDeleteStockTrade',
                 'confirmResetAll', 'dateFilterActive', 'deleteOptionItem', 'dialog', 'dismissToast',
-                'displayedExpenses', 'downloadTemplateExcel', 'draggingIds', 'editOptionName', 'editingExpenseId',
+                'displayedExpenses', 'downloadTemplateExcel', 'editOptionName', 'editingExpenseId',
                 'editingStockId', 'expenseFilterActive', 'expenseForm', 'expenseMonthFilterScope', 'expenseSearch',
                 'expenseYearOptions', 'expenseYearSelectOptions', 'expenses', 'exportToExcel', 'fetchStockPrices',
                 'fileInputRef', 'filterMonths', 'filterYears', 'filteredExpenses', 'filteredStockTrades',
@@ -1714,8 +1713,8 @@
                 'itemFilterLabel', 'itemGroups', 'itemsList', 'lastPriceUpdate', 'ledgerMonthRows',
                 'ledgerYearRows', 'loadMoreExpenses', 'mismatchGroups', 'mismatchTotal', 'monthSelectOptions',
                 'monthlyInvestNet', 'monthlyInvestSummary', 'monthlySavingsRate', 'monthlyTotalExpense', 'monthlyTotalIncome',
-                'onBackdrop', 'onCategoryChange', 'onDragEnd', 'onDragOver', 'onDragStart',
-                'onDrop', 'onExpenseScroll', 'openBatchCopyModal', 'openBatchDateModal', 'openCardDetail',
+                'onBackdrop', 'onCategoryChange',
+                'onExpenseScroll', 'openBatchCopyModal', 'openBatchDateModal', 'openCardDetail',
                 'openCategorySettings', 'openExpenseModal', 'openPaymentSettings', 'openResetModal', 'openStockModal',
                 'payTab', 'paymentChartData', 'paymentFilterLabel', 'paymentMethodsList', 'prepaidUseCount',
                 'promptAddOption', 'realizedBySymbolList', 'realizedInfo', 'realizedRowsDesc', 'removeFundingRule',
@@ -1735,8 +1734,8 @@
                 'toggleColorPanel', 'toggleDropdown', 'toggleFlowList', 'toggleSelectAllExpenses', 'toggleSelectAllStocks',
                 'totalDividend', 'totalInvestmentMarketValue', 'totalRealizedPL', 'totalUnrealizedPL', 'totalUnrealizedPLRate',
                 'typeSelectOptions', 'undoLast', 'undoToast', 'batchMenuOpen', 'catCircleStyle',
-                'expandedMonths', 'expenseDayGroups', 'fdmIsSel', 'fdmPressEnd', 'fdmPressMove',
-                'fdmPressStart', 'fdmTap', 'monthBar', 'stockDayGroups', 'toggleMonthDetail',
+                'expandedMonths', 'expenseDayGroups', 'fdmIsSel', 'fdmToggleSel',
+                'rowDown', 'isDragSrc', 'fdmTap', 'monthBar', 'stockDayGroups', 'toggleMonthDetail',
                 'expenseIconName', 'fdmSelecting', 'fdmEnter', 'fdmDone', 'fdmAllSelected',
                 'fdmToggleAll'
                 ];
@@ -1747,7 +1746,7 @@
     <div id="app-version" class="fixed bottom-1 left-2 text-[10px] text-slate-600 select-none"></div>
     <script>
         (function () {
-            var APP = 'V17';
+            var APP = 'V18';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');
