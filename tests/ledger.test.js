@@ -104,3 +104,26 @@ test('V19 項目圖：隱藏類別後前 5 名重新計算（保險費不再占�
   assert.deepEqual(top([]), ['保險費', '購物', '醫療', '電話費']);
   assert.deepEqual(top(['保險']), ['購物', '醫療', '電話費']);
 });
+
+// ---- V20：付款管道圖截斷／占比 ----
+test('V20 clipPlan：最大的超過第二大 3 倍才截斷；刻度上限取整齊數字', () => {
+  const p = L.clipPlan([18000, 3900, 910, 790, 45]);
+  assert.equal(p.max, 5500); assert.deepEqual(p.indexes, [0]);
+  assert.deepEqual(L.clipPlan([18000, 9000, 100]), { max: null, indexes: [] });        // 沒超過 3 倍：不截斷
+  assert.deepEqual(L.clipPlan([3900]), { max: null, indexes: [] });                     // 只有一條：不截斷
+  assert.deepEqual(L.clipPlan([]), { max: null, indexes: [] });
+  assert.deepEqual(L.clipPlan([0, 0]), { max: null, indexes: [] });
+});
+test('V20 clipPlan：順序不影響結果、回傳的是原順序的索引；max 一定大於第二大', () => {
+  const t = [790, 18000, 3900, 45], p = L.clipPlan(t);
+  assert.deepEqual(p.indexes, [1]); assert.ok(p.max > 3900 && p.max < 18000);
+  const t2 = [100, 10000, 20, 120]; const p2 = L.clipPlan(t2); assert.deepEqual(p2.indexes, [1]); assert.ok(p2.max >= 120 * 1.35);
+});
+test('V20 shareData：每個管道各類別百分比加總 100，與金額一致', () => {
+  const pay = L.aggregatePaymentsByCategory(V19, st, false), d = L.shareData(pay);
+  assert.equal(d.length, pay.categories.length);
+  pay.rows.forEach((r, i) => { assert.ok(Math.abs(d.reduce((s, c) => s + c[i], 0) - 100) < 1e-9); });
+  const insIdx = pay.categories.indexOf('保險'), cardIdx = pay.rows.findIndex(r => r.method === '信用卡A');
+  assert.ok(Math.abs(d[insIdx][cardIdx] - (3025 / 4525) * 100) < 1e-9);
+  assert.deepEqual(L.shareData({ categories: ['x'], rows: [{ total: 0, cats: {} }] }), [[0]]);   // 總額 0 不會除以 0
+});

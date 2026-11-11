@@ -1,6 +1,6 @@
 // FinDash 功能模組：月收支表、頁面上方卡片、信用卡待結算、項目／付款管道圖表資料
 // 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
-import { deriveLedger, DEFAULT_CATEGORY_COLORS, aggregateItems, buildItemRows, aggregatePaymentsByCategory, chartCategoryTotals, excludeCategories, calcLedger } from '../logic/ledger.js';
+import { deriveLedger, DEFAULT_CATEGORY_COLORS, aggregateItems, buildItemRows, aggregatePaymentsByCategory, chartCategoryTotals, excludeCategories, clipPlan, calcLedger } from '../logic/ledger.js';
 import { ymd, cardPeriod } from '../logic/trades.js';
 import { cleanSymbol } from '../logic/symbol.js';
 
@@ -89,13 +89,21 @@ export const useLedgerView = (ctx) => {
     });
     const itemChartData = computed(() => aggregateItems(buildItemRows(chartExpenses.value, appSettings.value, includeInvest.value), 5));
     const paymentChartData = computed(() => aggregatePaymentsByCategory(chartExpenses.value, appSettings.value, includeInvest.value));   // { categories, rows }：付款管道依類別堆疊
+    // V20：付款管道圖——金額／占比切換；金額模式下，有大額離群值時自動截斷（只是檢視狀態，不存檔）
+    const payChartMode = ref('amount');
+    const payChartClip = computed(() => (payChartMode.value === 'amount' ? clipPlan(paymentChartData.value.rows.map(r => r.total)) : { max: null, indexes: [] }));
+    const payChartClipNote = computed(() => {
+        const p = payChartClip.value, rows = paymentChartData.value.rows;
+        if (!p.indexes.length) return '';
+        return '長條已截斷，避免壓縮其他管道：' + p.indexes.map(i => `${rows[i].method} 實際 NT$ ${Math.round(rows[i].total).toLocaleString()}`).join('、') + '。切到「占比」可看完整構成。';
+    });
     const itemDetail = ref(null);
     const openItemDetail = (it) => {
         if (!it) return;
         const rows = [...it.rows].sort((a, b) => String(b.e.date).localeCompare(String(a.e.date)));
         itemDetail.value = { title: it.item, self: it.self, prepaid: it.prepaid, total: it.total, rows, parts: it.parts || null };
     };
-    watch([includeInvest, appSettings, chartHiddenCats], () => nextTick(() => renderCharts()), { deep: true });
+    watch([includeInvest, appSettings, chartHiddenCats, payChartMode], () => nextTick(() => renderCharts()), { deep: true });
     // 本月投資（獨立區塊，不進上面的圖表）
     const monthlyInvestSummary = computed(() => {
         const r = { buy: 0, sell: 0, dividend: 0, bySymbol: {} };
@@ -163,7 +171,7 @@ export const useLedgerView = (ctx) => {
     return {
         monthlyTotalIncome, monthlyTotalExpense, monthlyInvestNet, monthlySavingsRate, toggleCard, setCardDay,
         cardOffset, cardDetail, cardStatements, openCardDetail, catColor, catChartColor,
-        lightColor, itemChartData, chartCategoryLegend, chartHiddenCats, toggleChartCat, resetChartCats, paymentChartData, itemDetail, openItemDetail,
+        lightColor, itemChartData, chartCategoryLegend, chartHiddenCats, toggleChartCat, resetChartCats, paymentChartData, payChartMode, payChartClip, payChartClipNote, itemDetail, openItemDetail,
         monthlyInvestSummary, ledgerMonthRows, ledgerYearRows, showOtherCol, showAdvanceCol, goToMonth
     };
 };

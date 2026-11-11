@@ -15,7 +15,7 @@
     "./js/logic/reorder.js": "./js/logic/reorder.js?v=2",
     "./js/logic/drag.js": "./js/logic/drag.js?v=1",
     "./js/logic/trades.js": "./js/logic/trades.js?v=1",
-    "./js/logic/ledger.js": "./js/logic/ledger.js?v=2",
+    "./js/logic/ledger.js": "./js/logic/ledger.js?v=3",
     "./js/logic/importer.js": "./js/logic/importer.js?v=1",
     "./js/data/convert.js": "./js/data/convert.js?v=1",
     "./js/data/api.js": "./js/data/api.js?v=1",
@@ -25,12 +25,12 @@
     "./js/features/ui.js": "./js/features/ui.js?v=1",
     "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=1",
     "./js/features/modals.js": "./js/features/modals.js?v=1",
-    "./js/features/charts.js": "./js/features/charts.js?v=2",
+    "./js/features/charts.js": "./js/features/charts.js?v=3",
     "./js/features/import-export.js": "./js/features/import-export.js?v=1",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
     "./js/features/expenses.js": "./js/features/expenses.js?v=2",
     "./js/features/stocks.js": "./js/features/stocks.js?v=1",
-    "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=3",
+    "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=4",
     "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=3",
     "./js/features/card-drag.js": "./js/features/card-drag.js?v=1"
   }
@@ -39,7 +39,7 @@
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=1" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=6">
+    <link rel="stylesheet" href="css/app.css?v=8">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -248,12 +248,16 @@
                         </div>
                     </div>
                     <p class="text-xs text-slate-400">預設不含投資（ETF 買賣、投資儲蓄），避免大額投資稀釋其他項目；投資另外顯示在下方區塊。</p>
-                    <div class="flex flex-wrap items-center gap-2" role="group" aria-label="類別篩選：點一下可從下面兩張圖隱藏或顯示">
-                        <span class="text-xs text-slate-400">類別（點一下隱藏）</span>
-                        <button v-for="c in chartCategoryLegend" :key="c.name" type="button" @click="toggleChartCat(c.name)" :aria-pressed="!c.hidden" :title="c.hidden ? '點一下重新顯示' : '點一下從兩張圖隱藏，例如先隱藏每月固定的保險費'" class="fd-catchip" :class="{ 'is-off': c.hidden }">
-                            <span class="fd-catchip-sq" :style="{ '--chip': c.color }"></span>{{ c.name }}
-                        </button>
-                        <button v-if="chartHiddenCats.length" type="button" @click="resetChartCats" class="fd-catchip-reset">全部顯示</button>
+                    <div class="fd-catbar" role="group" aria-label="類別篩選：點一下可從下面兩張圖隱藏或顯示">
+                        <div class="fd-catbar-head">
+                            <span class="fd-catbar-label">類別（點一下隱藏／顯示）</span>
+                            <button v-if="chartHiddenCats.length" type="button" @click="resetChartCats" class="fd-catchip-reset">全部顯示</button>
+                        </div>
+                        <div class="fd-catbar-list">
+                            <button v-for="c in chartCategoryLegend" :key="c.name" type="button" @click="toggleChartCat(c.name)" :aria-pressed="!c.hidden" :title="c.hidden ? '點一下重新顯示' : '點一下從兩張圖隱藏，例如先隱藏每月固定的保險費'" class="fd-catchip" :class="{ 'is-off': c.hidden }">
+                                <span class="fd-catchip-sq" :style="{ '--chip': c.color }"></span>{{ c.name }}
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-4">
@@ -273,15 +277,22 @@
                         </div>
                     </div>
                     <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
-                        <h3 class="text-base font-semibold text-slate-200 mb-1 flex items-center gap-2">
-                            <i data-lucide="credit-card" class="w-4 h-4 text-indigo-400"></i>
-                            付款管道支出統計
-                        </h3>
-                        <p class="text-xs text-slate-400 mb-3">以「金額」計，代表錢實際從哪個管道流出（含給家裡的每月費用、悠遊卡儲值）；長條內依類別分色，顏色與左圖相同。</p>
+                        <div class="flex items-start justify-between gap-3 mb-1">
+                            <h3 class="text-base font-semibold text-slate-200 flex items-center gap-2">
+                                <i data-lucide="credit-card" class="w-4 h-4 text-indigo-400"></i>
+                                付款管道支出統計
+                            </h3>
+                            <div class="fd-seg" role="group" aria-label="付款管道圖顯示方式">
+                                <button type="button" :class="{ 'is-on': payChartMode === 'amount' }" :aria-pressed="payChartMode === 'amount'" @click="payChartMode = 'amount'">金額</button>
+                                <button type="button" :class="{ 'is-on': payChartMode === 'share' }" :aria-pressed="payChartMode === 'share'" @click="payChartMode = 'share'">占比</button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-3">{{ payChartMode === 'share' ? '占比：每個管道都當成 100%，看錢花在哪些類別；右側數字是該管道的實際總額。' : '以「金額」計，代表錢實際從哪個管道流出（含給家裡的每月費用、悠遊卡儲值）；長條內依類別分色，顏色與左圖相同。' }}</p>
                         <div class="relative h-56 w-full">
                             <canvas id="paymentChart" role="img" aria-label="付款管道支出統計堆疊長條圖，每個管道依類別分段"></canvas>
                             <div v-if="!paymentChartData.rows.length" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">{{ chartHiddenCats.length ? '目前的類別篩選下沒有紀錄' : '本月沒有支出紀錄' }}</div>
                         </div>
+                        <p v-if="payChartClipNote" class="fd-chart-note">{{ payChartClipNote }}</p>
                     </div>
                 </div>
 
@@ -920,10 +931,27 @@
                 <div v-if="itemDetail.parts" class="flex flex-wrap gap-2 text-xs">
                     <span v-for="p in itemDetail.parts" :key="p.item" class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-300">{{ p.item }}：{{ formatCurrency(p.total) }}</span>
                 </div>
-                <div class="overflow-x-auto max-h-[60vh] overflow-y-auto rounded-lg border border-slate-800">
+                <!-- 手機／平板（< 1024px）：一筆一張卡片，欄位不再被切斷或逐字換行 -->
+                <div class="fd-mobile fdm" style="--fdm-accent:#38bdf8;--fdm-accent-bg:rgba(56,189,248,.15)">
+                    <div class="fdm-list" style="max-height:60vh;overflow-y:auto">
+                        <div v-for="r in itemDetail.rows" :key="r.e.id" class="fdm-item" style="cursor:default">
+                            <span class="fdm-ic" :style="catCircleStyle(r.e.category)"><span :key="expenseIconName(r.e)"><i :data-lucide="expenseIconName(r.e)">{{ (r.e.item || '?').slice(0, 1) }}</i></span></span>
+                            <div class="fdm-mid">
+                                <div class="fdm-t1">{{ r.e.item }}<span v-if="r.e.content" style="font-weight:400;color:#cbd5e1"> · {{ r.e.content }}</span></div>
+                                <div class="fdm-t2">{{ r.e.date }} · {{ r.e.category }}<span v-if="r.e.note"> · {{ r.e.note }}</span></div>
+                                <div class="fdm-chips">
+                                    <span class="fdm-chip">{{ r.e.paymentMethod || '未填' }}</span>
+                                    <span v-if="r.source === 'prepaid'" class="fdm-chip">金額 {{ formatCurrency(r.e.amount || 0) }}・已付 {{ formatCurrency(r.e.paidAmount || 0) }}</span>
+                                </div>
+                            </div>
+                            <div class="fdm-amt">{{ formatCurrency(r.value) }}<span class="fdm-amt-sub" :class="{ 'is-prepaid': r.source === 'prepaid' }">{{ r.source === 'prepaid' ? '預付' : '自己付' }}</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fd-desktop overflow-x-auto max-h-[60vh] overflow-y-auto rounded-lg border border-slate-800">
                     <table class="w-full text-left text-xs sm:text-sm">
                         <thead class="bg-slate-800/90 text-slate-400 sticky top-0">
-                            <tr><th scope="col" class="py-2 px-3">日期</th><th scope="col" class="py-2 px-3">項目 / 類別</th><th scope="col" class="py-2 px-3">內容</th><th scope="col" class="py-2 px-3">付款方式</th><th scope="col" class="py-2 px-3 text-right">金額</th><th scope="col" class="py-2 px-3 text-right">已付金額</th><th scope="col" class="py-2 px-3 text-right">計入</th></tr>
+                            <tr><th scope="col" class="whitespace-nowrap py-2 px-3">日期</th><th scope="col" class="whitespace-nowrap py-2 px-3">項目 / 類別</th><th scope="col" class="whitespace-nowrap py-2 px-3">內容</th><th scope="col" class="whitespace-nowrap py-2 px-3">付款方式</th><th scope="col" class="whitespace-nowrap py-2 px-3 text-right">金額</th><th scope="col" class="whitespace-nowrap py-2 px-3 text-right">已付金額</th><th scope="col" class="whitespace-nowrap py-2 px-3 text-right">計入</th></tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60">
                             <tr v-for="r in itemDetail.rows" :key="r.e.id">
@@ -1715,7 +1743,7 @@
                 'gasApiUrl', 'getCardDay', 'getFixTarget', 'goToMonth', 'handleFileUpload',
                 'importIssues', 'importPreview', 'importSummary', 'includeInvest', 'inputApiUrl',
                 'isAllExpensesSelected', 'isAllItems', 'isAllStocksSelected', 'isCard', 'isCurrentMonthOrFuture',
-                'isFetchingPrices', 'isSyncing', 'itemChartData', 'chartCategoryLegend', 'chartHiddenCats', 'toggleChartCat', 'resetChartCats', 'itemDetail',
+                'isFetchingPrices', 'isSyncing', 'itemChartData', 'payChartMode', 'payChartClipNote', 'chartCategoryLegend', 'chartHiddenCats', 'toggleChartCat', 'resetChartCats', 'itemDetail',
                 'itemFilterLabel', 'itemGroups', 'itemsList', 'lastPriceUpdate', 'ledgerMonthRows',
                 'ledgerYearRows', 'loadMoreExpenses', 'mismatchGroups', 'mismatchTotal', 'monthSelectOptions',
                 'monthlyInvestNet', 'monthlyInvestSummary', 'monthlySavingsRate', 'monthlyTotalExpense', 'monthlyTotalIncome',
@@ -1752,7 +1780,7 @@
     <div id="app-version" class="fixed bottom-1 left-2 text-[10px] text-slate-600 select-none"></div>
     <script>
         (function () {
-            var APP = 'V19';
+            var APP = 'V20';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');

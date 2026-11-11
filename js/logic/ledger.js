@@ -184,3 +184,15 @@ export const aggregatePaymentsByCategory = (list, st, includeInvest) => {
         rows: Object.values(byMethod).sort((a, b) => b.total - a.total)
     };
 };
+
+// ---------- V20：付款管道圖——大額截斷、金額／占比切換 ----------
+// 最大的那條若超過第二大的 ratio 倍，就把刻度上限定在第二大的 pad 倍（取到整齊的數字），超過的長條會被截斷；沒有離群值時回傳 max: null（不截斷）
+export const clipPlan = (totals, ratio = 3, pad = 1.35) => {
+    const sorted = (totals || []).filter(t => t > 0).sort((a, b) => b - a);
+    if (sorted.length < 2 || !(sorted[0] > ratio * sorted[1])) return { max: null, indexes: [] };
+    const raw = sorted[1] * pad, step = Math.pow(10, Math.floor(Math.log10(raw))) / 2;   // 例如 5265 → 以 500 為單位進位 → 5500
+    const max = Math.ceil(raw / step) * step;
+    return { max, indexes: totals.map((t, i) => (t > max ? i : -1)).filter(i => i >= 0) };
+};
+// 占比模式：每個管道當成 100%，回傳「每個類別在每個管道的百分比」（與 pay.categories、pay.rows 同順序）
+export const shareData = (pay) => pay.categories.map(cat => pay.rows.map(r => (r.total ? ((r.cats[cat] || 0) / r.total) * 100 : 0)));
