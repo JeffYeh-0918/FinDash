@@ -60,3 +60,47 @@ test('顏色：預設對照、新類別依序分配且不重複、已有的不�
   assert.equal(L.assignCategoryColors(s, ['固定支出', '新A']), false); assert.equal(s.categoryColors['固定支出'], '#123456');
   assert.ok(!Object.values(L.DEFAULT_CATEGORY_COLORS).some(c => L.EXTRA_PALETTE.includes(c)), '擴充色盤不可與預設色重複');
 });
+
+// ---- V19：圖表類別篩選／付款管道依類別堆疊 ----
+const V19 = [
+  E({ category: '保險', item: '保險費', amount: 3025, paymentMethod: '信用卡A' }),
+  E({ category: '變動支出', item: '購物', amount: 1500, paymentMethod: '信用卡A' }),
+  E({ category: '變動支出', item: '醫療', amount: 650, paymentMethod: '現金' }),
+  E({ category: '固定支出', item: '電話費', amount: 599, paymentMethod: '信用卡B' }),
+  E({ category: '投資儲蓄', item: 'ETF投資', amount: 5000, paymentMethod: '銀行轉帳' }),
+  E({ category: '墊付', item: '代買', amount: 800, paymentMethod: '現金' }),
+  E({ type: '收入', category: '固定收入', item: '薪資', amount: 50000, paymentMethod: '銀行轉帳' }),
+  E({ category: '變動支出', item: '免費', amount: 0, paymentMethod: '現金' }),
+];
+test('V19 excludeCategories：隱藏指定類別；沒隱藏時原樣回傳（同一個陣列）', () => {
+  assert.equal(L.excludeCategories(V19, []), V19); assert.equal(L.excludeCategories(V19, undefined), V19);
+  assert.equal(L.excludeCategories(V19, ['保險']).some(e => e.category === '保險'), false);
+  assert.equal(L.excludeCategories(V19, ['保險']).length, V19.length - 1);
+  assert.equal(L.excludeCategories([E({ category: '' })], ['(未分類)']).length, 0);   // 沒有類別＝「(未分類)」
+});
+test('V19 chartCategoryTotals：與付款管道圖同一套規則（不含收入、代墊、預設不含投資），金額大的在前', () => {
+  assert.deepEqual(L.chartCategoryTotals(V19, st, false), [['保險', 3025], ['變動支出', 2150], ['固定支出', 599]]);
+  assert.deepEqual(L.chartCategoryTotals(V19, st, true).map(x => x[0]), ['投資儲蓄', '保險', '變動支出', '固定支出']);
+});
+test('V19 aggregatePaymentsByCategory：每個管道依類別分段，總額與原本的 aggregatePayments 一致', () => {
+  for (const inc of [false, true]) {
+    const r = L.aggregatePaymentsByCategory(V19, st, inc), old = L.aggregatePayments(V19, st, inc);
+    assert.deepEqual(r.rows.map(x => [x.method, x.total]), old);
+    r.rows.forEach(x => assert.equal(Object.values(x.cats).reduce((a, b) => a + b, 0), x.total));
+  }
+  const r = L.aggregatePaymentsByCategory(V19, st, false);
+  assert.deepEqual(r.categories, ['保險', '變動支出', '固定支出']);
+  assert.deepEqual(r.rows[0], { method: '信用卡A', total: 4525, cats: { '保險': 3025, '變動支出': 1500 } });
+});
+test('V19 隱藏類別後再彙總：總額只算看得到的類別，沒金額的管道消失', () => {
+  const vis = L.excludeCategories(V19, ['保險', '固定支出']);
+  const r = L.aggregatePaymentsByCategory(vis, st, false);
+  assert.deepEqual(r.rows.map(x => [x.method, x.total]), [['信用卡A', 1500], ['現金', 650]]);
+  assert.deepEqual(r.categories, ['變動支出']);
+  assert.deepEqual(L.aggregatePaymentsByCategory(L.excludeCategories(V19, ['保險', '變動支出', '固定支出']), st, false), { categories: [], rows: [] });
+});
+test('V19 項目圖：隱藏類別後前 5 名重新計算（保險費不再占榜）', () => {
+  const top = (hidden) => L.aggregateItems(L.buildItemRows(L.excludeCategories(V19, hidden), st, false), 5).map(x => x.item);
+  assert.deepEqual(top([]), ['保險費', '購物', '醫療', '電話費']);
+  assert.deepEqual(top(['保險']), ['購物', '醫療', '電話費']);
+});

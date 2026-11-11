@@ -15,7 +15,7 @@
     "./js/logic/reorder.js": "./js/logic/reorder.js?v=2",
     "./js/logic/drag.js": "./js/logic/drag.js?v=1",
     "./js/logic/trades.js": "./js/logic/trades.js?v=1",
-    "./js/logic/ledger.js": "./js/logic/ledger.js?v=1",
+    "./js/logic/ledger.js": "./js/logic/ledger.js?v=2",
     "./js/logic/importer.js": "./js/logic/importer.js?v=1",
     "./js/data/convert.js": "./js/data/convert.js?v=1",
     "./js/data/api.js": "./js/data/api.js?v=1",
@@ -25,12 +25,12 @@
     "./js/features/ui.js": "./js/features/ui.js?v=1",
     "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=1",
     "./js/features/modals.js": "./js/features/modals.js?v=1",
-    "./js/features/charts.js": "./js/features/charts.js?v=1",
+    "./js/features/charts.js": "./js/features/charts.js?v=2",
     "./js/features/import-export.js": "./js/features/import-export.js?v=1",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
     "./js/features/expenses.js": "./js/features/expenses.js?v=2",
     "./js/features/stocks.js": "./js/features/stocks.js?v=1",
-    "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=2",
+    "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=3",
     "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=3",
     "./js/features/card-drag.js": "./js/features/card-drag.js?v=1"
   }
@@ -39,7 +39,7 @@
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=1" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=5">
+    <link rel="stylesheet" href="css/app.css?v=6">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -248,6 +248,13 @@
                         </div>
                     </div>
                     <p class="text-xs text-slate-400">預設不含投資（ETF 買賣、投資儲蓄），避免大額投資稀釋其他項目；投資另外顯示在下方區塊。</p>
+                    <div class="flex flex-wrap items-center gap-2" role="group" aria-label="類別篩選：點一下可從下面兩張圖隱藏或顯示">
+                        <span class="text-xs text-slate-400">類別（點一下隱藏）</span>
+                        <button v-for="c in chartCategoryLegend" :key="c.name" type="button" @click="toggleChartCat(c.name)" :aria-pressed="!c.hidden" :title="c.hidden ? '點一下重新顯示' : '點一下從兩張圖隱藏，例如先隱藏每月固定的保險費'" class="fd-catchip" :class="{ 'is-off': c.hidden }">
+                            <span class="fd-catchip-sq" :style="{ '--chip': c.color }"></span>{{ c.name }}
+                        </button>
+                        <button v-if="chartHiddenCats.length" type="button" @click="resetChartCats" class="fd-catchip-reset">全部顯示</button>
+                    </div>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-4">
                     <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
@@ -258,10 +265,9 @@
                         <p class="text-xs text-slate-400 mb-3">點選長條可看明細。每月預付的使用以「已付金額」計入，儲值事件不重複計算。</p>
                         <div class="relative h-56 w-full">
                             <canvas id="itemChart" role="img" aria-label="支出項目占比長條圖，詳細數字可點選長條查看明細"></canvas>
-                            <div v-if="!itemChartData.length" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">本月沒有符合的消費紀錄</div>
+                            <div v-if="!itemChartData.length" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">{{ chartHiddenCats.length ? '目前的類別篩選下沒有紀錄' : '本月沒有符合的消費紀錄' }}</div>
                         </div>
                         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-3">
-                            <span v-for="c in itemChartLegend" :key="c.name" class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm" :style="{ background: c.color }"></span>{{ c.name }}</span>
                             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-slate-400"></span>實心＝自己付</span>
                             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm border border-slate-400" style="background: rgba(148,163,184,0.35)"></span>淺色＝每月預付</span>
                         </div>
@@ -271,10 +277,10 @@
                             <i data-lucide="credit-card" class="w-4 h-4 text-indigo-400"></i>
                             付款管道支出統計
                         </h3>
-                        <p class="text-xs text-slate-400 mb-3">以「金額」計，代表錢實際從哪個管道流出（含給家裡的每月費用、悠遊卡儲值）。</p>
+                        <p class="text-xs text-slate-400 mb-3">以「金額」計，代表錢實際從哪個管道流出（含給家裡的每月費用、悠遊卡儲值）；長條內依類別分色，顏色與左圖相同。</p>
                         <div class="relative h-56 w-full">
-                            <canvas id="paymentChart" role="img" aria-label="付款管道支出統計長條圖"></canvas>
-                            <div v-if="!paymentChartData.length" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">本月沒有支出紀錄</div>
+                            <canvas id="paymentChart" role="img" aria-label="付款管道支出統計堆疊長條圖，每個管道依類別分段"></canvas>
+                            <div v-if="!paymentChartData.rows.length" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">{{ chartHiddenCats.length ? '目前的類別篩選下沒有紀錄' : '本月沒有支出紀錄' }}</div>
                         </div>
                     </div>
                 </div>
@@ -1709,7 +1715,7 @@
                 'gasApiUrl', 'getCardDay', 'getFixTarget', 'goToMonth', 'handleFileUpload',
                 'importIssues', 'importPreview', 'importSummary', 'includeInvest', 'inputApiUrl',
                 'isAllExpensesSelected', 'isAllItems', 'isAllStocksSelected', 'isCard', 'isCurrentMonthOrFuture',
-                'isFetchingPrices', 'isSyncing', 'itemChartData', 'itemChartLegend', 'itemDetail',
+                'isFetchingPrices', 'isSyncing', 'itemChartData', 'chartCategoryLegend', 'chartHiddenCats', 'toggleChartCat', 'resetChartCats', 'itemDetail',
                 'itemFilterLabel', 'itemGroups', 'itemsList', 'lastPriceUpdate', 'ledgerMonthRows',
                 'ledgerYearRows', 'loadMoreExpenses', 'mismatchGroups', 'mismatchTotal', 'monthSelectOptions',
                 'monthlyInvestNet', 'monthlyInvestSummary', 'monthlySavingsRate', 'monthlyTotalExpense', 'monthlyTotalIncome',
@@ -1746,7 +1752,7 @@
     <div id="app-version" class="fixed bottom-1 left-2 text-[10px] text-slate-600 select-none"></div>
     <script>
         (function () {
-            var APP = 'V18';
+            var APP = 'V19';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');

@@ -152,3 +152,35 @@ export const findCategoryMismatches = (list, map) => {
 };
 // 建議改成哪個類別：對照表中「允許這個項目」的第一個類別（不含目前的類別）
 export const suggestCategoryFor = (item, current, map) => Object.keys(map).find(c => c !== current && Array.isArray(map[c]) && map[c].includes(item)) || '';
+
+// ---------- V19：圖表的類別篩選（點圖例隱藏／顯示類別）與付款管道依類別堆疊 ----------
+const catKey = (e) => e.category || '(未分類)';
+// 排除被隱藏的類別（hidden 為類別名稱陣列）；沒有隱藏時回傳原陣列
+export const excludeCategories = (list, hidden) => {
+    const h = new Set(hidden || []);
+    return h.size ? list.filter(e => !h.has(catKey(e))) : list;
+};
+// 付款管道圖「可納入」的支出（與付款管道圖同一套規則：只看支出、代墊不計、預設不含投資、金額 > 0）
+const chartRows = (list, st, includeInvest) => list.filter(e => e.type === '支出' && !isPassThrough(e, st) && (includeInvest || !isInvestExpense(e, st)) && Number(e.amount || 0) > 0);
+// 圖例用：各類別的支出合計，金額大的在前（類別在圖上的堆疊順序、圖例順序都以此為準）
+export const chartCategoryTotals = (list, st, includeInvest) => {
+    const m = {};
+    chartRows(list, st, includeInvest).forEach(e => { const k = catKey(e); m[k] = (m[k] || 0) + Number(e.amount || 0); });
+    return Object.entries(m).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+};
+// 付款管道圖（堆疊）：每個付款管道一條，條內依類別分段；總額與 aggregatePayments 相同
+// 回傳 { categories: [類別名…（依合計大到小）], rows: [{ method, total, cats: { 類別: 金額 } }…（依總額大到小）] }
+export const aggregatePaymentsByCategory = (list, st, includeInvest) => {
+    const rows = chartRows(list, st, includeInvest);
+    const catTotal = {}, byMethod = {};
+    rows.forEach(e => {
+        const amt = Number(e.amount || 0), k = catKey(e), p = e.paymentMethod || '未填';
+        catTotal[k] = (catTotal[k] || 0) + amt;
+        const m = byMethod[p] || (byMethod[p] = { method: p, total: 0, cats: {} });
+        m.total += amt; m.cats[k] = (m.cats[k] || 0) + amt;
+    });
+    return {
+        categories: Object.entries(catTotal).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(x => x[0]),
+        rows: Object.values(byMethod).sort((a, b) => b.total - a.total)
+    };
+};

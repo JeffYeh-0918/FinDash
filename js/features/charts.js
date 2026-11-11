@@ -74,15 +74,28 @@ export const useCharts = (ctx) => {
         const paymentCtx = document.getElementById('paymentChart')?.getContext('2d');
         if (paymentCtx) {
             if (paymentChartInstance) paymentChartInstance.destroy();
-            const pay = paymentChartData.value;
+            const pay = paymentChartData.value;   // { categories, rows }：每個付款管道一條，條內依類別堆疊（顏色與項目圖的類別色一致）
             paymentChartInstance = new Chart(paymentCtx, {
                 type: 'bar',
-                data: { labels: pay.map(p => p[0]), datasets: [{ label: '支出 (NT$)', data: pay.map(p => p[1]), backgroundColor: 'rgba(99, 102, 241, 0.7)', borderRadius: 4 }] },
+                data: {
+                    labels: pay.rows.map(r => r.method),
+                    datasets: pay.categories.map(cat => ({ label: cat, data: pay.rows.map(r => r.cats[cat] || 0), backgroundColor: catChartColor(cat), borderColor: 'rgba(15, 23, 42, 0.9)', borderWidth: 1, borderRadius: 3 }))
+                },
                 options: {
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                     layout: { padding: { right: 64 } },
-                    plugins: { legend: { display: false }, valueLabels: { display: true } },
-                    scales: { x: valueAxisStyle(), y: categoryAxisStyle() }
+                    plugins: {
+                        legend: { display: false },
+                        valueLabels: { display: true },
+                        tooltip: {
+                            filter: (c) => Number(c.raw || 0) > 0,
+                            callbacks: {
+                                label: (c) => `${c.dataset.label}：NT$ ${Number(c.raw || 0).toLocaleString()}`,
+                                footer: (items) => items.length > 1 ? `合計：NT$ ${Math.round(items.reduce((s, c) => s + Number(c.raw || 0), 0)).toLocaleString()}` : ''
+                            }
+                        }
+                    },
+                    scales: { x: valueAxisStyle({ stacked: true }), y: categoryAxisStyle({ stacked: true }) }
                 },
                 plugins: [valueLabelPlugin]
             });

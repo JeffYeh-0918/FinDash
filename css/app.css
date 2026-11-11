@@ -168,3 +168,13 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 .fd-drop-line::before { content: ''; position: absolute; left: -4px; top: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--fdm-accent, #34d399); }
 .fd-drop-line.is-noop { opacity: 0.45; box-shadow: none; background: repeating-linear-gradient(90deg, #94a3b8 0 6px, transparent 6px 10px); }   /* 放在原位＝不會有任何變動 */
 .fd-drop-line.is-noop::before { background: #94a3b8; }
+
+/* ===== V19：圖表上方的類別篩選（點一下隱藏／顯示，同時作用在項目圖與付款管道圖） ===== */
+.fd-catchip { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.5rem; border-radius: 0.375rem; border: 1px solid rgba(100, 116, 139, 0.6); color: #e2e8f0; font-size: 0.75rem; line-height: 1rem; background: transparent; cursor: pointer; transition: border-color 0.12s, color 0.12s; }
+.fd-catchip:hover { border-color: #94a3b8; }
+.fd-catchip-sq { width: 0.625rem; height: 0.625rem; border-radius: 2px; background: var(--chip); border: 1px solid var(--chip); flex: none; }
+.fd-catchip.is-off { color: #64748b; border-color: rgba(51, 65, 85, 0.9); text-decoration: line-through; }
+.fd-catchip.is-off .fd-catchip-sq { background: transparent; }
+.fd-catchip:focus-visible, .fd-catchip-reset:focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+.fd-catchip-reset { font-size: 0.75rem; color: #34d399; background: transparent; border: 0; padding: 0.25rem 0.25rem; cursor: pointer; }
+.fd-catchip-reset:hover { text-decoration: underline; }

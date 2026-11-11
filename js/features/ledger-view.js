@@ -1,6 +1,6 @@
 // FinDash 功能模組：月收支表、頁面上方卡片、信用卡待結算、項目／付款管道圖表資料
 // 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
-import { deriveLedger, DEFAULT_CATEGORY_COLORS, aggregateItems, buildItemRows, aggregatePayments, calcLedger } from '../logic/ledger.js';
+import { deriveLedger, DEFAULT_CATEGORY_COLORS, aggregateItems, buildItemRows, aggregatePaymentsByCategory, chartCategoryTotals, excludeCategories, calcLedger } from '../logic/ledger.js';
 import { ymd, cardPeriod } from '../logic/trades.js';
 import { cleanSymbol } from '../logic/symbol.js';
 
@@ -10,7 +10,8 @@ export const useLedgerView = (ctx) => {
     // 取用前面模組已建立的成員
     const {
         selectedYear, selectedMonth, expenses, appSettings, includeInvest, renderCharts,
-        expenseMonthFilterScope, filterYears, filterMonths, activeTab
+        expenseMonthFilterScope, filterYears, filterMonths, activeTab,
+        expenseSearch, selectedCategoryFilters, selectedItemFilters, selectedPaymentFilters, selectedTypeFilters, selectedExpenseIds
     } = ctx;
 
     const monthlyExpensesFiltered = computed(() => {
@@ -75,16 +76,26 @@ export const useLedgerView = (ctx) => {
         return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
     };
     const lightColor = (hex, a = 0.35) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`; };
-    const itemChartData = computed(() => aggregateItems(buildItemRows(monthlyExpensesFiltered.value, appSettings.value, includeInvest.value), 5));
-    const itemChartLegend = computed(() => Array.from(new Set(itemChartData.value.filter(x => !x.isOther).map(x => x.category))).map(name => ({ name, color: catChartColor(name) })));
-    const paymentChartData = computed(() => aggregatePayments(monthlyExpensesFiltered.value, appSettings.value, includeInvest.value));
+    // V19：點圖例（類別）可從「項目圖」與「付款管道圖」一起隱藏／顯示；只是目前畫面的檢視狀態，不存檔、重新整理就恢復全部
+    const chartHiddenCats = ref([]);
+    const chartExpenses = computed(() => excludeCategories(monthlyExpensesFiltered.value, chartHiddenCats.value));
+    const toggleChartCat = (name) => { chartHiddenCats.value = chartHiddenCats.value.includes(name) ? chartHiddenCats.value.filter(x => x !== name) : [...chartHiddenCats.value, name]; };
+    const resetChartCats = () => { chartHiddenCats.value = []; };
+    // 圖例：本月有支出的類別（金額大的在前）；已隱藏但本月沒有資料的類別也留著，才找得到地方取消隱藏
+    const chartCategoryLegend = computed(() => {
+        const names = chartCategoryTotals(monthlyExpensesFiltered.value, appSettings.value, includeInvest.value).map(x => x[0]);
+        chartHiddenCats.value.forEach(n => { if (!names.includes(n)) names.push(n); });
+        return names.map(name => ({ name, color: catChartColor(name), hidden: chartHiddenCats.value.includes(name) }));
+    });
+    const itemChartData = computed(() => aggregateItems(buildItemRows(chartExpenses.value, appSettings.value, includeInvest.value), 5));
+    const paymentChartData = computed(() => aggregatePaymentsByCategory(chartExpenses.value, appSettings.value, includeInvest.value));   // { categories, rows }：付款管道依類別堆疊
     const itemDetail = ref(null);
     const openItemDetail = (it) => {
         if (!it) return;
         const rows = [...it.rows].sort((a, b) => String(b.e.date).localeCompare(String(a.e.date)));
         itemDetail.value = { title: it.item, self: it.self, prepaid: it.prepaid, total: it.total, rows, parts: it.parts || null };
     };
-    watch([includeInvest, appSettings], () => nextTick(() => renderCharts()), { deep: true });
+    watch([includeInvest, appSettings, chartHiddenCats], () => nextTick(() => renderCharts()), { deep: true });
     // 本月投資（獨立區塊，不進上面的圖表）
     const monthlyInvestSummary = computed(() => {
         const r = { buy: 0, sell: 0, dividend: 0, bySymbol: {} };
@@ -132,12 +143,15 @@ export const useLedgerView = (ctx) => {
     });
     const showOtherCol = computed(() => ledgerMonthRows.value.some(r => r.other) || ledgerYearRows.value.some(r => r.other));
     const showAdvanceCol = computed(() => ledgerMonthRows.value.some(r => r.advanceOut || r.advanceIn) || ledgerYearRows.value.some(r => r.advanceOut || r.advanceIn));
-    // 點月收支表的某個月 → 切到日常收支，顯示該月明細
+    // 點月收支表的某個月 → 切到日常收支，並把「年份／月份」篩選器填上該年月（其他篩選與勾選一併清掉，才看得到該月完整明細）
     const goToMonth = (key) => {
         const [y, m] = key.split('-').map(Number);
         selectedYear.value = y; selectedMonth.value = m;
         expenseMonthFilterScope.value = 'MONTH';
-        filterYears.value = []; filterMonths.value = [];
+        filterYears.value = [String(y)]; filterMonths.value = [String(m)];
+        expenseSearch.value = '';
+        selectedCategoryFilters.value = []; selectedItemFilters.value = []; selectedPaymentFilters.value = []; selectedTypeFilters.value = [];
+        selectedExpenseIds.value = [];
         activeTab.value = 'expenses';
         nextTick(() => {
             renderCharts();
@@ -149,7 +163,7 @@ export const useLedgerView = (ctx) => {
     return {
         monthlyTotalIncome, monthlyTotalExpense, monthlyInvestNet, monthlySavingsRate, toggleCard, setCardDay,
         cardOffset, cardDetail, cardStatements, openCardDetail, catColor, catChartColor,
-        lightColor, itemChartData, itemChartLegend, paymentChartData, itemDetail, openItemDetail,
+        lightColor, itemChartData, chartCategoryLegend, chartHiddenCats, toggleChartCat, resetChartCats, paymentChartData, itemDetail, openItemDetail,
         monthlyInvestSummary, ledgerMonthRows, ledgerYearRows, showOtherCol, showAdvanceCol, goToMonth
     };
 };
