@@ -70,14 +70,38 @@ export const useMobileCards = (ctx) => {
 
     /* ---------- 月收支表 ---------- */
     // 比例條：收入當 100%，依序是 消費、投資、剩餘；沒有收入就不畫
+    // 月收支比例條：消費、淨投入、剩餘依「收入」比例；超支時縮放。
+    // V21：沒有收入的月份改以「支出（消費＋淨投入）」當 100%，不再整條消失；segs＝實際畫出來的每一段（含金額），卡片上逐段標示顏色與金額，不再靠最上方的總圖例對照
     const monthBar = (r) => {
         const inc = Number(r.income || 0);
-        if (inc <= 0) return null;
-        let c = Math.max(0, Number(r.consume || 0)) / inc, i = Math.max(0, Number(r.invest || 0)) / inc;
-        const over = c + i > 1;
+        const cAmt = Math.max(0, Number(r.consume || 0)), iAmt = Math.max(0, Number(r.invest || 0));   // 投資淨額為負（賣出多於買進）不畫負的長度
+        const noIncome = inc <= 0;
+        const base = noIncome ? cAmt + iAmt : inc;
+        if (base <= 0) return null;
+        let c = cAmt / base, i = iAmt / base;
+        const over = !noIncome && c + i > 1;
         if (over) { const s = c + i; c /= s; i /= s; }
         const round = (x) => Math.round(x * 1000) / 10;
-        return { consume: round(c), invest: round(i), rest: over ? 0 : round(1 - c - i), over };
+        const rest = over || noIncome ? 0 : round(1 - c - i);
+        const restAmt = over || noIncome ? 0 : Math.max(0, inc - cAmt - iAmt);
+        const segs = [
+            { key: 'c', label: '消費', color: '#818cf8', pct: round(c), amt: cAmt },
+            { key: 'i', label: '淨投入', color: '#fbbf24', pct: round(i), amt: iAmt },
+            { key: 'r', label: '剩餘', color: '#34d399', pct: rest, amt: restAmt }
+        ].filter(s => s.amt > 0);
+        return { consume: round(c), invest: round(i), rest, over, noIncome, segs };
+    };
+    // 月收支卡片的標示：左＝進來的錢（收入、淨賣出），右＝出去的錢（消費、淨投入）再加剩餘；顏色與長條一致（收入沒有長條，色點用空心圈）
+    // 淨賣出／淨投入＝這個月 ETF 賣出與買進相抵後的淨額（賣出多於買進才有「淨賣出」，反之才有「淨投入」）
+    const monthFlow = (r) => {
+        const bar = monthBar(r), inv = Number(r.invest || 0);
+        const left = [{ key: 'in', label: '收入', color: null, amt: Number(r.income || 0) }];
+        if (inv < 0) left.push({ key: 'sell', label: '淨賣出', color: '#fbbf24', amt: -inv });
+        const right = [{ key: 'c', label: '消費', color: '#818cf8', amt: Number(r.consume || 0) }];
+        if (inv > 0) right.push({ key: 'buy', label: '淨投入', color: '#fbbf24', amt: inv });
+        const rest = bar ? bar.segs.find(s => s.key === 'r') : null;
+        if (rest) right.push({ key: 'r', label: '剩餘', color: '#34d399', amt: rest.amt });
+        return { left, right, noIncome: !!(bar && bar.noIncome) };
     };
     const expandedMonths = ref({});
     const toggleMonthDetail = (key) => { expandedMonths.value = { ...expandedMonths.value, [key]: !expandedMonths.value[key] }; };
@@ -95,6 +119,6 @@ export const useMobileCards = (ctx) => {
     return {
         expenseDayGroups, stockDayGroups, expenseIconName, catCircleStyle,
         fdmIsSel, fdmToggleSel, fdmTap, fdmSelecting, fdmEnter, fdmDone, fdmAllSelected, fdmToggleAll, batchMenuOpen,
-        monthBar, expandedMonths, toggleMonthDetail
+        monthBar, monthFlow, expandedMonths, toggleMonthDetail
     };
 };

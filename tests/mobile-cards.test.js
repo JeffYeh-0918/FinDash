@@ -25,10 +25,41 @@ test('依日期分組：只合併相鄰同一天，保留手動排序；並加�
 test('日期缺漏不會當掉', () => { const { api } = setup({ expenses: [E({ id: 1, date: '' })] }); assert.equal(api.expenseDayGroups.value[0].label, '未填日期'); });
 test('月收支比例條：消費、投資、剩餘依收入比例；超支時縮放並標記', () => {
     const { api } = setup();
-    assert.deepEqual(api.monthBar({ income: 1000, consume: 500, invest: 100 }), { consume: 50, invest: 10, rest: 40, over: false });
+    const b = api.monthBar({ income: 1000, consume: 500, invest: 100 });
+    assert.deepEqual([b.consume, b.invest, b.rest, b.over, b.noIncome], [50, 10, 40, false, false]);
+    assert.deepEqual(b.segs.map(s => [s.label, s.pct, s.amt]), [['消費', 50, 500], ['淨投入', 10, 100], ['剩餘', 40, 400]]);   // 每一段都有顏色、比例與金額，可逐段標示
     const o = api.monthBar({ income: 1000, consume: 1500, invest: 500 }); assert.equal(o.over, true); assert.equal(o.rest, 0); assert.equal(o.consume + o.invest, 100);
-    assert.equal(api.monthBar({ income: 0, consume: 5, invest: 0 }), null);
+    assert.deepEqual(o.segs.map(s => s.label), ['消費', '淨投入']);                        // 超支：沒有「剩餘」這一段
+    assert.equal(api.monthBar({ income: 0, consume: 0, invest: 0 }), null);              // 完全沒有收支才沒有長條
     assert.equal(api.monthBar({ income: 1000, consume: 100, invest: -300 }).invest, 0);   // 投資淨額為負（賣出多於買進）不畫負的長度
+});
+test('月收支比例條：投資淨回收（淨額為負）的月份只有消費與剩餘，與卡片上的收入、消費對得上', () => {
+    const { api } = setup();
+    const b = api.monthBar({ income: 40315, consume: 23645, invest: -91634 });          // 例：2026/10
+    assert.deepEqual(b.segs.map(s => [s.label, s.amt]), [['消費', 23645], ['剩餘', 16670]]);
+    assert.equal(Math.round((b.consume + b.rest) * 10) / 10, 100);
+});
+test('月收支比例條：沒有收入的月份改以支出當 100%，不再整條消失', () => {
+    const { api } = setup();
+    const b = api.monthBar({ income: 0, consume: 28559, invest: 66395 });                // 例：2026/11
+    assert.equal(b.noIncome, true); assert.equal(b.over, false); assert.equal(b.rest, 0);
+    assert.deepEqual(b.segs.map(s => [s.label, s.amt]), [['消費', 28559], ['淨投入', 66395]]);
+    assert.equal(Math.round((b.consume + b.invest) * 10) / 10, 100);
+    assert.equal(api.monthBar({ income: 0, consume: 5, invest: 0 }).segs.length, 1);
+});
+test('月收支標示：左＝收入（與淨賣出），右＝消費（與淨投入）與剩餘；顏色與長條一致', () => {
+    const { api } = setup();
+    const lab = (a) => a.map(s => [s.label, s.amt]);
+    const f1 = api.monthFlow({ income: 40315, consume: 23645, invest: -91634 });           // 例：2026/10（淨賣出）
+    assert.deepEqual(lab(f1.left), [['收入', 40315], ['淨賣出', 91634]]);
+    assert.deepEqual(lab(f1.right), [['消費', 23645], ['剩餘', 16670]]);
+    const f2 = api.monthFlow({ income: 37668, consume: 29063, invest: 1000 });             // 淨投入
+    assert.deepEqual(lab(f2.left), [['收入', 37668]]); assert.deepEqual(lab(f2.right), [['消費', 29063], ['淨投入', 1000], ['剩餘', 7605]]);
+    const f3 = api.monthFlow({ income: 0, consume: 28559, invest: 66395 });                // 例：2026/11（沒有收入）
+    assert.equal(f3.noIncome, true); assert.deepEqual(lab(f3.left), [['收入', 0]]); assert.deepEqual(lab(f3.right), [['消費', 28559], ['淨投入', 66395]]);
+    assert.equal(api.monthFlow({ income: 1000, consume: 1500, invest: 0 }).right.some(s => s.label === '剩餘'), false);   // 超支：沒有剩餘
+    assert.deepEqual(lab(api.monthFlow({ income: 0, consume: 0, invest: 0 }).right), [['消費', 0]]);                       // 完全沒資料也不會爆
+    assert.equal(f1.left[0].color, null); assert.equal(f1.right[0].color, '#818cf8'); assert.equal(f1.left[1].color, '#fbbf24'); assert.equal(f1.right[1].color, '#34d399');
 });
 test('類別圖示（lucide 名稱）：先看項目、再看類別，找不到用預設', () => {
     const { api } = setup();
