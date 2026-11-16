@@ -1,6 +1,7 @@
 // FinDash 功能模組：日常收支：篩選、分頁、勾選合計、拖曳排序、新增／編輯／刪除、批次操作
 // 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
 import { dropHiddenSelection } from '../logic/selection.js';
+import { sortByDateDesc, insertAtDayEnd, putRecord } from '../logic/order.js';
 
 const { ref, nextTick, computed, watch } = Vue;
 
@@ -44,7 +45,8 @@ export const useExpenses = (ctx) => {
     const filteredExpenses = computed(() => {
         const prefix = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}`;
         const kw = (expenseSearch.value || '').trim().toLowerCase();
-        return expenses.value.filter(e => {
+        // V22：依日期排序（新的在上；同一天內維持原本順序）
+        return sortByDateDesc(expenses.value.filter(e => {
             const matchMonth = dateFilterActive.value
                 ? ((filterYears.value.length === 0 || filterYears.value.includes(String(e.date || '').slice(0, 4))) && (filterMonths.value.length === 0 || filterMonths.value.includes(String(parseInt(String(e.date || '').slice(5, 7), 10)))))
                 : (expenseMonthFilterScope.value === 'ALL' || (e.date && e.date.startsWith(prefix)));
@@ -58,7 +60,7 @@ export const useExpenses = (ctx) => {
             const matchPay = selectedPaymentFilters.value.length === 0 || selectedPaymentFilters.value.includes(e.paymentMethod);
             const matchType = selectedTypeFilters.value.length === 0 || selectedTypeFilters.value.includes(e.type);
             return matchMonth && matchKw && matchCat && matchItem && matchPay && matchType;
-        });
+        }));
     });
     const displayedExpenses = computed(() => filteredExpenses.value.slice(0, visibleCount.value));
     const expenseFilterActive = computed(() => !!((expenseSearch.value || '').trim() || selectedCategoryFilters.value.length || selectedItemFilters.value.length
@@ -107,7 +109,7 @@ export const useExpenses = (ctx) => {
             stockId: ''
         }));
         
-        expenses.value.unshift(...newItems);
+        expenses.value = insertAtDayEnd(expenses.value, newItems);   // V22：排在目標日期當天的最後面
         showBatchCopyModal.value = false;
         selectedExpenseIds.value = [];
         pushToCloud();
@@ -128,10 +130,10 @@ export const useExpenses = (ctx) => {
     const saveExpenseSubmit = () => {
         const data = { ...expenseForm.value, amount: Number(expenseForm.value.amount || 0), paidAmount: Number(expenseForm.value.paidAmount || 0) };
         if (editingExpenseId.value) {
-            const idx = expenses.value.findIndex(e => e.id === editingExpenseId.value);
-            if (idx !== -1) expenses.value[idx] = { id: editingExpenseId.value, ...data };
+            // V22：日期沒變＝原地更新；日期改了＝搬到新日期當天的最後一筆
+            expenses.value = putRecord(expenses.value, editingExpenseId.value, { id: editingExpenseId.value, ...data });
         } else {
-            expenses.value.unshift({ id: Date.now(), ...data });
+            expenses.value = insertAtDayEnd(expenses.value, { id: Date.now(), ...data });   // V22：排在當天最後一筆
         }
         showExpenseModal.value = false;
         pushToCloud();

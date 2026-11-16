@@ -5,6 +5,7 @@
 //  1. 從未成功拉過雲端資料（rev 為 null）前，絕不上傳，避免空資料覆蓋雲端
 //  2. 上傳帶著 baseRev，別台裝置已更新過 → conflict，由使用者決定
 //  3. 要上傳的筆數遠少於雲端 → shrink，由使用者決定
+//     （V22：使用者確認後以 force=true 重送，force 只略過「縮水檢查」；後端仍會檢查版本，確認期間別台裝置寫入過會回 conflict）
 //  4. 套用雲端資料時不算「使用者修改」（suppressDirty）
 export const createSyncEngine = ({ api, storage, getUrl, getData, hooks = {}, debounceMs = 800, retryMs = 300,
     keyRev = 'findash_cloud_rev_v1', keyDirty = 'findash_dirty_v1' }) => {

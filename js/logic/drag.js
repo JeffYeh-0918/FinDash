@@ -35,3 +35,12 @@ export const isNoopSlot = (viewIds, groupIds, slot) => {
     if (last - first + 1 !== idx.length) return false;   // 勾選的不連續：放下會把它們併在一起，一定有變動
     return slot >= first && slot <= last + 1;
 };
+
+// V22：整疊拖曳只能放在「被拖那張所在的那一天」之內。dates＝畫面每一列的日期（由上到下），day＝被拖那張的日期。
+// 把插入位置夾在那一天的範圍內（第一列～最後一列之後）；畫面上找不到那一天就原樣回傳。
+export const clampSlotToDay = (dates, slot, day) => {
+    let first = -1, last = -1;
+    (dates || []).forEach((d, i) => { if (String(d || '') === String(day || '')) { if (first < 0) first = i; last = i; } });
+    if (first < 0) return slot;
+    return Math.max(first, Math.min(last + 1, slot));
+};

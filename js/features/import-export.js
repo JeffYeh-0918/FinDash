@@ -2,6 +2,7 @@
 // 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
 import { cleanSymbol } from '../logic/symbol.js';
 import { buildImportPreview } from '../logic/importer.js';
+import { insertAtDayEnd } from '../logic/order.js';
 
 const { ref, computed, nextTick } = Vue;
 
@@ -136,8 +137,8 @@ export const useImportExport = (ctx) => {
             linkedN = fresh.length;
             expToAdd.push(...fresh);
         }
-        expenses.value = [...expToAdd, ...expenses.value];
-        stockTrades.value = [...stocksToAdd, ...stockTrades.value];
+        expenses.value = insertAtDayEnd(expenses.value, expToAdd);        // V22：各自排在該日期當天的最後面（同日維持 Excel 的順序）
+        stockTrades.value = insertAtDayEnd(stockTrades.value, stocksToAdd);
         refreshDynamicOptions();
         pushToCloud();
         showImportPreviewModal.value = false;

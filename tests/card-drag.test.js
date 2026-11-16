@@ -26,12 +26,14 @@ const { useCardDrag } = await import('../js/features/card-drag.js');
 // 假的列：第 i 列高 40px，中心 = i*40+20
 const mkRows = (kind, ids) => { rows = ids.map((id, i) => { const el = mkEl(); el.dataset.fdRow = ''; el.dataset.fdKind = kind; el.dataset.fdId = String(id); el.dataset.fdLabel = '項目' + id; el.dataset.fdAmt = '-' + id; el.getBoundingClientRect = () => ({ left: 10, top: i * 40, width: 300, height: 40, bottom: i * 40 + 40 }); return el; }); return rows; };
 const flush = () => { const q = rafQ; rafQ = []; q.forEach(f => f()); };
-const setup = (ids = [1, 2, 3, 4, 5], selected = []) => {
-    const exp = ids.map(id => ({ id })), pushed = [];
+const D0 = '2026-11-15';   // 預設：所有紀錄同一天（V22 起拖曳只能在同一天內調整）
+const setup = (ids = [1, 2, 3, 4, 5], selected = [], dates = [], extra = {}) => {
+    const exp = ids.map((id, i) => ({ id, date: dates[i] || D0, ...(extra.stockIds && extra.stockIds[i] ? { stockId: extra.stockIds[i] } : {}) })), pushed = [], undo = [], toasts = [];
     const ctx = { selectedExpenseIds: { value: selected }, selectedStockIds: { value: [] }, expenses: { value: exp }, stockTrades: { value: [] }, filteredExpenses: { value: exp }, filteredStockTrades: { value: [] },
-        pushToCloud: () => pushed.push(1), renderCharts: () => {}, fdmToggleSel: (k, id) => { const r = k === 'stock' ? ctx.selectedStockIds : ctx.selectedExpenseIds; r.value = r.value.includes(id) ? r.value.filter(x => x !== id) : [...r.value, id]; } };
+        pushToCloud: () => pushed.push(1), renderCharts: () => {}, captureUndo: () => undo.push(1), armUndo: (m) => toasts.push(m),
+        fdmToggleSel: (k, id) => { const r = k === 'stock' ? ctx.selectedStockIds : ctx.selectedExpenseIds; r.value = r.value.includes(id) ? r.value.filter(x => x !== id) : [...r.value, id]; } };
     mkRows('expense', ids);
-    return { api: useCardDrag(ctx), ctx, pushed };
+    return { api: useCardDrag(ctx), ctx, pushed, undo, toasts };
 };
 const P = (o) => ({ pointerId: 1, pointerType: 'touch', button: 0, clientX: 20, clientY: 20, target: { closest: () => null }, currentTarget: rows[0], ...o });
 const reset = () => { Object.keys(listeners).forEach(k => delete listeners[k]); body = mkEl(); document.body = body; rafQ = []; };
@@ -143,5 +145,55 @@ test('拖曳放到最後一列之後 → 搬到最後', () => {
         const { api, ctx } = setup();
         api.rowDown('expense', 1, P({})); mock.timers.tick(450); fire('pointermove', { pointerId: 1, clientX: 20, clientY: 500 }); flush(); fire('pointerup', { pointerId: 1 });
         assert.equal(order(ctx), '23451');
+    } finally { mock.timers.reset(); }
+});
+
+/* ---------- V22：依日期排序後的拖曳規則 ---------- */
+const dates = (ctx) => ctx.expenses.value.map(x => x.date.slice(5)).join(',');
+test('V22：整疊跨天 → 全部改成被拖那張所在的日期，放在當天指定位置，並可復原', () => {
+    mock.timers.enable({ apis: ['setTimeout'] }); reset();
+    try {
+        const { api, ctx, pushed, undo, toasts } = setup([1, 2, 3, 4, 5], [1, 3], ['2026-11-30', '2026-11-30', '2026-11-15', '2026-11-15', '2026-11-14']);
+        api.rowDown('expense', 3, P({ currentTarget: rows[2], clientY: 100 })); mock.timers.tick(450);
+        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 500 }); flush(); fire('pointerup', { pointerId: 1 });   // 拖到最底：夾在 11/15 這天的最後
+        assert.equal(order(ctx), '41325'); assert.equal(dates(ctx), '11-15,11-15,11-15,11-30,11-14');
+        assert.equal(pushed.length, 1); assert.equal(undo.length, 1); assert.equal(toasts.length, 1); assert.ok(toasts[0].includes('11/15') && toasts[0].includes('1 筆'));
+    } finally { mock.timers.reset(); }
+});
+test('V22：插入位置夾在被拖那一天之內（拖到清單最上面，也只會到那一天的最前面）', () => {
+    mock.timers.enable({ apis: ['setTimeout'] }); reset();
+    try {
+        const { api, ctx, undo } = setup([1, 2, 3, 4, 5], [], ['2026-11-30', '2026-11-30', '2026-11-15', '2026-11-15', '2026-11-14']);
+        api.rowDown('expense', 4, P({ currentTarget: rows[3], clientY: 140 })); mock.timers.tick(450);
+        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 150 }); fire('pointermove', { pointerId: 1, clientX: 20, clientY: 5 }); flush(); fire('pointerup', { pointerId: 1 });
+        assert.equal(order(ctx), '12435'); assert.equal(dates(ctx), '11-30,11-30,11-15,11-15,11-14'); assert.equal(undo.length, 0);   // 沒改日期 → 不用復原
+    } finally { mock.timers.reset(); }
+});
+test('V22：股票連動且不同天的收支不跟著搬（維持原日期、原位置）', () => {
+    mock.timers.enable({ apis: ['setTimeout'] }); reset();
+    try {
+        const { api, ctx, toasts } = setup([1, 2, 3], [1, 3], ['2026-11-30', '2026-11-15', '2026-11-15'], { stockIds: [99] });
+        api.rowDown('expense', 3, P({ currentTarget: rows[2], clientY: 100 })); mock.timers.tick(450);
+        const ghost = () => body.children.find(c => c.className.includes('fd-ghost'));
+        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 130 }); flush();
+        assert.equal(ghost().children.some(c => c.className.includes('fd-ghost-badge')), false);   // 只剩 1 筆在搬，沒有數量徽章
+        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 500 }); flush(); fire('pointerup', { pointerId: 1 });
+        assert.equal(dates(ctx), '11-30,11-15,11-15'); assert.equal(order(ctx), '123'); assert.equal(toasts.length, 0);
+    } finally { mock.timers.reset(); }
+});
+test('V22：股票交易被整疊改日期 → 連動的收支也改成同一天', () => {
+    mock.timers.enable({ apis: ['setTimeout'] }); reset();
+    try {
+        const { api, ctx, pushed, undo } = setup([1, 2, 3], [], ['2026-11-30', '2026-11-15', '2026-11-15']);
+        const trades = [{ id: 11, date: '2026-11-30' }, { id: 12, date: '2026-11-15' }, { id: 13, date: '2026-11-15' }];
+        ctx.stockTrades.value = trades; ctx.filteredStockTrades.value = trades; ctx.selectedStockIds.value = [11, 13];
+        ctx.expenses.value = [{ id: 101, date: '2026-11-30', stockId: 11 }, { id: 102, date: '2026-11-15' }, { id: 103, date: '2026-11-15', stockId: 13 }];
+        mkRows('stock', [11, 12, 13]);
+        api.rowDown('stock', 13, P({ currentTarget: rows[2], clientY: 100 })); mock.timers.tick(450);
+        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 500 }); flush(); fire('pointerup', { pointerId: 1 });
+        assert.deepEqual(ctx.stockTrades.value.map(t => t.date.slice(5)), ['11-15', '11-15', '11-15']);
+        assert.equal(ctx.expenses.value.find(e => e.id === 101).date, '2026-11-15');       // 連動收支跟著改
+        assert.equal(ctx.expenses.value.find(e => e.id === 102).date, '2026-11-15');
+        assert.equal(undo.length, 1); assert.equal(pushed.length, 1);
     } finally { mock.timers.reset(); }
 });
