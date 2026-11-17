@@ -148,35 +148,50 @@ test('拖曳放到最後一列之後 → 搬到最後', () => {
     } finally { mock.timers.reset(); }
 });
 
-/* ---------- V22：依日期排序後的拖曳規則 ---------- */
+/* ---------- V23：依日期排序後的拖曳規則（放開位置所在的那一天決定日期） ---------- */
 const dates = (ctx) => ctx.expenses.value.map(x => x.date.slice(5)).join(',');
-test('V22：整疊跨天 → 全部改成被拖那張所在的日期，放在當天指定位置，並可復原', () => {
+const D5 = ['2026-11-30', '2026-11-30', '2026-11-15', '2026-11-15', '2026-11-14'];   // 每列 40px：第 0、1 列＝11/30，第 2、3 列＝11/15，第 4 列＝11/14
+test('V23：單筆拖進另一天 → 改成那一天的日期，放在你放開的位置，並可復原', () => {
     mock.timers.enable({ apis: ['setTimeout'] }); reset();
     try {
-        const { api, ctx, pushed, undo, toasts } = setup([1, 2, 3, 4, 5], [1, 3], ['2026-11-30', '2026-11-30', '2026-11-15', '2026-11-15', '2026-11-14']);
-        api.rowDown('expense', 3, P({ currentTarget: rows[2], clientY: 100 })); mock.timers.tick(450);
-        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 500 }); flush(); fire('pointerup', { pointerId: 1 });   // 拖到最底：夾在 11/15 這天的最後
-        assert.equal(order(ctx), '41325'); assert.equal(dates(ctx), '11-15,11-15,11-15,11-30,11-14');
-        assert.equal(pushed.length, 1); assert.equal(undo.length, 1); assert.equal(toasts.length, 1); assert.ok(toasts[0].includes('11/15') && toasts[0].includes('1 筆'));
-    } finally { mock.timers.reset(); }
-});
-test('V22：插入位置夾在被拖那一天之內（拖到清單最上面，也只會到那一天的最前面）', () => {
-    mock.timers.enable({ apis: ['setTimeout'] }); reset();
-    try {
-        const { api, ctx, undo } = setup([1, 2, 3, 4, 5], [], ['2026-11-30', '2026-11-30', '2026-11-15', '2026-11-15', '2026-11-14']);
+        const { api, ctx, pushed, undo, toasts } = setup([1, 2, 3, 4, 5], [], D5);
         api.rowDown('expense', 4, P({ currentTarget: rows[3], clientY: 140 })); mock.timers.tick(450);
-        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 150 }); fire('pointermove', { pointerId: 1, clientX: 20, clientY: 5 }); flush(); fire('pointerup', { pointerId: 1 });
-        assert.equal(order(ctx), '12435'); assert.equal(dates(ctx), '11-30,11-30,11-15,11-15,11-14'); assert.equal(undo.length, 0);   // 沒改日期 → 不用復原
+        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 150 }); fire('pointermove', { pointerId: 1, clientX: 20, clientY: 30 }); flush();   // y=30：在第 0 列（11/30）下半 → 插到它之後
+        fire('pointerup', { pointerId: 1 });
+        assert.equal(order(ctx), '14235'); assert.equal(dates(ctx), '11-30,11-30,11-30,11-15,11-14');
+        assert.equal(pushed.length, 1); assert.equal(undo.length, 1); assert.ok(toasts[0].includes('1 筆') && toasts[0].includes('11/30'));
     } finally { mock.timers.reset(); }
 });
-test('V22：股票連動且不同天的收支不跟著搬（維持原日期、原位置）', () => {
+test('V23：兩個不同日期的紀錄一起拖 → 可以放到任何一天（不限那兩天），全部改成那一天', () => {
+    mock.timers.enable({ apis: ['setTimeout'] }); reset();
+    try {
+        const { api, ctx, toasts } = setup([1, 2, 3, 4, 5], [1, 3], D5);
+        api.rowDown('expense', 3, P({ currentTarget: rows[2], clientY: 100 })); mock.timers.tick(450);
+        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 110 }); fire('pointermove', { pointerId: 1, clientX: 20, clientY: 170 }); flush();   // y=170：第 4 列（11/14）上半 → 放在 11/14 最上面
+        fire('pointerup', { pointerId: 1 });
+        assert.equal(order(ctx), '13524'); assert.equal(dates(ctx), '11-14,11-14,11-14,11-30,11-15');
+        assert.ok(toasts[0].includes('2 筆') && toasts[0].includes('11/14'));
+    } finally { mock.timers.reset(); }
+});
+test('V23：同一天內調整順序（沒改日期）不需要復原；拖到清單最下面＝最後一天的最後面', () => {
+    mock.timers.enable({ apis: ['setTimeout'] }); reset();
+    try {
+        const { api, ctx, undo } = setup([1, 2, 3, 4, 5], [], D5);
+        api.rowDown('expense', 3, P({ currentTarget: rows[2], clientY: 100 })); mock.timers.tick(450);
+        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 110 }); fire('pointermove', { pointerId: 1, clientX: 20, clientY: 150 }); flush(); fire('pointerup', { pointerId: 1 });   // y=150：第 3 列（11/15）下半 → 放在它之後
+        assert.equal(order(ctx), '12435'); assert.equal(dates(ctx), '11-30,11-30,11-15,11-15,11-14'); assert.equal(undo.length, 0);
+    } finally { mock.timers.reset(); }
+});
+test('V23：股票連動且與目標日期不同天的收支不跟著搬（維持原日期）；徽章數字會隨目標日期更新', () => {
     mock.timers.enable({ apis: ['setTimeout'] }); reset();
     try {
         const { api, ctx, toasts } = setup([1, 2, 3], [1, 3], ['2026-11-30', '2026-11-15', '2026-11-15'], { stockIds: [99] });
         api.rowDown('expense', 3, P({ currentTarget: rows[2], clientY: 100 })); mock.timers.tick(450);
-        const ghost = () => body.children.find(c => c.className.includes('fd-ghost'));
-        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 130 }); flush();
-        assert.equal(ghost().children.some(c => c.className.includes('fd-ghost-badge')), false);   // 只剩 1 筆在搬，沒有數量徽章
+        const badge = () => body.children.find(c => c.className.includes('fd-ghost')).children.find(c => c.className.includes('fd-ghost-badge'));
+        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 130 }); flush();      // 游標在 11/15 → 連動收支（11/30）被排除，只剩 1 筆
+        assert.equal(badge().textContent, '1'); assert.equal(badge().style.display, 'none');
+        fire('pointermove', { pointerId: 1, clientX: 20, clientY: 10 }); flush();       // 游標移到 11/30 → 兩筆都會搬
+        assert.equal(badge().textContent, '2'); assert.equal(badge().style.display, '');
         fire('pointermove', { pointerId: 1, clientX: 20, clientY: 500 }); flush(); fire('pointerup', { pointerId: 1 });
         assert.equal(dates(ctx), '11-30,11-15,11-15'); assert.equal(order(ctx), '123'); assert.equal(toasts.length, 0);
     } finally { mock.timers.reset(); }

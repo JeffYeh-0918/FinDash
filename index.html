@@ -13,8 +13,8 @@
     "./js/logic/selection.js": "./js/logic/selection.js?v=1",
     "./js/logic/settings-ops.js": "./js/logic/settings-ops.js?v=1",
     "./js/logic/reorder.js": "./js/logic/reorder.js?v=2",
-    "./js/logic/drag.js": "./js/logic/drag.js?v=2",
-    "./js/logic/order.js": "./js/logic/order.js?v=1",
+    "./js/logic/drag.js": "./js/logic/drag.js?v=3",
+    "./js/logic/order.js": "./js/logic/order.js?v=2",
     "./js/logic/trades.js": "./js/logic/trades.js?v=1",
     "./js/logic/ledger.js": "./js/logic/ledger.js?v=3",
     "./js/logic/importer.js": "./js/logic/importer.js?v=1",
@@ -27,13 +27,13 @@
     "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=1",
     "./js/features/modals.js": "./js/features/modals.js?v=1",
     "./js/features/charts.js": "./js/features/charts.js?v=3",
-    "./js/features/import-export.js": "./js/features/import-export.js?v=2",
+    "./js/features/import-export.js": "./js/features/import-export.js?v=3",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
-    "./js/features/expenses.js": "./js/features/expenses.js?v=3",
-    "./js/features/stocks.js": "./js/features/stocks.js?v=2",
+    "./js/features/expenses.js": "./js/features/expenses.js?v=4",
+    "./js/features/stocks.js": "./js/features/stocks.js?v=3",
     "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=4",
     "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=5",
-    "./js/features/card-drag.js": "./js/features/card-drag.js?v=2"
+    "./js/features/card-drag.js": "./js/features/card-drag.js?v=3"
   }
 }
     </script>
@@ -1784,7 +1784,7 @@
     <div id="app-version" class="fixed bottom-1 left-2 text-[10px] text-slate-600 select-none"></div>
     <script>
         (function () {
-            var APP = 'V22';
+            var APP = 'V23';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');

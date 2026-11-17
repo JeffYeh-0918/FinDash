@@ -3,7 +3,7 @@
 import { cleanSymbol } from '../logic/symbol.js';
 import { sortTrades, calcRealized, calcDividends } from '../logic/trades.js';
 import { dropHiddenSelection } from '../logic/selection.js';
-import { sortByDateDesc, insertAtDayEnd, putRecord } from '../logic/order.js';
+import { sortByDateDesc, insertAtDayStart, putRecord } from '../logic/order.js';
 
 const { computed, nextTick, watch } = Vue;
 
@@ -226,11 +226,11 @@ export const useStocks = (ctx) => {
         let tradeId;
         if (editingStockId.value) {
             tradeId = editingStockId.value;
-            // V22：日期沒變＝原地更新；日期改了＝搬到新日期當天的最後一筆
+            // V22：日期沒變＝原地更新；日期改了＝搬到新日期當天的最上面
             stockTrades.value = putRecord(stockTrades.value, tradeId, { id: tradeId, ...data });
         } else {
             tradeId = Date.now();
-            stockTrades.value = insertAtDayEnd(stockTrades.value, { id: tradeId, ...data });   // V22：排在當天最後一筆
+            stockTrades.value = insertAtDayStart(stockTrades.value, { id: tradeId, ...data });   // V22：排在當天最上面
         }
         // 自動補上／更新對應的收支紀錄
         const trade = { id: tradeId, ...data };
@@ -239,7 +239,7 @@ export const useStocks = (ctx) => {
         if (linked) {
             expenses.value = putRecord(expenses.value, linked.id, { ...linked, ...fields, stockId: tradeId, paymentMethod: payMethod || '' });
         } else {
-            expenses.value = insertAtDayEnd(expenses.value, { id: newExpenseId(), ...fields, stockId: tradeId, paidAmount: 0, paymentMethod: payMethod || '', paymentDate: '', settlementDate: '' });
+            expenses.value = insertAtDayStart(expenses.value, { id: newExpenseId(), ...fields, stockId: tradeId, paidAmount: 0, paymentMethod: payMethod || '', paymentDate: '', settlementDate: '' });
         }
         showStockModal.value = false;
         pushToCloud();
@@ -327,7 +327,7 @@ export const useStocks = (ctx) => {
             else fresh.push({ id: newExpenseId(fresh.map(x => x.id)), ...std, stockId: t.id, paidAmount: 0, paymentMethod: DEFAULT_STOCK_PAY, paymentDate: '', settlementDate: '' });
         });
         fixes.forEach(({ t, e }) => Object.assign(e, stockExpenseFields(t)));
-        expenses.value = insertAtDayEnd(expenses.value, fresh);   // V22：各自排在該日期當天的最後面
+        expenses.value = insertAtDayStart(expenses.value, fresh);   // V22：各自排在該日期當天的最上面
         pushToCloud();
         armUndo(`已連結 ${linkN} 筆、新增 ${newN} 筆、統一格式 ${fixes.length} 筆` + (reid.size ? `、重新編號 ${reid.size} 筆` : ''));
         nextTick(() => renderCharts());

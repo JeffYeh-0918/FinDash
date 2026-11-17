@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sortByDateDesc, insertAtDayEnd, putRecord, moveToDay, retargetLinked, isLinkedOtherDay } from '../js/logic/order.js';
-import { clampSlotToDay } from '../js/logic/drag.js';
+import { sortByDateDesc, insertAtDayStart, putRecord, moveToDay, retargetLinked, isLinkedOtherDay } from '../js/logic/order.js';
+import { clampSlotToDay, dayAtY } from '../js/logic/drag.js';
 
 const r = (id, date, extra = {}) => ({ id, date, ...extra });
 const ids = (l) => l.map(x => x.id).join(',');
@@ -12,24 +12,24 @@ test('sortByDateDesc：日期新→舊；同一天維持原本順序；沒填日
     assert.equal(ids(sortByDateDesc(src)), 'b,e,a,d,f,c');
     assert.equal(ids(src), snap);
 });
-test('使用者情境：已有 11/30，之後補登 11/15 → 排在原本 11/15 的最後一筆，不會另開一組', () => {
+test('使用者情境：已有 11/30，之後補登 11/15 → 併入原本的 11/15 並排在當天最上面（越上面越新），不會另開一組', () => {
     const list = [r(1, '2026-11-30'), r(2, '2026-11-15'), r(3, '2026-11-15'), r(4, '2026-11-14')];
-    const next = insertAtDayEnd(list, r(9, '2026-11-15'));
-    assert.equal(ids(sortByDateDesc(next)), '1,2,3,9,4');
+    const next = insertAtDayStart(list, r(9, '2026-11-15'));
+    assert.equal(ids(sortByDateDesc(next)), '1,9,2,3,4');
     assert.equal(ids(list), '1,2,3,4');   // 沒有改到原陣列
 });
-test('insertAtDayEnd：該日期還沒有紀錄 → 放最前面，顯示時自動排進正確位置；一次多筆維持順序', () => {
+test('insertAtDayStart：該日期還沒有紀錄 → 放最前面，顯示時自動排進正確位置；一次多筆維持彼此順序', () => {
     const list = [r(1, '2026-11-30'), r(2, '2026-11-10')];
-    assert.equal(ids(sortByDateDesc(insertAtDayEnd(list, r(9, '2026-11-20')))), '1,9,2');
-    const many = insertAtDayEnd([r(1, '2026-11-15')], [r(7, '2026-11-15'), r(8, '2026-11-15'), r(9, '2026-11-01')]);
-    assert.equal(ids(sortByDateDesc(many)), '1,7,8,9');
+    assert.equal(ids(sortByDateDesc(insertAtDayStart(list, r(9, '2026-11-20')))), '1,9,2');
+    const many = insertAtDayStart([r(1, '2026-11-15')], [r(7, '2026-11-15'), r(8, '2026-11-15'), r(9, '2026-11-01')]);
+    assert.equal(ids(sortByDateDesc(many)), '7,8,1,9');
 });
-test('putRecord：日期沒變＝原地更新；日期改了＝搬到新日期的最後一筆；找不到就原樣回傳', () => {
+test('putRecord：日期沒變＝原地更新；日期改了＝搬到新日期當天的最上面；找不到就原樣回傳', () => {
     const list = [r(1, '2026-11-30'), r(2, '2026-11-15'), r(3, '2026-11-15')];
     const same = putRecord(list, 2, r(2, '2026-11-15', { amount: 5 }));
     assert.equal(ids(same), '1,2,3'); assert.equal(same[1].amount, 5);
-    assert.equal(ids(sortByDateDesc(putRecord(list, 2, r(2, '2026-11-30')))), '1,2,3');   // 2 變 11/30 → 排在 1 之後
-    assert.equal(ids(sortByDateDesc(putRecord(list, 1, r(1, '2026-11-15')))), '2,3,1');   // 1 變 11/15 → 排在 2、3 之後
+    assert.equal(ids(sortByDateDesc(putRecord(list, 2, r(2, '2026-11-30')))), '2,1,3');   // 2 變 11/30 → 排在那天最上面
+    assert.equal(ids(sortByDateDesc(putRecord(list, 1, r(1, '2026-11-15')))), '1,2,3');   // 1 變 11/15 → 排在 2、3 之前（那天最上面）
     assert.equal(putRecord(list, 99, r(99, 'x')), list);
 });
 test('moveToDay：整疊改成指定日期並放到指定位置；其他天的紀錄位置不動', () => {
@@ -65,10 +65,10 @@ test('moveToDay：錨點在被搬的那疊裡 → 往後找第一筆不在那疊
     assert.equal(ids(moveToDay(full, view, [1, 2], 2, '2026-11-15').list), '1,2,3');   // 本來就在那個位置
     assert.equal(ids(moveToDay(full, view, [2], 2, '2026-11-15').list), '1,2,3');
 });
-test('retargetLinked：股票交易改日期 → 以 stockId 連動的收支跟著改，並排到新日期最後；沒有要改就回傳原陣列', () => {
+test('retargetLinked：股票交易改日期 → 以 stockId 連動的收支跟著改，並排到新日期最上面；沒有要改就回傳原陣列', () => {
     const exp = [r(101, '2026-11-30', { stockId: 11 }), r(102, '2026-11-15'), r(103, '2026-11-15', { stockId: 13 })];
     const out = retargetLinked(exp, ['11'], '2026-11-15');
-    assert.equal(ids(sortByDateDesc(out)), '102,103,101');
+    assert.equal(ids(sortByDateDesc(out)), '101,102,103');
     assert.equal(retargetLinked(exp, ['13'], '2026-11-15'), exp);
     assert.equal(retargetLinked(exp, [], '2026-11-15'), exp);
 });
@@ -84,4 +84,13 @@ test('clampSlotToDay：插入位置夾在那一天的範圍內；找不到那一
     assert.equal(clampSlotToDay(d, 3, '11-15'), 3);
     assert.equal(clampSlotToDay(d, 6, '11-15'), 5);
     assert.equal(clampSlotToDay(d, 4, '99-99'), 4);
+});
+test('dayAtY：游標所在的那一列決定日期；落在空隙（日期標題）就取最近的那一列；超出清單頭尾取頭尾', () => {
+    const rects = [{ top: 0, bottom: 40 }, { top: 40, bottom: 80 }, { top: 120, bottom: 160 }];   // 第 2、3 列之間有 40px 的日期標題
+    const d = ['11-30', '11-30', '11-15'];
+    assert.equal(dayAtY(rects, d, 20), '11-30');
+    assert.equal(dayAtY(rects, d, 90), '11-30');    // 離第 2 列（80）較近
+    assert.equal(dayAtY(rects, d, 110), '11-15');   // 離第 3 列（120）較近
+    assert.equal(dayAtY(rects, d, -50), '11-30'); assert.equal(dayAtY(rects, d, 999), '11-15');
+    assert.equal(dayAtY([], [], 10), '');
 });

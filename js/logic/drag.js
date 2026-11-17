@@ -36,8 +36,14 @@ export const isNoopSlot = (viewIds, groupIds, slot) => {
     return slot >= first && slot <= last + 1;
 };
 
-// V22：整疊拖曳只能放在「被拖那張所在的那一天」之內。dates＝畫面每一列的日期（由上到下），day＝被拖那張的日期。
-// 把插入位置夾在那一天的範圍內（第一列～最後一列之後）；畫面上找不到那一天就原樣回傳。
+// V23：放開時「手指／游標所在的那一列」決定放進哪一天（日期標題等空隙就取離得最近的那一列）。rects＝每一列的位置（top、bottom），dates＝每一列的日期。
+export const dayAtY = (rects, dates, y) => {
+    let best = -1, bestD = Infinity;
+    (rects || []).forEach((b, i) => { const d = y < b.top ? b.top - y : (y > b.bottom ? y - b.bottom : 0); if (d < bestD) { bestD = d; best = i; } });
+    return best < 0 ? '' : String(dates[best] || '');
+};
+
+// 把插入位置夾在「那一天」的範圍內（第一列～最後一列之後），避免插到別天的區塊；畫面上找不到那一天就原樣回傳。
 export const clampSlotToDay = (dates, slot, day) => {
     let first = -1, last = -1;
     (dates || []).forEach((d, i) => { if (String(d || '') === String(day || '')) { if (first < 0) first = i; last = i; } });

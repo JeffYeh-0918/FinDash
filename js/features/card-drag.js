@@ -4,11 +4,11 @@
 //                 長按「已選取」的卡片不會取消選取，而是準備拖（要取消選取請點一下）。
 //   滑鼠：按住並移動超過約 5px 才算拖；單純點擊維持原本行為（開啟編輯）。
 //   拖的這一筆若已勾選，所有已勾選的整疊一起搬；沒勾選就只搬這一筆。
-//   V22：清單依日期排序，所以只能放在「被拖那一筆所在的那一天」之內；整疊裡其他天的紀錄會一起改成這一天的日期（股票連動的收支除外，維持原日期）。
+//   V23：清單依日期排序，放開時「游標所在的那一列」決定放進哪一天：整疊（可能來自不同天）全部改成那一天的日期，並放在你放開的位置（股票連動的收支不能單獨改日期，不同天的會留在原處）。
 // 畫面：浮動的卡片堆（數量徽章、整併動畫）、插入位置指示線、原位置淡化、靠近邊緣自動捲動、Esc／拖回原處可取消。
 // 排序邏輯在 js/logic/order.js（moveToDay）與 js/logic/drag.js，這裡只負責手勢與畫面。
 import { moveToDay, isLinkedOtherDay, retargetLinked } from '../logic/order.js';
-import { slotFromY, edgeScrollDelta, movedBeyond, groupIdsFor, isNoopSlot, clampSlotToDay } from '../logic/drag.js';
+import { slotFromY, edgeScrollDelta, movedBeyond, groupIdsFor, isNoopSlot, clampSlotToDay, dayAtY } from '../logic/drag.js';
 
 const { ref, computed, nextTick } = Vue;
 
@@ -69,7 +69,7 @@ export const useCardDrag = (ctx) => {
         card.appendChild(t); card.appendChild(a);
         return card;
     };
-    const buildGhost = (srcRow, groupRows, n) => {
+    const buildGhost = (srcRow, groupRows, n) => {   // 回傳 { ghost, badge }；badge 的數字會隨放開位置所在的日期變動（股票連動收支被排除時）
         const r = srcRow.getBoundingClientRect();
         const ghost = document.createElement('div');
         ghost.className = 'fd-ghost'; ghost.setAttribute('aria-hidden', 'true');
@@ -100,9 +100,10 @@ export const useCardDrag = (ctx) => {
             card.style.transform = 'translate(' + (i + 1) * 6 + 'px,' + (i + 1) * 6 + 'px)'; ghost.appendChild(card);
         }
         const top = makeCard(srcRow); top.classList.add('fd-ghost-top'); ghost.appendChild(top);
-        if (n > 1) { const badge = document.createElement('div'); badge.className = 'fd-ghost-badge'; badge.textContent = String(n); ghost.appendChild(badge); }
+        let badge = null;
+        if (n > 1) { badge = document.createElement('div'); badge.className = 'fd-ghost-badge'; badge.textContent = String(n); ghost.appendChild(badge); }
         document.body.appendChild(ghost);
-        return ghost;
+        return { ghost, badge };
     };
 
     /* ---------- 拖曳過程 ---------- */
@@ -129,13 +130,9 @@ export const useCardDrag = (ctx) => {
             if (dy) { const b = window.scrollY; window.scrollBy(0, dy); if (window.scrollY === b) dy = 0; }
         }
 
-        // 插入位置：依每一列的垂直中心判斷；指示線畫在那一列的上緣（最後面＝最後一列的下緣）
-        const rows = visibleRows(ui.kind);
-        const rects = rows.map(el => el.getBoundingClientRect());
-        // V22：插入位置夾在「被拖那一筆所在的那一天」之內
-        const slot = clampSlotToDay(rows.map(el => ui.dateById[el.dataset.fdId]), slotFromY(rects.map(b => b.top + b.height / 2), g.y), ui.day);
-        ui.slot = slot; ui.rowIds = rows.map(el => el.dataset.fdId);
+        const rects = compute();
         if (rects.length) {
+            const slot = ui.slot;
             const at = slot < rects.length ? rects[slot] : rects[rects.length - 1];
             const y = slot < rects.length ? at.top : at.bottom;
             ui.line.style.width = at.width + 'px';
@@ -144,6 +141,27 @@ export const useCardDrag = (ctx) => {
             ui.line.classList.toggle('is-noop', !ui.cross && isNoopSlot(ui.viewIds, ui.gids, slot));
         }
         if (dy) schedule();   // 還在邊緣捲動中：不用等手指動，下一格繼續
+    };
+
+    // 依目前游標位置算出：放進哪一天（ui.day）、插入位置（ui.slot）、實際會搬的紀錄（ui.gids）。tick 與 drop 共用，放開時一定用最新位置
+    const compute = () => {
+        const rows = visibleRows(ui.kind);
+        const rects = rows.map(el => el.getBoundingClientRect());
+        const dates = rows.map(el => ui.dateById[el.dataset.fdId]);
+        // V23：游標所在的那一列決定放進哪一天；插入位置再夾在那一天的範圍內（依各列垂直中心判斷）
+        const day = rects.length ? dayAtY(rects, dates, g.y) : ui.day;
+        ui.day = day;
+        ui.slot = clampSlotToDay(dates, slotFromY(rects.map(b => b.top + b.height / 2), g.y), day);
+        ui.rowIds = rows.map(el => el.dataset.fdId);
+        // 股票連動的收支不能單獨改日期：與目標日期不同天的留在原處，不跟著搬
+        const gids = ui.allIds.filter(id => !isLinkedOtherDay(ui.byId.get(id), day));
+        if (gids.length !== ui.gids.length || gids.some((id, i) => id !== ui.gids[i])) {
+            ui.gids = gids; dragIds.value = gids;
+            if (ui.badge) { ui.badge.textContent = String(gids.length); ui.badge.style.display = gids.length > 1 ? '' : 'none'; }
+        }
+        ui.locked = ui.allIds.length - gids.length;
+        ui.cross = gids.some(id => ui.dateById[id] !== day);
+        return rects;
     };
 
     const teardown = () => {
@@ -162,14 +180,11 @@ export const useCardDrag = (ctx) => {
         const viewIds = view.map(x => String(x.id));
         if (!viewIds.includes(g.id)) { endGesture(false); return; }   // 這筆已經不在清單裡（例如剛好被同步更新）
         const dragged = view.find(x => String(x.id) === g.id);
-        const day = String((dragged && dragged.date) || '');
+        const day = String((dragged && dragged.date) || '');   // 起始值；拖動時由游標位置重新決定
         const dateById = {}; view.forEach(x => { dateById[String(x.id)] = String(x.date || ''); });
         const byId = new Map(view.map(x => [String(x.id), x]));
         const allIds = groupIdsFor(g.id, selRef(g.kind).value, viewIds);
-        // 股票連動的收支不能單獨改日期：不同天的留在原處，不跟著搬
-        const gids = allIds.filter(id => !isLinkedOtherDay(byId.get(id), day));
-        const locked = allIds.length - gids.length;
-        const cross = gids.some(id => dateById[id] !== day);
+        const gids = allIds.slice();
         const rows = visibleRows(g.kind);
         const srcRow = rows.find(el => el.dataset.fdId === g.id) || g.row;
         const gidSet = new Set(gids);
@@ -180,12 +195,12 @@ export const useCardDrag = (ctx) => {
         document.body.appendChild(line);
         g.phase = 'dragging'; g.swallow = true;
         ui = {
-            kind: g.kind, gids, viewIds, day, dateById, cross, locked, line, raf: 0, slot: 0, rowIds: [],
+            kind: g.kind, allIds, byId, gids, viewIds, day, dateById, cross: false, locked: 0, line, raf: 0, slot: 0, rowIds: [], badge: null,
             gx: Math.max(0, Math.min(g.x - r.left, 460)), gy: Math.max(0, g.y - r.top),
             sp: findScrollParent(srcRow), cards: !!(srcRow.classList && srcRow.classList.contains('fdm-item')),
             ghost: null
         };
-        ui.ghost = buildGhost(srcRow, groupRows, gids.length);
+        { const built = buildGhost(srcRow, groupRows, gids.length); ui.ghost = built.ghost; ui.badge = built.badge; }
         document.body.classList.add('fd-dragging');
         dragKind.value = g.kind; dragIds.value = gids;
         try { if (g.row && g.row.setPointerCapture) g.row.setPointerCapture(g.pid); } catch (e) { /* 拖出視窗外追不到指標也沒關係 */ }
@@ -194,6 +209,7 @@ export const useCardDrag = (ctx) => {
 
     const drop = () => {
         if (!ui) return;
+        compute();   // 用放開當下的位置再算一次（不用等下一個動畫格）
         const { kind, gids, slot, rowIds, day, locked } = ui;
         const view = viewOf(kind);
         // 放在第 slot 列之前；放到畫面最後一列之後時，接在「畫面還沒載入的下一筆」之前（沒有就是清單最後）

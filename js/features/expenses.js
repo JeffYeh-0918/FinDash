@@ -1,7 +1,7 @@
 // FinDash 功能模組：日常收支：篩選、分頁、勾選合計、拖曳排序、新增／編輯／刪除、批次操作
 // 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
 import { dropHiddenSelection } from '../logic/selection.js';
-import { sortByDateDesc, insertAtDayEnd, putRecord } from '../logic/order.js';
+import { sortByDateDesc, insertAtDayStart, putRecord } from '../logic/order.js';
 
 const { ref, nextTick, computed, watch } = Vue;
 
@@ -109,7 +109,7 @@ export const useExpenses = (ctx) => {
             stockId: ''
         }));
         
-        expenses.value = insertAtDayEnd(expenses.value, newItems);   // V22：排在目標日期當天的最後面
+        expenses.value = insertAtDayStart(expenses.value, newItems);   // V22：排在目標日期當天的最上面
         showBatchCopyModal.value = false;
         selectedExpenseIds.value = [];
         pushToCloud();
@@ -130,10 +130,10 @@ export const useExpenses = (ctx) => {
     const saveExpenseSubmit = () => {
         const data = { ...expenseForm.value, amount: Number(expenseForm.value.amount || 0), paidAmount: Number(expenseForm.value.paidAmount || 0) };
         if (editingExpenseId.value) {
-            // V22：日期沒變＝原地更新；日期改了＝搬到新日期當天的最後一筆
+            // V22：日期沒變＝原地更新；日期改了＝搬到新日期當天的最上面
             expenses.value = putRecord(expenses.value, editingExpenseId.value, { id: editingExpenseId.value, ...data });
         } else {
-            expenses.value = insertAtDayEnd(expenses.value, { id: Date.now(), ...data });   // V22：排在當天最後一筆
+            expenses.value = insertAtDayStart(expenses.value, { id: Date.now(), ...data });   // V22：排在當天最上面
         }
         showExpenseModal.value = false;
         pushToCloud();
