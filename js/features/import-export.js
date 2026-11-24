@@ -12,6 +12,8 @@ export const useImportExport = (ctx) => {
         showToast, expenses, stockTrades, todayStr, appSettings, captureUndo,
         DEFAULT_STOCK_PAY, refreshDynamicOptions, pushToCloud, armUndo, renderCharts
     } = ctx;
+    // 股票模組比本模組晚建立：呼叫當下才去 ctx 找（與 ui.js、sync-ui.js 相同做法）
+    const fetchStockPrices = (...args) => ctx.fetchStockPrices(...args);
 
     // 取用「較晚建立」的模組成員（模組之間互相呼叫）：用到的當下才去 ctx 找
     const stockExpenseFields = (...args) => ctx.stockExpenseFields(...args);
@@ -145,6 +147,7 @@ export const useImportExport = (ctx) => {
         importPreview.value = null;
         armUndo(`已匯入 ${expToAdd.length - linkedN} 筆收支、${stocksToAdd.length} 筆股票` + (linkedN ? `，並產生 ${linkedN} 筆連動收支` : ''));
         nextTick(() => renderCharts());
+        if (stocksToAdd.length) fetchStockPrices(true);   // 匯入了股票交易 → 馬上取得報價（不用再按「更新市價」）
     };
     const downloadTemplateExcel = () => {
         const wb = XLSX.utils.book_new();

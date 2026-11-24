@@ -24,23 +24,25 @@
     "./js/features/state.js": "./js/features/state.js?v=2",
     "./js/features/options.js": "./js/features/options.js?v=2",
     "./js/features/ui.js": "./js/features/ui.js?v=1",
-    "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=1",
+    "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=2",
     "./js/features/modals.js": "./js/features/modals.js?v=1",
     "./js/features/charts.js": "./js/features/charts.js?v=3",
-    "./js/features/import-export.js": "./js/features/import-export.js?v=3",
+    "./js/features/import-export.js": "./js/features/import-export.js?v=4",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
     "./js/features/expenses.js": "./js/features/expenses.js?v=4",
     "./js/features/stocks.js": "./js/features/stocks.js?v=3",
     "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=4",
     "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=5",
-    "./js/features/card-drag.js": "./js/features/card-drag.js?v=3"
+    "./js/features/card-drag.js": "./js/features/card-drag.js?v=4",
+    "./js/features/nav.js": "./js/features/nav.js?v=1",
+    "./js/logic/nav.js": "./js/logic/nav.js?v=1"
   }
 }
     </script>
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=2" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=11">
+    <link rel="stylesheet" href="css/app.css?v=14">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -53,131 +55,88 @@
     
 </head>
 <body class="min-h-screen bg-slate-900 text-slate-100 antialiased selection:bg-emerald-500 selection:text-white" @click="closeAllDropdowns">
-    <div id="app" v-cloak class="pb-12">
-        <!-- Header / Navigation Bar -->
-        <header class="relative lg:sticky lg:top-0 z-30 glass-card border-b border-slate-800/80 px-4 lg:px-8 py-3 mb-6">
-            <div class="max-w-7xl mx-auto flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3 lg:gap-4">
-                <div class="flex items-center space-x-3 w-full lg:w-auto justify-between lg:justify-start">
-                    <div class="flex items-center space-x-3">
-                        <div class="p-2.5 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-xl shadow-lg shadow-emerald-500/20">
-                            <i data-lucide="wallet" class="w-6 h-6 text-slate-950"></i>
-                        </div>
-                        <div>
-                            <h1 class="text-xl font-bold whitespace-nowrap bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                                FinDash 智慧資產管理
-                            </h1>
-                            <p class="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
-                                <span>日常收支與股票投資儀表板</span>
-                                <button type="button" v-if="gasApiUrl && syncBadge.text" @click="syncFromCloud()" :disabled="isSyncing" :title="syncState === 'error' || syncState === 'dirty' ? '點一下重新同步' : '同步狀態'" :class="syncBadge.cls" class="text-xs px-1.5 py-0.2 rounded border whitespace-nowrap cursor-pointer hover:brightness-125 disabled:cursor-default">{{ syncBadge.text }}</button>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex flex-wrap items-center justify-end gap-2 sm:gap-3 w-full lg:w-auto">
-                    <div class="flex items-center glass-card rounded-xl p-1 border border-slate-700/60">
-                        <button @click="changeMonth(-1)" class="p-1.5 hover:bg-slate-800 rounded-lg transition text-slate-400 hover:text-white" title="上個月" aria-label="上一個月">
-                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                        </button>
-                        <span class="px-2.5 text-xs sm:text-sm font-bold text-slate-200 min-w-[90px] text-center">
-                            {{ selectedYear }} 年 {{ selectedMonth }} 月
-                        </span>
-                        <button @click="changeMonth(1)" :disabled="isCurrentMonthOrFuture" :class="isCurrentMonthOrFuture ? 'opacity-30 cursor-not-allowed text-slate-400' : 'hover:bg-slate-800 text-slate-400 hover:text-white'" class="p-1.5 rounded-lg transition" title="下個月" aria-label="下一個月">
-                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                    <div class="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-800 space-x-1">
-                        <button @click="syncFromCloud()" :disabled="isSyncing" class="flex items-center space-x-1.5 hover:bg-slate-800 text-emerald-400 px-2.5 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-50" title="同步 Google 雲端試算表">
-                            <span :class="{'animate-bounce': isSyncing}" class="inline-flex"><i data-lucide="cloud-download" class="w-4 h-4"></i></span>
-                            <span class="hidden sm:inline">{{ isSyncing ? '同步中' : '同步' }}</span>
-                        </button>
-                        <div class="h-4 w-[1px] bg-slate-800"></div>
-                        <button @click="fetchStockPrices()" :disabled="isFetchingPrices" class="flex items-center space-x-1.5 hover:bg-slate-800 text-sky-400 px-2.5 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-50" title="更新即時股價">
-                            <span :class="{'animate-spin': isFetchingPrices}" class="inline-flex"><i data-lucide="refresh-cw" class="w-4 h-4"></i></span>
-                            <span class="hidden sm:inline">更新市價</span>
-                        </button>
-                    </div>
-                    <div class="lg:relative" @click.stop>
-                        <button @click="toggleDropdown('tools')" aria-haspopup="menu" :aria-expanded="activeDropdown === 'tools'" class="flex items-center space-x-1 bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 px-2.5 py-2 rounded-xl text-xs font-medium transition">
-                            <i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400"></i>
-                            <span class="hidden sm:inline">工具</span>
-                        </button>
-                        <div v-show="activeDropdown === 'tools'" @click="closeAllDropdowns" class="absolute left-4 right-4 sm:left-auto sm:right-4 sm:w-60 lg:right-0 lg:w-52 top-full mt-1 glass-modal rounded-xl border border-slate-700/80 shadow-2xl py-1.5 z-50 max-h-[70vh] overflow-y-auto">
-                            <div class="px-3 pt-2 pb-1 text-xs font-bold tracking-wider text-slate-400">單次設定</div>
-                            <button @click="showApiConfigModal = true" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-sky-300">
-                                <i data-lucide="settings" class="w-3.5 h-3.5"></i>
-                                <span>API 設定</span>
-                            </button>
-                            <button @click="syncLegacyStockExpenses" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-indigo-300">
-                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                                <span>股票交易同步到收支</span>
-                            </button>
-                            <div class="my-1 border-t border-slate-800"></div>
-                            <div class="px-3 pt-2 pb-1 text-xs font-bold tracking-wider text-slate-400">常態設定</div>
-                            <button @click="openCategorySettings('map')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-teal-300">
-                                <i data-lucide="list-tree" class="w-3.5 h-3.5"></i>
-                                <span>類別與項目</span>
-                                <span v-if="mismatchTotal" class="ml-auto text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded px-1">{{ mismatchTotal }}</span>
-                            </button>
-                            <button @click="openPaymentSettings('methods')" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-amber-300">
-                                <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
-                                <span>付款與帳單</span>
-                            </button>
-                            <div class="my-1 border-t border-slate-800"></div>
-                            <div class="px-3 pt-2 pb-1 text-xs font-bold tracking-wider text-slate-400">資料</div>
-                            <button @click="exportToExcel" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-emerald-300">
-                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                                <span>匯出 Excel</span>
-                            </button>
-                            <label class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-sky-300 cursor-pointer">
-                                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-                                <span>匯入檔案</span>
-                                <input type="file" ref="fileInputRef" @change="handleFileUpload" accept=".xlsx, .xls, .csv" class="hidden">
-                            </label>
-                            <button @click="showImportHelpModal = true" class="w-full text-left px-3 py-2 text-xs hover:bg-slate-800/80 flex items-center space-x-2 text-amber-300">
-                                <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
-                                <span>匯入說明</span>
-                            </button>
-                            <div class="my-1 border-t border-slate-800"></div>
-                            <div class="px-3 pt-2 pb-1 text-xs font-bold tracking-wider text-slate-400">進階</div>
-                            <button @click="openResetModal" class="w-full text-left px-3 py-2 text-xs text-rose-400 hover:bg-rose-950/40 flex items-center space-x-2">
-                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                                <span>清空重來</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-2 pl-1 border-l border-slate-800">
-                        <button @click="openExpenseModal()" class="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl text-xs font-bold transition shadow-lg shadow-emerald-600/20 active:scale-95 whitespace-nowrap">
-                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                            <span>記收支</span>
-                        </button>
-                        <button @click="openStockModal()" class="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-xs font-bold transition shadow-lg shadow-indigo-600/20 active:scale-95 whitespace-nowrap">
-                            <i data-lucide="trending-up" class="w-4 h-4"></i>
-                            <span>記股票</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </header>
+    <div id="app" v-cloak>
+<div class="fd-app" :class="{ 'fd-wide': navWide }">
+        <!-- ===== 導覽：768px 以上＝左側邊欄（1280px 以上展開，可收合為窄欄）；768px 以下＝底部導覽列 ===== -->
+<aside class="fd-side" aria-label="主要導覽">
+    <div class="fd-logo">
+        <span class="fd-logo-mark"><i data-lucide="wallet" class="w-5 h-5"></i></span>
+        <span class="fd-label fd-logo-text">FinDash<small>智慧資產管理</small></span>
+    </div>
+    <nav class="fd-nav" :data-tab="activeTab" aria-label="分頁">
+        <span class="fd-nav-ind" aria-hidden="true" :style="{ transform: 'translateY(' + (activeTabIndex * 48) + 'px)' }"></span>
+        <button type="button" class="fd-nav-item" :class="{ 'is-active': activeTab === 'expenses' }" :aria-current="activeTab === 'expenses' ? 'page' : null" title="日常收支" @click="setTab('expenses')"><i data-lucide="receipt" class="w-5 h-5"></i><span class="fd-label">日常收支</span></button>
+        <button type="button" class="fd-nav-item" :class="{ 'is-active': activeTab === 'investments' }" :aria-current="activeTab === 'investments' ? 'page' : null" title="ETF 與股票" @click="setTab('investments')"><i data-lucide="line-chart" class="w-5 h-5"></i><span class="fd-label">ETF 與股票</span></button>
+        <button type="button" class="fd-nav-item" :class="{ 'is-active': activeTab === 'monthly' }" :aria-current="activeTab === 'monthly' ? 'page' : null" title="月收支表" @click="setTab('monthly')"><i data-lucide="table" class="w-5 h-5"></i><span class="fd-label">月收支表</span></button>
+        <button type="button" class="fd-nav-item" :class="{ 'is-active': activeTab === 'cards' }" :aria-current="activeTab === 'cards' ? 'page' : null" title="信用卡" @click="setTab('cards')"><i data-lucide="credit-card" class="w-5 h-5"></i><span class="fd-label">信用卡</span></button>
+    </nav>
+    <div class="fd-side-scroll">
+        <button type="button" class="fd-nav-item fd-tools-btn" title="工具與設定" aria-haspopup="true" :aria-expanded="activeDropdown === 'tools'" @click.stop="toggleDropdown('tools')"><i data-lucide="settings" class="w-5 h-5"></i></button>
+        <div class="fd-tools-inline" @click="closeAllDropdowns">
+<div class="fd-group">單次設定</div>
+<button type="button" class="fd-tool" @click="showApiConfigModal = true"><i data-lucide="settings" class="w-4 h-4 text-sky-300"></i><span>API 設定</span></button>
+<button type="button" class="fd-tool" @click="syncLegacyStockExpenses"><i data-lucide="refresh-cw" class="w-4 h-4 text-indigo-300"></i><span>股票交易同步到收支</span></button>
+<div class="fd-group">常態設定</div>
+<button type="button" class="fd-tool" @click="openCategorySettings('map')"><i data-lucide="list-tree" class="w-4 h-4 text-teal-300"></i><span>類別與項目</span><span v-if="mismatchTotal" class="fd-badge">{{ mismatchTotal }}</span></button>
+<button type="button" class="fd-tool" @click="openPaymentSettings('methods')"><i data-lucide="credit-card" class="w-4 h-4 text-amber-300"></i><span>付款與帳單</span></button>
+<div class="fd-group">資料</div>
+<button type="button" class="fd-tool" @click="exportToExcel"><i data-lucide="download" class="w-4 h-4 text-emerald-300"></i><span>匯出 Excel</span></button>
+<button type="button" class="fd-tool" @click="fileInputRef && fileInputRef.click()"><i data-lucide="upload" class="w-4 h-4 text-sky-300"></i><span>匯入檔案</span></button>
+<button type="button" class="fd-tool" @click="showImportHelpModal = true"><i data-lucide="help-circle" class="w-4 h-4 text-amber-300"></i><span>匯入說明</span></button>
+<div class="fd-group">進階</div>
+<button type="button" class="fd-tool is-danger" @click="openResetModal"><i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>清空重來</span></button>
+        </div>
+    </div>
+    <div class="fd-side-foot">
+        <button type="button" v-if="gasApiUrl && syncBadge.text" @click="syncFromCloud()" :disabled="isSyncing" :title="syncBadge.title + '（點一下重新同步）'" :class="syncBadge.cls" class="fd-chip">{{ syncBadge.text }}</button>
+        <button type="button" class="fd-collapse" :title="navWide ? '收合側邊欄' : '展開側邊欄'" :aria-label="navWide ? '收合側邊欄' : '展開側邊欄'" @click="toggleNavPref">
+            <span v-if="navWide" class="inline-flex"><i data-lucide="chevron-left" class="w-4 h-4"></i></span>
+            <span v-else class="inline-flex"><i data-lucide="chevron-right" class="w-4 h-4"></i></span>
+            <span class="fd-label">收合側邊欄</span>
+        </button>
+    </div>
+</aside>
 
-        <main class="max-w-7xl mx-auto px-4 lg:px-8 space-y-6">
-            <nav class="sticky top-0 lg:top-[var(--header-h,0px)] z-20 -mx-4 px-4 lg:-mx-8 lg:px-8 pt-2 bg-slate-900/95 backdrop-blur flex border-b border-slate-800/80 space-x-4 sm:space-x-6 overflow-x-auto whitespace-nowrap no-scrollbar">
-                <button @click="activeTab = 'expenses'" :class="activeTab === 'expenses' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 shrink-0 flex items-center space-x-2 text-sm sm:text-base transition">
-                    <i data-lucide="receipt" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">日常收支與對帳管理</span><span class="sm:hidden">日常收支</span>
-                </button>
-                <button @click="activeTab = 'investments'" :class="activeTab === 'investments' ? 'border-indigo-500 text-indigo-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 shrink-0 flex items-center space-x-2 text-sm sm:text-base transition">
-                    <i data-lucide="line-chart" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">ETF & 股票投資儀表板</span><span class="sm:hidden">ETF & 股票</span>
-                </button>
-                <button @click="activeTab = 'monthly'" :class="activeTab === 'monthly' ? 'border-amber-500 text-amber-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 shrink-0 flex items-center space-x-2 text-sm sm:text-base transition">
-                    <i data-lucide="table" class="w-4 h-4"></i>
-                    <span>月收支表</span>
-                </button>
-                <button @click="activeTab = 'cards'" :class="activeTab === 'cards' ? 'border-sky-500 text-sky-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="pb-3 border-b-2 shrink-0 flex items-center space-x-2 text-sm sm:text-base transition">
-                    <i data-lucide="credit-card" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">信用卡待結算</span><span class="sm:hidden">信用卡</span>
-                </button>
-            </nav>
+<div class="fd-main">
+<header class="fd-top">
+    <!-- 手機／平板（1024px 以下） -->
+    <div class="fd-mhead">
+        <div class="fd-mrow1">
+            <span class="fd-logo-mark"><i data-lucide="wallet" class="w-5 h-5"></i></span>
+            <div class="fd-mbrand">
+                <div class="fd-mname">FinDash <span>智慧資產管理</span></div>
+                <div class="fd-msub"><span class="fd-msub-text">{{ activeTabInfo.title }}</span><button type="button" v-if="gasApiUrl && syncBadge.text" @click="syncFromCloud()" :disabled="isSyncing" :title="syncBadge.title + '（點一下重新同步）'" :class="syncBadge.cls" class="fd-chip fd-chip-m">{{ syncBadge.text }}</button></div>
+            </div>
+        </div>
+        <div class="fd-mrow2">
+            <div class="fd-month" role="group" aria-label="切換月份">
+            <button type="button" class="fd-month-btn" title="上個月" aria-label="上一個月" @click="changeMonth(-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+            <span class="fd-month-text">{{ selectedYear }} 年 {{ selectedMonth }} 月</span>
+            <button type="button" class="fd-month-btn" title="下個月" aria-label="下一個月" :disabled="isCurrentMonthOrFuture" @click="changeMonth(1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+        </div>
+            <div class="fd-top-sp"></div>
+            <button type="button" class="fd-top-btn text-emerald-400" :class="{ 'is-dirty': syncState === 'dirty', 'is-error': syncState === 'error' }" @click="syncFromCloud()" :disabled="isSyncing" title="同步 Google 雲端試算表"><span :class="{ 'animate-bounce': isSyncing }" class="inline-flex"><i data-lucide="cloud-download" class="w-4 h-4"></i></span></button>
+            <button type="button" v-if="activeTab === 'investments'" class="fd-top-btn text-indigo-300" @click="fetchStockPrices()" :disabled="isFetchingPrices" title="更新即時股價"><span :class="{ 'animate-spin': isFetchingPrices }" class="inline-flex"><i data-lucide="refresh-cw" class="w-4 h-4"></i></span></button>
+            <button type="button" class="fd-top-btn" :class="{ 'is-dirty': syncState === 'dirty', 'is-error': syncState === 'error' }" aria-label="工具與設定" aria-haspopup="true" :aria-expanded="activeDropdown === 'tools'" @click.stop="toggleDropdown('tools')"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>
+        </div>
+    </div>
+    <!-- 桌機（1024px 以上） -->
+    <div class="fd-dhead">
+        <h1 class="fd-title">{{ activeTabInfo.title }}</h1>
+        <div class="fd-month" role="group" aria-label="切換月份">
+            <button type="button" class="fd-month-btn" title="上個月" aria-label="上一個月" @click="changeMonth(-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+            <span class="fd-month-text">{{ selectedYear }} 年 {{ selectedMonth }} 月</span>
+            <button type="button" class="fd-month-btn" title="下個月" aria-label="下一個月" :disabled="isCurrentMonthOrFuture" @click="changeMonth(1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+        </div>
+        <button type="button" v-if="gasApiUrl && syncBadge.text" @click="syncFromCloud()" :disabled="isSyncing" :title="syncBadge.title + '（點一下重新同步）'" :class="syncBadge.cls" class="fd-chip fd-chip-top">{{ syncBadge.text }}</button>
+        <div class="fd-top-sp"></div>
+        <button type="button" class="fd-top-btn text-emerald-400" :class="{ 'is-dirty': syncState === 'dirty', 'is-error': syncState === 'error' }" @click="syncFromCloud()" :disabled="isSyncing" title="同步 Google 雲端試算表"><span :class="{ 'animate-bounce': isSyncing }" class="inline-flex"><i data-lucide="cloud-download" class="w-4 h-4"></i></span><span class="fd-btn-label">{{ isSyncing ? '同步中' : '同步' }}</span></button>
+        <button type="button" v-if="activeTab === 'investments'" class="fd-top-btn text-indigo-300" @click="fetchStockPrices()" :disabled="isFetchingPrices" title="更新即時股價"><span :class="{ 'animate-spin': isFetchingPrices }" class="inline-flex"><i data-lucide="refresh-cw" class="w-4 h-4"></i></span><span class="fd-btn-label">{{ isFetchingPrices ? '更新中' : '更新市價' }}</span></button>
+        <button type="button" class="fd-add fd-add-e" @click="openExpenseModal()"><i data-lucide="plus" class="w-4 h-4"></i><span>記收支</span></button>
+        <button type="button" class="fd-add fd-add-k" @click="openStockModal()"><i data-lucide="plus" class="w-4 h-4"></i><span>記股票</span></button>
+    </div>
+</header>
+<main class="fd-content space-y-6">
 
             <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <div class="glass-card rounded-2xl p-3 sm:p-5">
@@ -236,7 +195,7 @@
             </section>
 
             <!-- TAB 1: 日常收支儀表板 -->
-            <div v-show="activeTab === 'expenses'" class="space-y-6">
+            <div v-show="activeTab === 'expenses'" data-fd-tab="expenses" class="space-y-6">
                 <div class="space-y-1.5">
                     <div class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2 min-w-0">
@@ -262,23 +221,23 @@
                     </div>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-4">
-                    <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
-                        <h3 class="text-base font-semibold text-slate-200 mb-1 flex items-center gap-2">
+                    <div class="glass-card rounded-2xl p-5 flex flex-col fd-chart-card">
+                        <div class="fd-chart-head"><h3 class="text-base font-semibold text-slate-200 flex items-center gap-2">
                             <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-400"></i>
                             支出項目占比（前 5 名）
-                        </h3>
-                        <p class="text-xs text-slate-400 mb-3">點選長條可看明細。每月預付的使用以「已付金額」計入，儲值事件不重複計算。</p>
+                        </h3></div>
+                        <p class="text-xs text-slate-400 mb-3 fd-chart-desc">點選長條可看明細。每月預付的使用以「已付金額」計入，儲值事件不重複計算。</p>
                         <div class="relative h-56 w-full">
                             <canvas id="itemChart" role="img" aria-label="支出項目占比長條圖，詳細數字可點選長條查看明細"></canvas>
                             <div v-if="!itemChartData.length" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">{{ chartHiddenCats.length ? '目前的類別篩選下沒有紀錄' : '本月沒有符合的消費紀錄' }}</div>
                         </div>
-                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-3">
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 fd-chart-foot">
                             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-slate-400"></span>實心＝自己付</span>
                             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm border border-slate-400" style="background: rgba(148,163,184,0.35)"></span>淺色＝每月預付</span>
                         </div>
                     </div>
-                    <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
-                        <div class="flex items-start justify-between gap-3 mb-1">
+                    <div class="glass-card rounded-2xl p-5 flex flex-col fd-chart-card">
+                        <div class="flex items-start justify-between gap-3 fd-chart-head">
                             <h3 class="text-base font-semibold text-slate-200 flex items-center gap-2">
                                 <i data-lucide="credit-card" class="w-4 h-4 text-indigo-400"></i>
                                 付款管道支出統計
@@ -288,12 +247,12 @@
                                 <button type="button" :class="{ 'is-on': payChartMode === 'share' }" :aria-pressed="payChartMode === 'share'" @click="payChartMode = 'share'">占比</button>
                             </div>
                         </div>
-                        <p class="text-xs text-slate-400 mb-3">{{ payChartMode === 'share' ? '占比：每個管道都當成 100%，看錢花在哪些類別；右側數字是該管道的實際總額。' : '以「金額」計，代表錢實際從哪個管道流出（含給家裡的每月費用、悠遊卡儲值）；長條內依類別分色，顏色與左圖相同。' }}</p>
+                        <p class="text-xs text-slate-400 mb-3 fd-chart-desc">{{ payChartMode === 'share' ? '占比：每個管道都當成 100%，看錢花在哪些類別；右側數字是該管道的實際總額。' : '以「金額」計，代表錢實際從哪個管道流出（含給家裡的每月費用、悠遊卡儲值）；長條內依類別分色，顏色與左圖相同。' }}</p>
                         <div class="relative h-56 w-full">
                             <canvas id="paymentChart" role="img" aria-label="付款管道支出統計堆疊長條圖，每個管道依類別分段"></canvas>
                             <div v-if="!paymentChartData.rows.length" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">{{ chartHiddenCats.length ? '目前的類別篩選下沒有紀錄' : '本月沒有支出紀錄' }}</div>
                         </div>
-                        <p v-if="payChartClipNote" class="fd-chart-note">{{ payChartClipNote }}</p>
+                        <div class="fd-chart-foot"><p v-if="payChartClipNote" class="fd-chart-note">{{ payChartClipNote }}</p></div>
                     </div>
                 </div>
 
@@ -528,7 +487,7 @@
             </div>
 
             <!-- TAB 2: ETF & 股票投資儀表板 -->
-            <div v-show="activeTab === 'monthly'" class="space-y-4">
+            <div v-show="activeTab === 'monthly'" data-fd-tab="monthly" class="space-y-4">
                 <div>
                     <div class="flex items-center gap-2 flex-wrap">
                         <h2 class="text-lg font-bold text-slate-100">月收支表</h2>
@@ -634,7 +593,7 @@
                 <p class="text-xs text-slate-400">比較說明：消費支出比上月或去年同月「減少」顯示綠色、增加顯示紅色；結餘則相反。「其他儲蓄」欄只在有「非消費類別、且不是 ETF」的支出時才會出現。</p>
             </div>
 
-            <div v-show="activeTab === 'cards'" class="space-y-6">
+            <div v-show="activeTab === 'cards'" data-fd-tab="cards" class="space-y-6">
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div>
                         <h2 class="text-lg font-bold text-slate-100">信用卡待結算</h2>
@@ -667,7 +626,7 @@
                 </div>
             </div>
 
-            <div v-show="activeTab === 'investments'" class="space-y-6">
+            <div v-show="activeTab === 'investments'" data-fd-tab="investments" class="space-y-6">
                 <div>
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                         <h3 class="text-base sm:text-lg font-semibold text-slate-200 flex items-center gap-2 whitespace-nowrap">
@@ -678,10 +637,11 @@
                             <span v-if="lastPriceUpdate" class="text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20 whitespace-nowrap">
                                 <span class="hidden sm:inline">市價更新時間：</span><span class="sm:hidden">更新 </span>{{ lastPriceUpdate }}
                             </span>
-                            <span v-else class="text-amber-400">點擊上方「更新即時市價」連線 API</span>
+                            <span v-else class="text-amber-400">按上方「更新市價」取得報價</span>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <p v-if="!gasApiUrl && stockHoldings.length" class="text-xs text-amber-400 -mt-2">尚未連接 API：目前只能取得「前一個交易日的收盤價」。到「API 設定」連接後，盤中可看到即時價。</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div v-for="holding in stockHoldings" :key="holding.symbol" class="glass-card rounded-2xl p-4 space-y-3 relative overflow-hidden group hover:border-indigo-500/40 transition">
                             <div class="flex items-start justify-between">
                                 <div>
@@ -876,6 +836,45 @@
                 </div>
             </div>
         </main>
+</div>
+</div>
+
+<!-- 手機／平板：底部導覽列（中央「＋」＝新增；工具與設定在右上角「⋯」） -->
+<nav class="fd-bottom" aria-label="主要導覽">
+    <button type="button" class="fd-bn-item" data-tab="expenses" :class="{ 'is-active': activeTab === 'expenses' }" :aria-current="activeTab === 'expenses' ? 'page' : null" @click="setTab('expenses')"><span class="fd-bn-pill"><i data-lucide="receipt" class="w-5 h-5"></i></span>日常收支</button>
+    <button type="button" class="fd-bn-item" data-tab="investments" :class="{ 'is-active': activeTab === 'investments' }" :aria-current="activeTab === 'investments' ? 'page' : null" @click="setTab('investments')"><span class="fd-bn-pill"><i data-lucide="line-chart" class="w-5 h-5"></i></span>ETF 股票</button>
+    <button type="button" class="fd-bn-item fd-bn-plus" :class="{ 'is-open': activeDropdown === 'add' }" aria-label="新增紀錄" aria-haspopup="true" :aria-expanded="activeDropdown === 'add'" @click.stop="toggleDropdown('add')"><span class="fd-bn-pill"><i data-lucide="plus" class="w-6 h-6"></i></span>新增</button>
+    <button type="button" class="fd-bn-item" data-tab="monthly" :class="{ 'is-active': activeTab === 'monthly' }" :aria-current="activeTab === 'monthly' ? 'page' : null" @click="setTab('monthly')"><span class="fd-bn-pill"><i data-lucide="table" class="w-5 h-5"></i></span>月收支</button>
+    <button type="button" class="fd-bn-item" data-tab="cards" :class="{ 'is-active': activeTab === 'cards' }" :aria-current="activeTab === 'cards' ? 'page' : null" @click="setTab('cards')"><span class="fd-bn-pill"><i data-lucide="credit-card" class="w-5 h-5"></i></span>信用卡</button>
+    <div class="fd-fan" :class="{ 'is-open': activeDropdown === 'add' }" role="menu" aria-label="新增" @click.stop>
+        <button type="button" class="fd-fan-item fd-fan-k" role="menuitem" @click="closeAllDropdowns(); openStockModal()"><span class="fd-fan-ic"><i data-lucide="trending-up" class="w-6 h-6"></i></span><span class="fd-fan-lb">記股票</span></button>
+        <button type="button" class="fd-fan-item fd-fan-e" role="menuitem" @click="closeAllDropdowns(); openExpenseModal()"><span class="fd-fan-ic"><i data-lucide="plus" class="w-6 h-6"></i></span><span class="fd-fan-lb">記收支</span></button>
+    </div>
+</nav>
+<div v-show="activeDropdown === 'add'" class="fd-scrim fd-scrim-add" aria-hidden="true"></div>
+
+<!-- 工具與設定：手機＝底部面板；窄欄側邊欄＝從左下角彈出（展開的側邊欄直接列在側邊欄裡） -->
+<div v-show="activeDropdown === 'tools'" class="fd-scrim" aria-hidden="true"></div>
+<div v-show="activeDropdown === 'tools'" class="fd-pop" role="menu" aria-label="工具與設定" @click.stop>
+    <div class="fd-pop-head fd-mob-only"><b>工具與設定</b><button type="button" v-if="gasApiUrl && syncBadge.text" @click="syncFromCloud()" :disabled="isSyncing" :title="syncBadge.title + '（點一下重新同步）'" :class="syncBadge.cls" class="fd-chip">{{ syncBadge.text }}</button></div>
+    <button type="button" class="fd-tool fd-mob-only fd-sync-row" @click="closeAllDropdowns(); syncFromCloud()" :disabled="isSyncing"><span :class="{ 'animate-bounce': isSyncing }" class="inline-flex"><i data-lucide="cloud-download" class="w-4 h-4 text-emerald-400"></i></span><span>{{ isSyncing ? '同步中…' : '同步 Google 雲端試算表' }}</span></button>
+    <div class="fd-pop-body" @click="closeAllDropdowns">
+<div class="fd-group">單次設定</div>
+<button type="button" class="fd-tool" @click="showApiConfigModal = true"><i data-lucide="settings" class="w-4 h-4 text-sky-300"></i><span>API 設定</span></button>
+<button type="button" class="fd-tool" @click="syncLegacyStockExpenses"><i data-lucide="refresh-cw" class="w-4 h-4 text-indigo-300"></i><span>股票交易同步到收支</span></button>
+<div class="fd-group">常態設定</div>
+<button type="button" class="fd-tool" @click="openCategorySettings('map')"><i data-lucide="list-tree" class="w-4 h-4 text-teal-300"></i><span>類別與項目</span><span v-if="mismatchTotal" class="fd-badge">{{ mismatchTotal }}</span></button>
+<button type="button" class="fd-tool" @click="openPaymentSettings('methods')"><i data-lucide="credit-card" class="w-4 h-4 text-amber-300"></i><span>付款與帳單</span></button>
+<div class="fd-group">資料</div>
+<button type="button" class="fd-tool" @click="exportToExcel"><i data-lucide="download" class="w-4 h-4 text-emerald-300"></i><span>匯出 Excel</span></button>
+<button type="button" class="fd-tool" @click="fileInputRef && fileInputRef.click()"><i data-lucide="upload" class="w-4 h-4 text-sky-300"></i><span>匯入檔案</span></button>
+<button type="button" class="fd-tool" @click="showImportHelpModal = true"><i data-lucide="help-circle" class="w-4 h-4 text-amber-300"></i><span>匯入說明</span></button>
+<div class="fd-group">進階</div>
+<button type="button" class="fd-tool is-danger" @click="openResetModal"><i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>清空重來</span></button>
+    </div>
+</div>
+<input type="file" ref="fileInputRef" @change="handleFileUpload" accept=".xlsx, .xls, .csv" class="hidden">
+
 
         <!-- 手機版：長按選取後，畫面底部的批次操作列 -->
         <div v-if="activeTab === 'expenses' && fdmSelecting('expense')" class="fdm-bar" style="--fdm-accent:#34d399;--fdm-accent-bg:rgba(52,211,153,.15)" role="region" aria-label="批次操作">
@@ -1246,19 +1245,6 @@
             </div>
         </div>
 
-        <!-- 手機版浮動新增鈕（頂部工具列捲走後，仍可隨時記收支／記股票） -->
-        <div v-show="activeDropdown !== 'tools'" class="fdm-fab lg:hidden fixed right-4 z-40 flex flex-col items-end gap-2" :class="undoToast ? 'bottom-24' : 'bottom-6'" @click.stop>
-            <div v-show="activeDropdown === 'fab'" class="flex flex-col items-end gap-2">
-                <button @click="closeAllDropdowns(); openStockModal()" class="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-4 h-10 rounded-full text-xs font-bold shadow-xl whitespace-nowrap">
-                    <i data-lucide="trending-up" class="w-4 h-4"></i><span>記股票</span>
-                </button>
-                <button @click="closeAllDropdowns(); openExpenseModal()" class="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 h-10 rounded-full text-xs font-bold shadow-xl whitespace-nowrap">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i><span>記收支</span>
-                </button>
-            </div>
-            <button @click="toggleDropdown('fab')" aria-label="新增紀錄" aria-haspopup="true" :aria-expanded="activeDropdown === 'fab'" class="w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-2xl shadow-emerald-600/30 text-3xl leading-none flex items-center justify-center transition-transform" :class="activeDropdown === 'fab' ? 'rotate-45' : ''">+</button>
-        </div>
-
         <!-- 匯入預覽 -->
         <div v-if="showImportPreviewModal && importPreview" data-modal="showImportPreviewModal" @click.self="onBackdrop('showImportPreviewModal')" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-2xl p-6 space-y-4 border border-slate-700/80 my-8">
@@ -1625,6 +1611,7 @@
         import { useLedgerView } from './js/features/ledger-view.js';
         import { useMobileCards } from './js/features/mobile-cards.js';
         import { useCardDrag } from './js/features/card-drag.js';
+        import { useNav } from './js/features/nav.js';
         import { renameInSettings as renameInSettingsOn, removeFromSettings as removeFromSettingsOn } from './js/logic/settings-ops.js';
 
         const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick, provide, inject } = Vue;
@@ -1682,7 +1669,8 @@
                 Object.assign(ctx, useStocks(ctx));
                 Object.assign(ctx, useLedgerView(ctx));
                 Object.assign(ctx, useMobileCards(ctx));
-                Object.assign(ctx, useCardDrag(ctx));
+        Object.assign(ctx, useNav(ctx));
+        Object.assign(ctx, useCardDrag(ctx));
                 Object.assign(ctx, { COLOR_CHOICES });   // 範本用到的 import 進來的常數
 
                 const {
@@ -1708,14 +1696,6 @@
                         localStorage.setItem('findash_hidden_migrated', '1');
                     }
                     document.addEventListener('keydown', handleGlobalKeydown);
-                    // 量測頂部工具列高度，讓電腦版的分頁列固定在它正下方（工具列換行、出現同步徽章時會自動跟著調整）
-                    const headerEl = document.querySelector('header');
-                    if (headerEl) {
-                        const setHeaderH = () => document.documentElement.style.setProperty('--header-h', headerEl.offsetHeight + 'px');
-                        setHeaderH();
-                        window.addEventListener('resize', setHeaderH);
-                        if (window.ResizeObserver) new ResizeObserver(setHeaderH).observe(headerEl);
-                    }
                     if (window.lucide) lucide.createIcons();
                     if (gasApiUrl.value) syncFromCloud(true); else fetchStockPrices(true);
                     refreshDynamicOptions();
@@ -1732,6 +1712,8 @@
 
                 // 範本（HTML）會用到的成員。範本新增用到的名稱時，要加在這裡；npm run check 會檢查每一個都存在。
                 const TEMPLATE_MEMBERS = [
+            // V24 導覽
+            'navWide', 'toggleNavPref', 'activeTabIndex', 'activeTabInfo', 'setTab',
                 'COLOR_CHOICES', 'activeDropdown', 'activeTab', 'addFundingRule', 'allKnownItems',
                 'appSettings', 'applyBatchCopy', 'applyBatchDate', 'applyCategoryFix', 'batchDateType',
                 'calculatedStockTotal', 'cancelDialog', 'cardDetail', 'cardOffset', 'cardStatements',
@@ -1781,10 +1763,10 @@
             }
         }).component('multi-select', MultiSelect).mount('#app');
     </script>
-    <div id="app-version" class="fixed bottom-1 left-2 text-[10px] text-slate-600 select-none"></div>
+    <div id="app-version" class="fd-version select-none"></div>
     <script>
         (function () {
-            var APP = 'V23';
+            var APP = 'V24.2';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');

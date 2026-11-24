@@ -67,7 +67,7 @@ export const useSyncUi = (ctx) => {
     const syncFromCloud = async (silent = false) => {
         silent = (silent === true);   // 避免 @click 傳入事件物件
         const r = await engine.syncFromCloud({ silent });
-        if (r === 'no-url' && !silent) { showToast('請先在右上角「工具 → API 設定」輸入 Google Apps Script 網址。', 'error'); showApiConfigModal.value = true; }
+        if (r === 'no-url' && !silent) { showToast('請先開啟' + (window.innerWidth >= 1024 ? '左側邊欄的「API 設定」（窄欄時點左下角的設定圖示）' : '右上角「⋯」→「API 設定」') + '，輸入 Google Apps Script 網址。', 'error'); showApiConfigModal.value = true; }
         else if (r === 'synced' && !silent) showToast('已從 Google 試算表同步資料');
     };
     watch(expenses, (val) => {

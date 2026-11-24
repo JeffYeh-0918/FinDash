@@ -115,7 +115,7 @@ export const useCardDrag = (ctx) => {
         ui.ghost.style.transform = 'translate3d(' + (g.x - ui.gx) + 'px,' + (g.y - ui.gy) + 'px,0)';
 
         // 自動捲動：先捲表格自己的捲動框，捲不動再捲整頁。可捲範圍要避開固定在上方的分頁列／標題列、下方的批次操作列
-        const nav = document.querySelector('nav.sticky');
+        const nav = document.querySelector('.fd-top');   // V24：固定在上方的薄頂欄（自動捲動的上緣要避開它）
         const wTop = (nav ? nav.getBoundingClientRect().bottom : 0) + (ui.cards ? 52 : 0);
         const bar = document.querySelector('.fdm-bar');
         const wBottom = window.innerHeight - (bar && bar.offsetHeight ? bar.offsetHeight + 16 : 0);
