@@ -331,7 +331,7 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 @media (min-width: 1200px) { .fd-btn-label { display: inline; } }
 .fd-add { display: flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border: 0; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background-color .15s ease, transform .1s ease; }
 .fd-add:active { transform: scale(.98); }
-.fd-add-e { background: #047857; } .fd-add-e:hover { background: #059669; }
+.fd-add-e { background: #059669; } .fd-add-e:hover { background: #07be85; }
 .fd-add-k { background: #4f46e5; } .fd-add-k:hover { background: #6366f1; }
 /* 手機／平板第二行：月份切換＋最多三顆按鈕要放得進一行（ETF 頁多一顆「更新市價」） */
 @media (max-width: 1023px) {
