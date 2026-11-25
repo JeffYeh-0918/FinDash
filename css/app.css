@@ -374,7 +374,7 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 .fd-fan-lb { text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
 
 /* --- 工具面板：手機／平板＝底部面板；窄欄側邊欄＝左下角彈出 --- */
-.fd-scrim { position: fixed; inset: 0; z-index: 44; background: rgba(2, 6, 23, .55); animation: fd-fade .2s ease-out; }
+.fd-scrim { position: fixed; inset: 0; z-index: 44; background: rgba(2, 6, 23, .55); }
 .fd-scrim-add { z-index: 39; background: rgba(2, 6, 23, .45); }
 .fd-pop { position: fixed; z-index: 45; display: flex; flex-direction: column; background: #0f172a; border: 1px solid #334155; box-shadow: 0 20px 50px rgba(0, 0, 0, .55); overflow: hidden; }
 .fd-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 16px 16px 8px; color: #f1f5f9; }
@@ -382,12 +382,12 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 .fd-pop .fd-tool { height: 44px; }
 .fd-sync-row { margin: 0 8px; width: calc(100% - 16px); }
 @media (max-width: 1023px) {
-    .fd-pop { left: 0; right: 0; bottom: 0; max-height: 80vh; padding-bottom: env(safe-area-inset-bottom, 0px); border-bottom: 0; border-radius: 20px 20px 0 0; animation: fd-sheet .25s cubic-bezier(.2, .8, .2, 1); }
+    .fd-pop { left: 0; right: 0; bottom: 0; max-height: 80vh; padding-bottom: env(safe-area-inset-bottom, 0px); border-bottom: 0; border-radius: 20px 20px 0 0; }
     .fd-version { bottom: calc(var(--fd-bn-h) + env(safe-area-inset-bottom, 0px) + 2px) !important; }
     .fdm-undo { bottom: calc(var(--fd-bn-h) + env(safe-area-inset-bottom, 0px) + 12px) !important; }
 }
 @media (min-width: 1024px) {
-    .fd-pop { left: 80px; bottom: 12px; width: 264px; max-height: 80vh; border-radius: 14px; animation: fd-rise .15s ease-out; }
+    .fd-pop { left: 80px; bottom: 12px; width: 264px; max-height: 80vh; border-radius: 14px; }
     .fd-pop .fd-tool { height: 38px; }
     .fd-scrim, .fd-mob-only { display: none !important; }
 }
@@ -409,10 +409,40 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 @keyframes fd-fade { from { opacity: 0; } to { opacity: 1; } }
 /* 減少動態：只保留淡入，拿掉位移與旋轉 */
 @media (prefers-reduced-motion: reduce) {
-    .fd-tab-in, .fd-pop { animation-name: fd-fade !important; animation-duration: .12s !important; }
+    .fd-tab-in { animation-name: fd-fade !important; animation-duration: .12s !important; }
     .fd-nav-ind { transition: none !important; }
     .fd-fan-item { transform: none !important; transition: opacity .12s ease !important; }
     .fd-fan.is-open .fd-fan-k { transform: translate(-78px, -96px) !important; }
     .fd-fan.is-open .fd-fan-e { transform: translate(78px, -96px) !important; }
     .fd-bn-plus.is-open .fd-bn-pill { transform: none !important; }
+}
+
+/* --- V25 進出場動畫（Vue <transition>；只動 opacity／transform） --- */
+/* 彈窗：背景淡入淡出，面板微幅上移＋縮放 */
+.fd-modal-enter-active, .fd-modal-leave-active { transition: opacity .2s ease; }
+.fd-modal-enter-from, .fd-modal-leave-to { opacity: 0; }
+.fd-modal-enter-active > div, .fd-modal-leave-active > div { transition: transform .2s cubic-bezier(.2, .8, .2, 1), opacity .2s ease; }
+.fd-modal-enter-from > div, .fd-modal-leave-to > div { transform: translateY(12px) scale(.98); opacity: 0; }
+.fd-modal-leave-active { pointer-events: none; }
+/* 提示條：從上方滑入，離開時淡出並讓出位置 */
+.fd-toast-enter-active, .fd-toast-leave-active { transition: opacity .2s ease, transform .2s ease; }
+.fd-toast-enter-from, .fd-toast-leave-to { opacity: 0; transform: translateY(-8px); }
+.fd-toast-leave-active { position: absolute; left: 0; right: 0; }
+.fd-toast-move { transition: transform .2s ease; }
+/* 篩選下拉選單 */
+.fd-dd-enter-active, .fd-dd-leave-active { transition: opacity .12s ease, transform .12s ease; }
+.fd-dd-enter-from, .fd-dd-leave-to { opacity: 0; transform: translateY(-4px); }
+/* 工具選單遮罩與彈出面板（電腦＝左下角彈出，手機／平板＝底部面板） */
+.fd-scrim-enter-active, .fd-scrim-leave-active { transition: opacity .2s ease; }
+.fd-scrim-enter-from, .fd-scrim-leave-to { opacity: 0; }
+.fd-pop-enter-active, .fd-pop-leave-active { transition: opacity .15s ease, transform .15s ease; }
+.fd-pop-enter-from, .fd-pop-leave-to { opacity: 0; transform: translateY(8px); }
+@media (max-width: 1023px) {
+    .fd-pop-enter-active, .fd-pop-leave-active { transition: opacity .25s ease, transform .25s cubic-bezier(.2, .8, .2, 1); }
+    .fd-pop-enter-from, .fd-pop-leave-to { opacity: .6; transform: translateY(32px); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .fd-modal-enter-active > div, .fd-modal-leave-active > div, .fd-pop-enter-active, .fd-pop-leave-active { transition-property: opacity !important; transition-duration: .12s !important; }
+    .fd-modal-enter-from > div, .fd-modal-leave-to > div, .fd-pop-enter-from, .fd-pop-leave-to, .fd-toast-enter-from, .fd-toast-leave-to, .fd-dd-enter-from, .fd-dd-leave-to { transform: none !important; }
+    .fd-toast-move { transition: none !important; }
 }

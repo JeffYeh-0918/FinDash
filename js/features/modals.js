@@ -44,7 +44,7 @@ export const useModals = (ctx) => {
     const onBackdrop = (name) => { const m = modalRegistry[name]; if (m && (m.type === 'info' || m.type === 'setting')) requestClose(name); };
     const topModalEl = () => {
         let best = null, bz = -1;
-        document.querySelectorAll('[data-modal],[data-dialog]').forEach(el => { const z = parseInt(getComputedStyle(el).zIndex, 10) || 0; if (z >= bz) { best = el; bz = z; } });
+        document.querySelectorAll('[data-modal],[data-dialog]').forEach(el => { if (el.classList.contains('fd-modal-leave-active')) return; const z = parseInt(getComputedStyle(el).zIndex, 10) || 0; if (z >= bz) { best = el; bz = z; } });
         return best;
     };
     const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -66,6 +66,20 @@ export const useModals = (ctx) => {
     };
     // 彈窗開啟時：補上對話框標記、把焦點移進去；關閉後把焦點還給原本的按鈕
     let currentModalEl = null, lastFocusEl = null;
+    // 彈窗開啟時，背景（導覽、內容、其他彈窗）設為 inert：讀屏軟體與 Tab 都碰不到；關閉後還原
+    let inerted = [];
+    const setBackgroundInert = (top) => {
+        inerted.forEach(e => e.removeAttribute('inert')); inerted = [];
+        if (!top) return;
+        let node = top;
+        while (node && node.id !== 'app' && node.parentElement) {
+            Array.from(node.parentElement.children).forEach(sib => {
+                if (sib === node || sib.tagName === 'SCRIPT' || sib.hasAttribute('data-keep-live')) return;
+                sib.setAttribute('inert', ''); inerted.push(sib);
+            });
+            node = node.parentElement;
+        }
+    };
     const enhanceModals = () => {
         document.querySelectorAll('[data-modal],[data-dialog]').forEach(el => {
             if (el.hasAttribute('role')) return;
@@ -79,13 +93,17 @@ export const useModals = (ctx) => {
         if (top && top !== currentModalEl) {
             if (!currentModalEl) lastFocusEl = document.activeElement;
             currentModalEl = top;
+            setBackgroundInert(top);
             const target = top.querySelector('[data-autofocus]') || top.querySelector('input:not([type=hidden]):not([disabled]):not([type=checkbox]),select,textarea') || top;
             try { target.focus({ preventScroll: true }); } catch (e) {}
         } else if (!top && currentModalEl) {
             currentModalEl = null;
+            setBackgroundInert(null);
             if (lastFocusEl && document.contains(lastFocusEl)) { try { lastFocusEl.focus({ preventScroll: true }); } catch (e) {} }
             lastFocusEl = null;
         }
+        // 退場動畫還在播的彈窗：播完之後再檢查一次（那時才會還原焦點與背景）
+        if (document.querySelector('.fd-modal-leave-active')) setTimeout(enhanceModals, 260);
     };
 
     return {

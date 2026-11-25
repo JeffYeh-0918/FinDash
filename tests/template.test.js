@@ -17,3 +17,12 @@ test('手機／平板的底部導覽與扇形選單存在，舊的浮動按鈕�
     assert.match(html, /class="fd-fan"/);
     assert.ok(!html.includes('fdm-fab'));
 });
+test('V25：14 個彈窗（含確認視窗）都包在 <transition name="fd-modal"> 裡，開關標籤成對', () => {
+    const opens = [...html.matchAll(/<transition name="fd-modal">\s*<div v-if="[^"]+" data-(modal|dialog)/g)].length;
+    const all = [...html.matchAll(/<div v-if="[^"]+" data-(modal|dialog)/g)].length;
+    assert.equal(all, 14);
+    assert.equal(opens, all, '有彈窗沒包 transition，關閉時不會有退場動畫');
+    const o = (html.match(/<transition(?=[\s>])/g) || []).length, c = (html.match(/<\/transition>/g) || []).length;
+    assert.equal(o, c);
+    assert.equal((html.match(/<transition-group\b/g) || []).length, (html.match(/<\/transition-group>/g) || []).length);
+});

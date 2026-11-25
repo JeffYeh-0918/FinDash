@@ -1,6 +1,9 @@
 // FinDash 功能模組：圖表（Chart.js）
 // 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
 
+// 圖表動畫縮短為 300ms；系統設為「減少動態」時不播
+const CHART_ANIM = (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) ? false : { duration: 300 };
+
 export const useCharts = (ctx) => {
     // 取用「較晚建立」的模組成員（模組之間互相呼叫）：用到的當下才去 ctx 找
     const itemChartData = { get value() { return ctx.itemChartData.value; }, set value(v) { ctx.itemChartData.value = v; } };
@@ -66,6 +69,7 @@ export const useCharts = (ctx) => {
                     ]
                 },
                 options: {
+                    animation: CHART_ANIM,
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                     layout: { padding: { right: 64 } },
                     plugins: {
@@ -98,6 +102,7 @@ export const useCharts = (ctx) => {
                     })
                 },
                 options: {
+                    animation: CHART_ANIM,
                     indexAxis: 'y', responsive: true, maintainAspectRatio: false,
                     layout: { padding: { right: 72 } },
                     plugins: {
@@ -128,6 +133,7 @@ export const useCharts = (ctx) => {
                     datasets: [{ label: '未實現損益 (NT$)', data: holdings.map(h => h.unrealizedPL), backgroundColor: holdings.map(h => h.unrealizedPL >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(244, 63, 94, 0.7)'), borderRadius: 4 }]
                 },
                 options: {
+                    animation: CHART_ANIM,
                     responsive: true, maintainAspectRatio: false,
                     layout: { padding: { top: 18, bottom: 6 } },
                     plugins: { legend: { display: false }, valueLabels: { display: true } },
@@ -147,7 +153,7 @@ export const useCharts = (ctx) => {
                     labels: holdings.map(h => `${h.symbol} ${h.name}`),
                     datasets: [{ data: holdings.map(h => h.marketValue), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'], borderWidth: 0 }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
+                options: { animation: CHART_ANIM, responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
             });
         }
     };

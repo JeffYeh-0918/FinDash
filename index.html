@@ -25,8 +25,8 @@
     "./js/features/options.js": "./js/features/options.js?v=2",
     "./js/features/ui.js": "./js/features/ui.js?v=1",
     "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=2",
-    "./js/features/modals.js": "./js/features/modals.js?v=1",
-    "./js/features/charts.js": "./js/features/charts.js?v=3",
+    "./js/features/modals.js": "./js/features/modals.js?v=2",
+    "./js/features/charts.js": "./js/features/charts.js?v=4",
     "./js/features/import-export.js": "./js/features/import-export.js?v=4",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
     "./js/features/expenses.js": "./js/features/expenses.js?v=4",
@@ -42,7 +42,7 @@
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=2" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=14">
+    <link rel="stylesheet" href="css/app.css?v=15">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -199,7 +199,7 @@
                 <div class="space-y-1.5">
                     <div class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2 min-w-0">
-                            <h3 class="text-base font-semibold text-slate-200 whitespace-nowrap">支出分析</h3>
+                            <h3 class="text-lg font-semibold text-slate-200 whitespace-nowrap">支出分析</h3>
                             <button type="button" @click="openPaymentSettings('rules')" class="shrink-0 inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-400/60 rounded-md px-1.5 py-0.5 transition" title="調整儲值事件與消費定義"><i data-lucide="sliders-horizontal" class="w-3 h-3"></i>規則</button>
                         </div>
                         <div class="flex items-center shrink-0 h-10 bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
@@ -307,6 +307,7 @@
                                 <span class="truncate">{{ categoryFilterLabel }}</span>
                                 <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 ml-1"></i>
                             </button>
+                            <transition name="fd-dd">
                             <div v-if="activeDropdown === 'category'" class="absolute left-0 right-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
                                 <label class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-emerald-400 font-bold border-b border-slate-800">
                                     <input type="checkbox" :checked="selectedCategoryFilters.length === 0" @change="selectedCategoryFilters = []" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
@@ -317,6 +318,7 @@
                                     <span>{{ cat }}</span>
                                 </label>
                             </div>
+                            </transition>
                         </div>
 
                         <div class="relative" @click.stop>
@@ -324,6 +326,7 @@
                                 <span class="truncate">{{ itemFilterLabel }}</span>
                                 <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 ml-1"></i>
                             </button>
+                            <transition name="fd-dd">
                             <div v-if="activeDropdown === 'item'" class="absolute left-0 right-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
                                 <label class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-emerald-400 font-bold border-b border-slate-800">
                                     <input type="checkbox" :checked="selectedItemFilters.length === 0" @change="selectedItemFilters = []" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
@@ -334,6 +337,7 @@
                                     <span>{{ it }}</span>
                                 </label>
                             </div>
+                            </transition>
                         </div>
 
                         <div class="relative" @click.stop>
@@ -341,6 +345,7 @@
                                 <span class="truncate">{{ paymentFilterLabel }}</span>
                                 <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 ml-1"></i>
                             </button>
+                            <transition name="fd-dd">
                             <div v-if="activeDropdown === 'payment'" class="absolute left-0 right-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
                                 <label class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-emerald-400 font-bold border-b border-slate-800">
                                     <input type="checkbox" :checked="selectedPaymentFilters.length === 0" @change="selectedPaymentFilters = []" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
@@ -351,6 +356,7 @@
                                     <span>{{ pm }}</span>
                                 </label>
                             </div>
+                            </transition>
                         </div>
 
                         <div>
@@ -490,7 +496,7 @@
             <div v-show="activeTab === 'monthly'" data-fd-tab="monthly" class="space-y-4">
                 <div>
                     <div class="flex items-center gap-2 flex-wrap">
-                        <h2 class="text-lg font-bold text-slate-100">月收支表</h2>
+                        <h2 class="text-lg font-semibold text-slate-200">月收支表</h2>
                         <button type="button" @click="openPaymentSettings('rules')" class="inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 rounded px-1.5 py-0.5">
                             <i data-lucide="sliders-horizontal" class="w-3 h-3"></i>規則
                         </button>
@@ -596,7 +602,7 @@
             <div v-show="activeTab === 'cards'" data-fd-tab="cards" class="space-y-6">
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-100">信用卡待結算</h2>
+                        <h2 class="text-lg font-semibold text-slate-200">信用卡待結算</h2>
                         <p class="text-xs text-slate-400">依各卡結帳日推算帳期，金額為該帳期內「金額」欄的合計（記在「已付金額」欄的儲值／預付消費不重複計算）</p>
                     </div>
                     <div class="flex items-center gap-2">
@@ -629,7 +635,7 @@
             <div v-show="activeTab === 'investments'" data-fd-tab="investments" class="space-y-6">
                 <div>
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-                        <h3 class="text-base sm:text-lg font-semibold text-slate-200 flex items-center gap-2 whitespace-nowrap">
+                        <h3 class="text-lg font-semibold text-slate-200 flex items-center gap-2 whitespace-nowrap">
                             <i data-lucide="layers" class="w-5 h-5 text-indigo-400"></i>
                             持有庫存標的資產估值
                         </h3>
@@ -851,10 +857,15 @@
         <button type="button" class="fd-fan-item fd-fan-e" role="menuitem" @click="closeAllDropdowns(); openExpenseModal()"><span class="fd-fan-ic"><i data-lucide="plus" class="w-6 h-6"></i></span><span class="fd-fan-lb">記收支</span></button>
     </div>
 </nav>
+<transition name="fd-scrim">
 <div v-show="activeDropdown === 'add'" class="fd-scrim fd-scrim-add" aria-hidden="true"></div>
+</transition>
 
 <!-- 工具與設定：手機＝底部面板；窄欄側邊欄＝從左下角彈出（展開的側邊欄直接列在側邊欄裡） -->
+<transition name="fd-scrim">
 <div v-show="activeDropdown === 'tools'" class="fd-scrim" aria-hidden="true"></div>
+</transition>
+<transition name="fd-pop">
 <div v-show="activeDropdown === 'tools'" class="fd-pop" role="menu" aria-label="工具與設定" @click.stop>
     <div class="fd-pop-head fd-mob-only"><b>工具與設定</b><button type="button" v-if="gasApiUrl && syncBadge.text" @click="syncFromCloud()" :disabled="isSyncing" :title="syncBadge.title + '（點一下重新同步）'" :class="syncBadge.cls" class="fd-chip">{{ syncBadge.text }}</button></div>
     <button type="button" class="fd-tool fd-mob-only fd-sync-row" @click="closeAllDropdowns(); syncFromCloud()" :disabled="isSyncing"><span :class="{ 'animate-bounce': isSyncing }" class="inline-flex"><i data-lucide="cloud-download" class="w-4 h-4 text-emerald-400"></i></span><span>{{ isSyncing ? '同步中…' : '同步 Google 雲端試算表' }}</span></button>
@@ -873,6 +884,7 @@
 <button type="button" class="fd-tool is-danger" @click="openResetModal"><i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>清空重來</span></button>
     </div>
 </div>
+</transition>
 <input type="file" ref="fileInputRef" @change="handleFileUpload" accept=".xlsx, .xls, .csv" class="hidden">
 
 
@@ -903,6 +915,7 @@
         </div>
 
         <!-- API Config Modal -->
+        <transition name="fd-modal">
         <div v-if="showApiConfigModal" data-modal="showApiConfigModal" @click.self="onBackdrop('showApiConfigModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
             <div class="glass-modal rounded-2xl w-full max-w-md p-6 space-y-4 border border-slate-700">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -920,8 +933,10 @@
                 </div>
             </div>
         </div>
+        </transition>
 
         <!-- 項目明細 -->
+        <transition name="fd-modal">
         <div v-if="itemDetail" data-modal="itemDetail" @click.self="onBackdrop('itemDetail')" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-3xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-start border-b border-slate-800 pb-3">
@@ -971,8 +986,10 @@
                 </div>
             </div>
         </div>
+        </transition>
 
         <!-- 設定：類別與項目 -->
+        <transition name="fd-modal">
         <div v-if="showCategoryMapModal" data-modal="showCategoryMapModal" @click.self="onBackdrop('showCategoryMapModal')" class="fixed inset-0 z-[65] flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-3xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1084,8 +1101,10 @@
                 </div>
             </div>
         </div>
+        </transition>
 
         <!-- 設定：付款與帳單 -->
+        <transition name="fd-modal">
         <div v-if="showCardSettingsModal" data-modal="showCardSettingsModal" @click.self="onBackdrop('showCardSettingsModal')" class="fixed inset-0 z-[65] flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1153,8 +1172,10 @@
                 </div>
             </div>
         </div>
+        </transition>
 
         <!-- 信用卡帳期明細 -->
+        <transition name="fd-modal">
         <div v-if="cardDetail" data-modal="cardDetail" @click.self="onBackdrop('cardDetail')" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-3xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-start border-b border-slate-800 pb-3">
@@ -1200,8 +1221,10 @@
                 </div>
             </div>
         </div>
+        </transition>
 
         <!-- 已實現損益計算明細 -->
+        <transition name="fd-modal">
         <div v-if="showRealizedModal" data-modal="showRealizedModal" @click.self="onBackdrop('showRealizedModal')" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-4xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-start border-b border-slate-800 pb-3">
@@ -1244,8 +1267,10 @@
                 </div>
             </div>
         </div>
+        </transition>
 
         <!-- 匯入預覽 -->
+        <transition name="fd-modal">
         <div v-if="showImportPreviewModal && importPreview" data-modal="showImportPreviewModal" @click.self="onBackdrop('showImportPreviewModal')" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-2xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1296,8 +1321,10 @@
                 </div>
             </div>
         </div>
+        </transition>
 
         <!-- 清空重來（加強確認） -->
+        <transition name="fd-modal">
         <div v-if="showResetModal" data-modal="showResetModal" @click.self="onBackdrop('showResetModal')" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-md p-6 space-y-4 border border-rose-500/40 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1325,17 +1352,21 @@
                 </div>
             </div>
         </div>
+        </transition>
 
         <!-- 統一提示條 -->
-        <div class="fixed top-3 left-1/2 -translate-x-1/2 z-[80] flex flex-col gap-2 w-[min(92vw,26rem)] pointer-events-none" role="status" aria-live="polite">
+        <div class="fixed top-3 left-1/2 -translate-x-1/2 z-[80] flex flex-col gap-2 w-[min(92vw,26rem)] pointer-events-none" role="status" aria-live="polite" data-keep-live>
+            <transition-group name="fd-toast">
             <div v-for="t in toasts" :key="t.id" class="pointer-events-auto flex items-start gap-3 rounded-xl border bg-slate-800 px-4 py-3 text-sm shadow-2xl" :class="toastClass(t.type)">
                 <span class="flex-1 whitespace-pre-line">{{ t.text }}</span>
                 <button v-if="t.action" @click="runToastAction(t)" class="font-bold underline shrink-0">{{ t.actionLabel }}</button>
                 <button @click="dismissToast(t.id)" aria-label="關閉提示" class="shrink-0 opacity-70 hover:opacity-100">✕</button>
             </div>
+            </transition-group>
         </div>
 
         <!-- 統一確認／輸入視窗 -->
+        <transition name="fd-modal">
         <div v-if="dialog" data-dialog class="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
             <div class="glass-modal rounded-2xl w-full max-w-sm p-6 space-y-4 border" :class="dialog.danger ? 'border-rose-500/40' : 'border-slate-700/80'">
                 <h3 class="text-base font-bold" :class="dialog.danger ? 'text-rose-400' : 'text-slate-100'">{{ dialog.title }}</h3>
@@ -1350,6 +1381,7 @@
                 </div>
             </div>
         </div>
+        </transition>
 
         <!-- 復原提示 -->
         <div v-if="undoToast" class="fdm-undo fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center space-x-4 bg-slate-800 border border-slate-600 text-slate-100 text-sm rounded-xl shadow-2xl px-4 py-3">
@@ -1358,6 +1390,7 @@
         </div>
 
         <!-- MODAL 1: Expense Edit/Create -->
+        <transition name="fd-modal">
         <div v-if="showExpenseModal" data-modal="showExpenseModal" @click.self="onBackdrop('showExpenseModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-lg p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1446,8 +1479,10 @@
                 </form>
             </div>
         </div>
+        </transition>
 
         <!-- MODAL 2: Stock Edit/Create -->
+        <transition name="fd-modal">
         <div v-if="showStockModal" data-modal="showStockModal" @click.self="onBackdrop('showStockModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
             <div class="glass-modal rounded-2xl w-full max-w-md p-6 space-y-4 border border-slate-700/80">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1519,8 +1554,10 @@
                 </form>
             </div>
         </div>
+        </transition>
 
         <!-- MODAL 3: Batch Update Dates -->
+        <transition name="fd-modal">
         <div v-if="showBatchDateModal" data-modal="showBatchDateModal" @click.self="onBackdrop('showBatchDateModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
             <div class="glass-modal rounded-2xl w-full max-w-sm p-6 space-y-4 border border-slate-700/80">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1537,8 +1574,10 @@
                 </div>
             </div>
         </div>
+        </transition>
 
         <!-- MODAL 4: Batch Copy Modal -->
+        <transition name="fd-modal">
         <div v-if="showBatchCopyModal" data-modal="showBatchCopyModal" @click.self="onBackdrop('showBatchCopyModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
             <div class="glass-modal rounded-2xl w-full max-w-sm p-6 space-y-4 border border-slate-700/80">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1556,8 +1595,10 @@
                 </div>
             </div>
         </div>
+        </transition>
 
         <!-- MODAL 5: Import Help Documentation & Download Template -->
+        <transition name="fd-modal">
         <div v-if="showImportHelpModal" data-modal="showImportHelpModal" @click.self="onBackdrop('showImportHelpModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-2xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1586,6 +1627,7 @@
                 </div>
             </div>
         </div>
+        </transition>
     </div>
 
     <script type="module">
@@ -1766,7 +1808,7 @@
     <div id="app-version" class="fd-version select-none"></div>
     <script>
         (function () {
-            var APP = 'V24.2';
+            var APP = 'V25';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');
