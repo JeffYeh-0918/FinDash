@@ -43,7 +43,7 @@
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=2" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=17">
+    <link rel="stylesheet" href="css/app.css?v=18">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -1414,10 +1414,10 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <div class="flex flex-wrap justify-between items-center gap-x-2 gap-y-0.5 mb-1">
+                            <div class="flex justify-between items-center gap-2 mb-1">
                                 <label class="block text-slate-400 whitespace-nowrap">類別</label>
-                                <span class="flex items-center gap-3 whitespace-nowrap">
-                                    <button type="button" @click="openCategorySettings('map')" class="text-xs text-teal-400 hover:underline" title="調整各類別可選的項目">調整對照</button>
+                                <span class="flex items-center gap-2 whitespace-nowrap">
+                                    <button type="button" @click="openCategorySettings('map')" class="text-xs text-teal-400 hover:underline" title="調整各類別可選的項目（類別與項目的對照）" aria-label="調整類別與項目的對照">對照</button>
                                     <button type="button" @click="promptAddOption('category')" class="text-xs text-emerald-400 hover:underline">+ 新增</button>
                                 </span>
                             </div>

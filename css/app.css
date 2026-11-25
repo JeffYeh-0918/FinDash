@@ -262,7 +262,7 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 .fd-nav[data-tab="investments"] { --a: 129 140 248; }
 .fd-nav[data-tab="monthly"] { --a: 251 191 36; }
 .fd-nav[data-tab="cards"] { --a: 56 189 248; }
-.fd-nav-item { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; height: 44px; padding: 0 12px 0 14px; border: 0; border-radius: 10px; background: none; color: #94a3b8; font-size: 14px; text-align: left; white-space: nowrap; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+.fd-nav-item { position: relative; display: flex; align-items: center; gap: 0; width: 100%; height: 44px; padding: 0 12px 0 14px; border: 0; border-radius: 10px; background: none; color: #94a3b8; font-size: 14px; text-align: left; white-space: nowrap; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
 .fd-nav-item:hover { background: #18233a; color: #e2e8f0; }
 .fd-nav-item.is-active { background: rgb(var(--a) / .12); color: rgb(var(--a)); font-weight: 600; }
 .fd-nav-ind { position: absolute; left: -12px; top: 12px; width: 3px; height: 20px; border-radius: 0 3px 3px 0; background: rgb(var(--a)); transition: transform .2s ease; pointer-events: none; }
@@ -481,3 +481,7 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
     .fd-side, .fd-label { transition: none !important; }
     .fd-wide .fd-tools-inline, .fd-wide .fd-side-foot .fd-chip { animation: none; }
 }
+
+/* 側邊欄導覽：圖示不被壓縮；文字與圖示的間距改由文字的 margin 提供（窄欄時為 0，圖示大小與位置才不會變） */
+.fd-nav-item > svg, .fd-nav-item > i { flex: none; }
+.fd-wide .fd-nav-item .fd-label { margin-left: 12px; }
