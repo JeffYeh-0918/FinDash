@@ -52,7 +52,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, [tabindex]:focus-vi
 }
 .fdm { margin-top: 0.25rem; }
 /* 區塊標題列：固定在分頁列下方，捲動時一直看得到目前在哪一塊 */
-.fdm-sec { position: sticky; top: var(--tabbar-h, 46px); z-index: 12; display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.25rem; margin: 0 -0.25rem; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid rgba(148, 163, 184, 0.12); }
+.fdm-sec { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 12; display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.25rem; margin: 0 -0.25rem; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid rgba(148, 163, 184, 0.12); }
 .fdm-sq { flex: none; width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; background: var(--fdm-accent-bg); color: var(--fdm-accent); }
 .fdm-title { font-size: 0.9rem; font-weight: 600; color: #f1f5f9; line-height: 1.2; }
 .fdm-sub { font-size: 0.7rem; color: #94a3b8; margin-top: 1px; }
@@ -249,13 +249,12 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 @media (min-width: 1024px) { .fd-content { padding: 1.5rem 2rem 3rem; } }
 
 /* --- 側邊欄（1024px 以上） --- */
-.fd-side { display: none; position: sticky; top: 0; align-self: flex-start; height: 100vh; height: 100dvh; flex: none; width: 72px; flex-direction: column; padding: 16px 12px 28px; background: #0b1220; border-right: 1px solid #1e293b; z-index: 30; }
+.fd-side { display: none; position: sticky; top: 0; align-self: flex-start; height: 100vh; height: 100dvh; flex: none; width: 72px; flex-direction: column; padding: 16px 12px 28px; background: #0b1220; border-right: 1px solid #1e293b; z-index: 30; overflow: hidden; transition: width .22s cubic-bezier(.2, .8, .2, 1); }
 @media (min-width: 1024px) { .fd-side { display: flex; } }
 .fd-wide .fd-side { width: 232px; }
-.fd-label { display: none; }
-.fd-wide .fd-label { display: inline; }
+.fd-label { display: inline-block; max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; vertical-align: middle; transition: max-width .22s cubic-bezier(.2, .8, .2, 1), opacity .12s ease, margin-left .22s ease; }
+.fd-wide .fd-label { max-width: 180px; opacity: 1; transition: max-width .22s cubic-bezier(.2, .8, .2, 1), opacity .2s ease .08s, margin-left .22s ease; }
 .fd-logo { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 4px 6px 16px; }
-.fd-app:not(.fd-wide) .fd-logo { justify-content: center; padding-left: 0; padding-right: 0; }
 .fd-logo-mark { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 10px; background: #10b981; color: #022c22; }
 .fd-logo-text { font-weight: 700; font-size: 16px; line-height: 1.2; color: #e2e8f0; white-space: nowrap; }
 .fd-logo-text small { display: block; font-size: 12px; font-weight: 400; color: #94a3b8; }
@@ -263,8 +262,7 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 .fd-nav[data-tab="investments"] { --a: 129 140 248; }
 .fd-nav[data-tab="monthly"] { --a: 251 191 36; }
 .fd-nav[data-tab="cards"] { --a: 56 189 248; }
-.fd-nav-item { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; color: #94a3b8; font-size: 14px; text-align: left; white-space: nowrap; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
-.fd-app:not(.fd-wide) .fd-nav-item { justify-content: center; padding: 0; }
+.fd-nav-item { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; height: 44px; padding: 0 12px 0 14px; border: 0; border-radius: 10px; background: none; color: #94a3b8; font-size: 14px; text-align: left; white-space: nowrap; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
 .fd-nav-item:hover { background: #18233a; color: #e2e8f0; }
 .fd-nav-item.is-active { background: rgb(var(--a) / .12); color: rgb(var(--a)); font-weight: 600; }
 .fd-nav-ind { position: absolute; left: -12px; top: 12px; width: 3px; height: 20px; border-radius: 0 3px 3px 0; background: rgb(var(--a)); transition: transform .2s ease; pointer-events: none; }
@@ -289,7 +287,7 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 .fd-chip:disabled { cursor: default; }
 .fd-side-foot .fd-chip { display: none; }
 .fd-wide .fd-side-foot .fd-chip { display: block; }
-.fd-collapse { display: none; align-items: center; justify-content: center; gap: 8px; height: 36px; border: 0; border-radius: 8px; background: none; color: #94a3b8; font-size: 13px; cursor: pointer; }
+.fd-collapse { display: none; align-items: center; justify-content: center; gap: 0; height: 36px; border: 0; border-radius: 8px; background: none; color: #94a3b8; font-size: 13px; cursor: pointer; }
 .fd-collapse:hover { background: #18233a; color: #e2e8f0; }
 @media (min-width: 1024px) { .fd-collapse { display: flex; } }
 
@@ -474,4 +472,12 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 @media (prefers-reduced-motion: reduce) {
     .fd-slide-l, .fd-slide-r { animation-name: fd-fade !important; animation-duration: .12s !important; }
     .fd-seg2::before, .fd-tabs2::after { transition: none !important; }
+}
+
+/* --- V25 側邊欄展開／收合：寬度滑動、文字淡入（窄欄時文字寬度為 0，所以圖示位置不會跳） --- */
+.fd-wide .fd-collapse .fd-label { margin-left: 8px; }
+.fd-wide .fd-tools-inline, .fd-wide .fd-side-foot .fd-chip { animation: fd-fade .25s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+    .fd-side, .fd-label { transition: none !important; }
+    .fd-wide .fd-tools-inline, .fd-wide .fd-side-foot .fd-chip { animation: none; }
 }

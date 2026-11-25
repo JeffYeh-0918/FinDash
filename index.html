@@ -43,7 +43,7 @@
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=2" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=16">
+    <link rel="stylesheet" href="css/app.css?v=17">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -146,7 +146,7 @@
                         <div class="fd-ci p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg text-emerald-400 shrink-0"><i data-lucide="arrow-down-left" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
                     </div>
                     <div class="mt-2 sm:mt-3">
-                        <div class="text-lg sm:text-2xl font-bold text-emerald-400 whitespace-nowrap">{{ formatCurrency(monthlyTotalIncome) }}</div>
+                        <div class="text-lg sm:text-2xl font-bold text-emerald-400 whitespace-nowrap"><fd-num :value="monthlyTotalIncome"></fd-num></div>
                         <p class="text-xs sm:text-xs text-slate-400 mt-1">{{ selectedYear }} / {{ selectedMonth }} 月計</p>
                     </div>
                 </div>
@@ -156,12 +156,12 @@
                         <div class="fd-ci p-1.5 sm:p-2 bg-rose-500/10 rounded-lg text-rose-400 shrink-0"><i data-lucide="arrow-up-right" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
                     </div>
                     <div class="mt-2 sm:mt-3">
-                        <div class="text-lg sm:text-2xl font-bold text-rose-400 whitespace-nowrap">{{ formatCurrency(monthlyTotalExpense) }}</div>
+                        <div class="text-lg sm:text-2xl font-bold text-rose-400 whitespace-nowrap"><fd-num :value="monthlyTotalExpense"></fd-num></div>
                         <p class="fd-kv text-xs sm:text-xs text-slate-400 mt-1">
                             <span>淨儲蓄率</span>
                             <span class="text-slate-200 font-bold">{{ monthlySavingsRate }}%</span>
                         </p>
-                        <p class="fd-kv text-xs sm:text-xs text-slate-400 mt-0.5"><span>{{ monthlyInvestNet < 0 ? '投資淨回收' : '投資淨投入' }}</span><span :class="monthlyInvestNet < 0 ? 'text-emerald-400' : 'text-slate-300'">{{ formatCurrency(Math.abs(monthlyInvestNet)) }}</span></p>
+                        <p class="fd-kv text-xs sm:text-xs text-slate-400 mt-0.5"><span>{{ monthlyInvestNet < 0 ? '投資淨回收' : '投資淨投入' }}</span><span :class="monthlyInvestNet < 0 ? 'text-emerald-400' : 'text-slate-300'"><fd-num :value="Math.abs(monthlyInvestNet)"></fd-num></span></p>
                     </div>
                 </div>
                 <div class="glass-card rounded-2xl p-3 sm:p-5">
@@ -170,11 +170,11 @@
                         <div class="fd-ci p-1.5 sm:p-2 bg-indigo-500/10 rounded-lg text-indigo-400 shrink-0"><i data-lucide="pie-chart" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
                     </div>
                     <div class="mt-2 sm:mt-3">
-                        <div class="text-lg sm:text-2xl font-bold text-slate-100 whitespace-nowrap">{{ formatCurrency(totalInvestmentMarketValue) }}</div>
+                        <div class="text-lg sm:text-2xl font-bold text-slate-100 whitespace-nowrap"><fd-num :value="totalInvestmentMarketValue"></fd-num></div>
                         <p class="text-xs sm:text-xs text-slate-400 mt-1 flex flex-col sm:flex-row sm:justify-between">
                             <span>未實現損益</span>
                             <span :class="totalUnrealizedPL >= 0 ? 'text-emerald-400' : 'text-rose-400'" class="font-medium">
-                                {{ totalUnrealizedPL >= 0 ? '+' : '' }}{{ formatCurrency(totalUnrealizedPL) }} ({{ totalUnrealizedPLRate }}%)
+                                {{ totalUnrealizedPL >= 0 ? '+' : '' }}<fd-num :value="totalUnrealizedPL"></fd-num> ({{ totalUnrealizedPLRate }}%)
                             </span>
                         </p>
                     </div>
@@ -186,10 +186,10 @@
                     </div>
                     <div class="mt-2 sm:mt-3">
                         <div class="text-lg sm:text-2xl font-bold whitespace-nowrap" :class="totalRealizedPL >= 0 ? 'text-emerald-400' : 'text-rose-400'">
-                            {{ totalRealizedPL >= 0 ? '+' : '' }}{{ formatCurrency(totalRealizedPL) }}
+                            {{ totalRealizedPL >= 0 ? '+' : '' }}<fd-num :value="totalRealizedPL"></fd-num>
                         </div>
                         <p class="hidden sm:block text-xs text-slate-400 mt-1">賣出後落袋的損益（移動平均成本，已扣手續費與稅）</p>
-                        <p class="text-xs sm:text-xs text-slate-400 mt-1 sm:mt-0.5">累積股息 {{ formatCurrency(totalDividend) }}</p>
+                        <p class="text-xs sm:text-xs text-slate-400 mt-1 sm:mt-0.5">累積股息 <fd-num :value="totalDividend"></fd-num></p>
                         <p class="text-xs sm:text-xs text-amber-400/80 mt-0.5">點擊查看明細</p>
                     </div>
                 </div>
@@ -1414,9 +1414,9 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="block text-slate-400">類別</label>
-                                <span class="flex items-center gap-3">
+                            <div class="flex flex-wrap justify-between items-center gap-x-2 gap-y-0.5 mb-1">
+                                <label class="block text-slate-400 whitespace-nowrap">類別</label>
+                                <span class="flex items-center gap-3 whitespace-nowrap">
                                     <button type="button" @click="openCategorySettings('map')" class="text-xs text-teal-400 hover:underline" title="調整各類別可選的項目">調整對照</button>
                                     <button type="button" @click="promptAddOption('category')" class="text-xs text-emerald-400 hover:underline">+ 新增</button>
                                 </span>
