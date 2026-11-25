@@ -25,7 +25,7 @@
     "./js/features/options.js": "./js/features/options.js?v=2",
     "./js/features/ui.js": "./js/features/ui.js?v=1",
     "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=2",
-    "./js/features/modals.js": "./js/features/modals.js?v=2",
+    "./js/features/modals.js": "./js/features/modals.js?v=3",
     "./js/features/charts.js": "./js/features/charts.js?v=4",
     "./js/features/import-export.js": "./js/features/import-export.js?v=4",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
@@ -35,6 +35,7 @@
     "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=5",
     "./js/features/card-drag.js": "./js/features/card-drag.js?v=4",
     "./js/features/nav.js": "./js/features/nav.js?v=1",
+    "./js/features/motion.js": "./js/features/motion.js?v=1",
     "./js/logic/nav.js": "./js/logic/nav.js?v=1"
   }
 }
@@ -42,7 +43,7 @@
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=2" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=15">
+    <link rel="stylesheet" href="css/app.css?v=16">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -202,10 +203,10 @@
                             <h3 class="text-lg font-semibold text-slate-200 whitespace-nowrap">支出分析</h3>
                             <button type="button" @click="openPaymentSettings('rules')" class="shrink-0 inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-400/60 rounded-md px-1.5 py-0.5 transition" title="調整儲值事件與消費定義"><i data-lucide="sliders-horizontal" class="w-3 h-3"></i>規則</button>
                         </div>
-                        <div class="flex items-center shrink-0 h-10 bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
-                            <button @click="includeInvest = false" :class="!includeInvest ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="h-full px-3 rounded-md transition whitespace-nowrap">不含投資</button>
-                            <button @click="includeInvest = true" :class="includeInvest ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="h-full px-3 rounded-md transition whitespace-nowrap">含投資</button>
-                        </div>
+                        <div class="fd-seg2 fd-seg-lg" role="group" aria-label="圖表是否含投資" :style="{ '--n': 2, '--i': includeInvest ? 1 : 0, '--seg-accent': '#059669' }">
+<button type="button" @click="includeInvest = false" :class="{ 'is-on': !includeInvest }" :aria-pressed="!includeInvest">不含投資</button>
+<button type="button" @click="includeInvest = true" :class="{ 'is-on': includeInvest }" :aria-pressed="includeInvest">含投資</button>
+</div>
                     </div>
                     <p class="text-xs text-slate-400">預設不含投資（ETF 買賣、投資儲蓄），避免大額投資稀釋其他項目；投資另外顯示在下方區塊。</p>
                     <div class="fd-catbar" role="group" aria-label="類別篩選：點一下可從下面兩張圖隱藏或顯示">
@@ -220,7 +221,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-4">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-4" data-fd-refresh="month invest">
                     <div class="glass-card rounded-2xl p-5 flex flex-col fd-chart-card">
                         <div class="fd-chart-head"><h3 class="text-base font-semibold text-slate-200 flex items-center gap-2">
                             <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-400"></i>
@@ -236,13 +237,13 @@
                             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm border border-slate-400" style="background: rgba(148,163,184,0.35)"></span>淺色＝每月預付</span>
                         </div>
                     </div>
-                    <div class="glass-card rounded-2xl p-5 flex flex-col fd-chart-card">
+                    <div class="glass-card rounded-2xl p-5 flex flex-col fd-chart-card" data-fd-refresh="paymode">
                         <div class="flex items-start justify-between gap-3 fd-chart-head">
                             <h3 class="text-base font-semibold text-slate-200 flex items-center gap-2">
                                 <i data-lucide="credit-card" class="w-4 h-4 text-indigo-400"></i>
                                 付款管道支出統計
                             </h3>
-                            <div class="fd-seg" role="group" aria-label="付款管道圖顯示方式">
+                            <div class="fd-seg2" role="group" aria-label="付款管道圖顯示方式" :style="{ '--n': 2, '--i': payChartMode === 'share' ? 1 : 0 }">
                                 <button type="button" :class="{ 'is-on': payChartMode === 'amount' }" :aria-pressed="payChartMode === 'amount'" @click="payChartMode = 'amount'">金額</button>
                                 <button type="button" :class="{ 'is-on': payChartMode === 'share' }" :aria-pressed="payChartMode === 'share'" @click="payChartMode = 'share'">占比</button>
                             </div>
@@ -256,16 +257,16 @@
                     </div>
                 </div>
 
-                <div class="glass-card rounded-2xl p-5">
+                <div class="glass-card rounded-2xl p-5" data-fd-refresh="month">
                     <h3 class="text-base font-semibold text-slate-200 mb-3 flex flex-wrap items-center gap-2">
                         <i data-lucide="trending-up" class="w-4 h-4 text-amber-400"></i>
                         <span>本月投資</span><span class="fd-h3-note">（不計入上方消費圖表）</span>
                     </h3>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">買進</div><div class="text-base sm:text-lg font-bold text-rose-300 mt-0.5">{{ formatCurrency(monthlyInvestSummary.buy) }}</div></div>
-                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">賣出</div><div class="text-base sm:text-lg font-bold text-emerald-300 mt-0.5">{{ formatCurrency(monthlyInvestSummary.sell) }}</div></div>
-                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">淨投入</div><div class="text-base sm:text-lg font-bold mt-0.5" :class="monthlyInvestSummary.buy - monthlyInvestSummary.sell >= 0 ? 'text-slate-100' : 'text-emerald-300'">{{ formatCurrency(monthlyInvestSummary.buy - monthlyInvestSummary.sell) }}</div></div>
-                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">股息收入</div><div class="text-base sm:text-lg font-bold text-emerald-300 mt-0.5">{{ formatCurrency(monthlyInvestSummary.dividend) }}</div></div>
+                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">買進</div><div class="text-base sm:text-lg font-bold text-rose-300 mt-0.5"><fd-num :value="monthlyInvestSummary.buy"></fd-num></div></div>
+                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">賣出</div><div class="text-base sm:text-lg font-bold text-emerald-300 mt-0.5"><fd-num :value="monthlyInvestSummary.sell"></fd-num></div></div>
+                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">淨投入</div><div class="text-base sm:text-lg font-bold mt-0.5" :class="monthlyInvestSummary.buy - monthlyInvestSummary.sell >= 0 ? 'text-slate-100' : 'text-emerald-300'"><fd-num :value="monthlyInvestSummary.buy - monthlyInvestSummary.sell"></fd-num></div></div>
+                        <div class="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 text-left md:text-center"><div class="text-xs text-slate-400">股息收入</div><div class="text-base sm:text-lg font-bold text-emerald-300 mt-0.5"><fd-num :value="monthlyInvestSummary.dividend"></fd-num></div></div>
                     </div>
                     <div v-if="monthlyInvestSummary.list.length" class="mt-3 flex flex-wrap gap-2 text-xs">
                         <div v-for="x in monthlyInvestSummary.list" :key="x.symbol" class="fd-inv-row bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
@@ -297,17 +298,17 @@
                             <input v-model="expenseSearch" type="text" placeholder="搜尋類別/項目/內容/備註..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
                         </div>
                         
-                        <div class="flex items-center h-10 bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
-                            <button @click="expenseMonthFilterScope = 'MONTH'; filterYears = []; filterMonths = []" :class="expenseMonthFilterScope === 'MONTH' && !dateFilterActive ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">僅當月</button>
-                            <button @click="expenseMonthFilterScope = 'ALL'; filterYears = []; filterMonths = []" :class="expenseMonthFilterScope === 'ALL' && !dateFilterActive ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400'" class="flex-1 h-full rounded text-center transition flex items-center justify-center">全部歷史</button>
-                        </div>
+                        <div class="fd-seg2 fd-seg-lg fd-seg-block" :class="{ 'is-none': dateFilterActive }" role="group" aria-label="日期範圍" :style="{ '--n': 2, '--i': expenseMonthFilterScope === 'ALL' ? 1 : 0, '--seg-accent': '#059669' }">
+<button type="button" @click="expenseMonthFilterScope = 'MONTH'; filterYears = []; filterMonths = []" :class="{ 'is-on': expenseMonthFilterScope === 'MONTH' && !dateFilterActive }">僅當月</button>
+<button type="button" @click="expenseMonthFilterScope = 'ALL'; filterYears = []; filterMonths = []" :class="{ 'is-on': expenseMonthFilterScope === 'ALL' && !dateFilterActive }">全部歷史</button>
+</div>
                         
                         <div class="relative" @click.stop>
                             <button @click="toggleDropdown('category')" class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 flex items-center justify-between focus:border-emerald-500 focus:outline-none">
                                 <span class="truncate">{{ categoryFilterLabel }}</span>
                                 <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 ml-1"></i>
                             </button>
-                            <transition name="fd-dd">
+                            <transition name="fd-dd" :duration="140">
                             <div v-if="activeDropdown === 'category'" class="absolute left-0 right-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
                                 <label class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-emerald-400 font-bold border-b border-slate-800">
                                     <input type="checkbox" :checked="selectedCategoryFilters.length === 0" @change="selectedCategoryFilters = []" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
@@ -326,7 +327,7 @@
                                 <span class="truncate">{{ itemFilterLabel }}</span>
                                 <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 ml-1"></i>
                             </button>
-                            <transition name="fd-dd">
+                            <transition name="fd-dd" :duration="140">
                             <div v-if="activeDropdown === 'item'" class="absolute left-0 right-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
                                 <label class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-emerald-400 font-bold border-b border-slate-800">
                                     <input type="checkbox" :checked="selectedItemFilters.length === 0" @change="selectedItemFilters = []" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
@@ -345,7 +346,7 @@
                                 <span class="truncate">{{ paymentFilterLabel }}</span>
                                 <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 ml-1"></i>
                             </button>
-                            <transition name="fd-dd">
+                            <transition name="fd-dd" :duration="140">
                             <div v-if="activeDropdown === 'payment'" class="absolute left-0 right-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
                                 <label class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-emerald-400 font-bold border-b border-slate-800">
                                     <input type="checkbox" :checked="selectedPaymentFilters.length === 0" @change="selectedPaymentFilters = []" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
@@ -383,7 +384,7 @@
                         <div v-if="filteredExpenses.length === 0" class="fdm-empty">無符合條件的收支紀錄</div>
                         <template v-for="g in expenseDayGroups" :key="g.id">
                             <div class="fdm-day"><span>{{ g.label }}</span><span class="fdm-day-sum"><span v-if="g.exp">支出 {{ formatCurrency(g.exp) }}</span><span v-if="g.exp && g.inc" class="fdm-sep">・</span><span v-if="g.inc">收入 {{ formatCurrency(g.inc) }}</span></span></div>
-                            <div class="fdm-list">
+                            <div class="fdm-list" data-fd-refresh="month">
                                 <div v-for="item in g.items" :key="item.id" class="fdm-item" :class="{ 'is-selected': fdmIsSel('expense', item.id), 'is-drag-src': isDragSrc('expense', item.id) }"
                                     data-fd-row data-fd-kind="expense" :data-fd-id="item.id" :data-fd-label="(item.item || '') + (item.content ? ' · ' + item.content : '')" :data-fd-amt="(item.type === '收入' ? '+' : '-') + formatCurrency(item.amount)"
                                     role="button" tabindex="0" :aria-pressed="fdmIsSel('expense', item.id)" :aria-label="'選取或編輯：' + (item.item || '')"
@@ -410,7 +411,7 @@
                     </div>
 
                     <div @scroll="onExpenseScroll" class="fd-desktop overflow-x-auto max-h-[500px] overflow-y-auto rounded-lg border border-slate-800" style="--fdm-accent:#34d399;--fdm-accent-bg:rgba(52,211,153,.15)">
-                        <table class="w-full text-left text-xs sm:text-sm">
+                        <table class="w-full text-left text-xs sm:text-sm" data-fd-refresh="month">
                             <thead class="bg-slate-800/90 text-slate-400 border-b border-slate-700/60 uppercase sticky top-0 z-10 backdrop-blur-md">
                                 <tr>
                                     <th scope="col" class="whitespace-nowrap py-3 px-2 text-center w-10" title="全選／取消全選">
@@ -538,7 +539,7 @@
                     <div v-if="ledgerYearRows.length" class="fdm-subhead">年度合計（日曆年）與月均</div>
                     <div v-for="r in ledgerYearRows" :key="r.key" class="fdm-month" style="cursor:default">
                         <div class="fdm-m1"><span class="fdm-mlabel" :style="r.kind === 'avg' ? 'font-weight:400;color:#cbd5e1' : ''">{{ r.label }}</span><span class="fdm-net" :class="{ 'is-neg': r.net < 0 }"><small>結餘</small>{{ signedCurrency(r.net) }}</span></div>
-                        <div class="fdm-m3" style="margin-top:.375rem"><span>收入 {{ formatCurrency(r.income) }}</span><span>消費 {{ formatCurrency(r.consume) }}</span></div>
+                        <div class="fdm-m3" style="margin-top:.375rem"><span>收入 <fd-num :value="r.income"></fd-num></span><span>消費 <fd-num :value="r.consume"></fd-num></span></div>
                         <div class="fdm-m3" style="margin-top:.125rem"><span>{{ r.invest < 0 ? '投資淨回收 ' : '投資淨投入 ' }}{{ formatCurrency(Math.abs(r.invest)) }}</span><span>投資後現金 {{ signedCurrency(r.after) }}</span></div>
                     </div>
                 </div>
@@ -614,7 +615,7 @@
                 <div v-if="cardStatements.length === 0" class="glass-card rounded-2xl p-6 text-sm text-slate-400">
                     尚未設定信用卡。請按右上角「信用卡設定」，勾選屬於信用卡的付款方式並填入每月結帳日。
                 </div>
-                <div v-for="card in cardStatements" :key="card.name" class="glass-card rounded-2xl p-5 space-y-4">
+                <div v-for="card in cardStatements" :key="card.name" class="glass-card rounded-2xl p-5 space-y-4" data-fd-refresh="card">
                     <div class="flex items-center justify-between">
                         <h3 class="text-base font-bold text-slate-100">{{ card.name }}</h3>
                         <span class="text-xs text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">每月 {{ card.closingDay }} 日結帳</span>
@@ -625,7 +626,7 @@
                                 <span class="text-xs text-slate-400">{{ p.title }}</span>
                                 <span class="text-xs px-1.5 rounded border" :class="p.closed ? 'text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-sky-300 border-sky-500/30 bg-sky-500/10'">{{ p.closed ? '已出帳' : '尚未出帳' }}</span>
                             </div>
-                            <div class="text-2xl font-bold text-rose-300 mt-2">{{ formatCurrency(p.total) }}</div>
+                            <div class="text-2xl font-bold text-rose-300 mt-2"><fd-num :value="p.total"></fd-num></div>
                             <div class="fd-meta text-xs text-slate-400 mt-1"><span>{{ p.start }} ～ {{ p.end }}</span><span>{{ p.count }} 筆</span><span>點擊看明細</span></div>
                         </button>
                     </div>
@@ -676,18 +677,18 @@
                                 </div>
                                 <div>
                                     <span class="text-slate-400 block">投入總成本</span>
-                                    <span class="font-medium text-slate-200">{{ formatCurrency(holding.totalCost) }}</span>
+                                    <span class="font-medium text-slate-200"><fd-num :value="holding.totalCost"></fd-num></span>
                                 </div>
                                 <div>
                                     <span class="text-slate-400 block">目前總市值</span>
-                                    <span class="font-medium text-slate-200">{{ formatCurrency(holding.marketValue) }}</span>
+                                    <span class="font-medium text-slate-200"><fd-num :value="holding.marketValue"></fd-num></span>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between pt-1 border-t border-slate-800/60">
                                 <span class="text-xs text-slate-400">未實現損益</span>
                                 <div class="text-right" :class="holding.unrealizedPL >= 0 ? 'text-emerald-400' : 'text-rose-400'">
                                     <span class="text-sm font-bold">
-                                        {{ holding.unrealizedPL >= 0 ? '+' : '' }}{{ formatCurrency(holding.unrealizedPL) }}
+                                        {{ holding.unrealizedPL >= 0 ? '+' : '' }}<fd-num :value="holding.unrealizedPL"></fd-num>
                                     </span>
                                     <span class="text-xs block font-semibold">
                                         ({{ holding.unrealizedPL >= 0 ? '+' : '' }}{{ holding.unrealizedPLRate }}%)
@@ -699,7 +700,7 @@
                                     <span class="block text-xs text-slate-400">已領股息 {{ formatCurrency(holding.dividends) }}</span>
                                 </span>
                                 <div class="text-right" :class="holding.totalPL >= 0 ? 'text-emerald-400' : 'text-rose-400'">
-                                    <span class="text-sm font-bold">{{ holding.totalPL >= 0 ? '+' : '' }}{{ formatCurrency(holding.totalPL) }}</span>
+                                    <span class="text-sm font-bold">{{ holding.totalPL >= 0 ? '+' : '' }}<fd-num :value="holding.totalPL"></fd-num></span>
                                     <span class="text-xs block font-semibold">({{ holding.totalPL >= 0 ? '+' : '' }}{{ holding.totalPLRate }}%)</span>
                                 </div>
                             </div>
@@ -857,15 +858,15 @@
         <button type="button" class="fd-fan-item fd-fan-e" role="menuitem" @click="closeAllDropdowns(); openExpenseModal()"><span class="fd-fan-ic"><i data-lucide="plus" class="w-6 h-6"></i></span><span class="fd-fan-lb">記收支</span></button>
     </div>
 </nav>
-<transition name="fd-scrim">
+<transition name="fd-scrim" :duration="220">
 <div v-show="activeDropdown === 'add'" class="fd-scrim fd-scrim-add" aria-hidden="true"></div>
 </transition>
 
 <!-- 工具與設定：手機＝底部面板；窄欄側邊欄＝從左下角彈出（展開的側邊欄直接列在側邊欄裡） -->
-<transition name="fd-scrim">
+<transition name="fd-scrim" :duration="220">
 <div v-show="activeDropdown === 'tools'" class="fd-scrim" aria-hidden="true"></div>
 </transition>
-<transition name="fd-pop">
+<transition name="fd-pop" :duration="270">
 <div v-show="activeDropdown === 'tools'" class="fd-pop" role="menu" aria-label="工具與設定" @click.stop>
     <div class="fd-pop-head fd-mob-only"><b>工具與設定</b><button type="button" v-if="gasApiUrl && syncBadge.text" @click="syncFromCloud()" :disabled="isSyncing" :title="syncBadge.title + '（點一下重新同步）'" :class="syncBadge.cls" class="fd-chip">{{ syncBadge.text }}</button></div>
     <button type="button" class="fd-tool fd-mob-only fd-sync-row" @click="closeAllDropdowns(); syncFromCloud()" :disabled="isSyncing"><span :class="{ 'animate-bounce': isSyncing }" class="inline-flex"><i data-lucide="cloud-download" class="w-4 h-4 text-emerald-400"></i></span><span>{{ isSyncing ? '同步中…' : '同步 Google 雲端試算表' }}</span></button>
@@ -915,7 +916,7 @@
         </div>
 
         <!-- API Config Modal -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="showApiConfigModal" data-modal="showApiConfigModal" @click.self="onBackdrop('showApiConfigModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
             <div class="glass-modal rounded-2xl w-full max-w-md p-6 space-y-4 border border-slate-700">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -936,7 +937,7 @@
         </transition>
 
         <!-- 項目明細 -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="itemDetail" data-modal="itemDetail" @click.self="onBackdrop('itemDetail')" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-3xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-start border-b border-slate-800 pb-3">
@@ -989,19 +990,19 @@
         </transition>
 
         <!-- 設定：類別與項目 -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="showCategoryMapModal" data-modal="showCategoryMapModal" @click.self="onBackdrop('showCategoryMapModal')" class="fixed inset-0 z-[65] flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-3xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                     <h3 class="text-base font-bold text-slate-100">類別與項目</h3>
                     <button @click="requestClose('showCategoryMapModal')" class="text-slate-400 hover:text-white text-lg leading-none" aria-label="關閉">✕</button>
                 </div>
-                <div class="flex border-b border-slate-800/80 space-x-2 overflow-x-auto no-scrollbar">
-                    <button @click="catTab = 'map'" :class="catTab === 'map' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="px-3 py-2 border-b-2 text-xs sm:text-sm whitespace-nowrap transition">類別涵蓋的項目</button>
-                    <button @click="catTab = 'options'" :class="catTab === 'options' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="px-3 py-2 border-b-2 text-xs sm:text-sm whitespace-nowrap transition">選項增刪</button>
-                </div>
+                <div class="fd-tabs2" role="tablist" :style="{ '--n': 2, '--i': catTab === 'options' ? 1 : 0 }">
+<button type="button" role="tab" @click="catTab = 'map'" :class="{ 'is-on': catTab === 'map' }" :aria-selected="catTab === 'map'">類別涵蓋的項目</button>
+<button type="button" role="tab" @click="catTab = 'options'" :class="{ 'is-on': catTab === 'options' }" :aria-selected="catTab === 'options'">選項增刪</button>
+</div>
 
-                <div v-show="catTab === 'map'" class="space-y-5">
+                <div v-show="catTab === 'map'" class="space-y-5" data-fd-refresh="cattab">
                 <div class="space-y-2">
                     <h4 class="text-sm font-semibold" :class="mismatchGroups.length ? 'text-amber-300' : 'text-emerald-400'">
                         {{ mismatchGroups.length ? `有 ${mismatchTotal} 筆既有紀錄不在對照表內` : '所有既有紀錄都符合對照表' }}
@@ -1066,7 +1067,7 @@
                 </div>
                 </div>
 
-                <div v-show="catTab === 'options'" class="space-y-4 text-xs">
+                <div v-show="catTab === 'options'" class="space-y-4 text-xs" data-fd-refresh="cattab">
                     <p class="text-slate-400">在這裡新增、改名、刪除類別與項目的選項。改名會一併更新歷史紀錄與各項設定；刪除只是不再出現在選單，不會刪除歷史紀錄。要決定「哪個類別可以選哪些項目」，請到「類別涵蓋的項目」分頁。</p>
                     <div>
                         <div class="flex justify-between items-center mb-1.5">
@@ -1104,19 +1105,19 @@
         </transition>
 
         <!-- 設定：付款與帳單 -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="showCardSettingsModal" data-modal="showCardSettingsModal" @click.self="onBackdrop('showCardSettingsModal')" class="fixed inset-0 z-[65] flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                     <h3 class="text-base font-bold text-slate-100">付款與帳單</h3>
                     <button @click="requestClose('showCardSettingsModal')" class="text-slate-400 hover:text-white text-lg leading-none" aria-label="關閉">✕</button>
                 </div>
-                <div class="flex border-b border-slate-800/80 space-x-2 overflow-x-auto no-scrollbar">
-                    <button @click="payTab = 'methods'" :class="payTab === 'methods' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="px-3 py-2 border-b-2 text-xs sm:text-sm whitespace-nowrap transition">付款方式</button>
-                    <button @click="payTab = 'rules'" :class="payTab === 'rules' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'" class="px-3 py-2 border-b-2 text-xs sm:text-sm whitespace-nowrap transition">儲值事件</button>
-                </div>
+                <div class="fd-tabs2" role="tablist" :style="{ '--n': 2, '--i': payTab === 'rules' ? 1 : 0 }">
+<button type="button" role="tab" @click="payTab = 'methods'" :class="{ 'is-on': payTab === 'methods' }" :aria-selected="payTab === 'methods'">付款方式</button>
+<button type="button" role="tab" @click="payTab = 'rules'" :class="{ 'is-on': payTab === 'rules' }" :aria-selected="payTab === 'rules'">儲值事件</button>
+</div>
 
-                <div v-show="payTab === 'methods'" class="space-y-3">
+                <div v-show="payTab === 'methods'" class="space-y-3" data-fd-refresh="paytab">
                     <p class="text-xs text-slate-400">每個付款方式在這裡一次設定：名稱、是否為信用卡（填每月結帳日；29～31 日遇到較短的月份會自動取該月最後一天）、是否為預付類（使用時記在已付金額、金額為 0）。目前共 {{ prepaidUseCount }} 筆紀錄使用預付類付款方式。</p>
                     <div class="flex justify-end">
                         <button @click="promptAddOption('payment')" class="text-xs text-amber-400 hover:underline">+ 新增付款方式</button>
@@ -1149,7 +1150,7 @@
                     </div>
                 </div>
 
-                <div v-show="payTab === 'rules'" class="space-y-5">
+                <div v-show="payTab === 'rules'" class="space-y-5" data-fd-refresh="paytab">
                 <div class="space-y-2">
                     <h4 class="text-sm font-semibold text-slate-200">儲值事件（先出錢、之後才分項使用）</h4>
                     <p class="text-xs text-slate-400">符合「類別＋項目」的支出會從項目圖排除（避免和之後的分項使用重複），但仍計入付款管道統計與月收支表。目前符合 {{ fundingMatchCount }} 筆。</p>
@@ -1175,7 +1176,7 @@
         </transition>
 
         <!-- 信用卡帳期明細 -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="cardDetail" data-modal="cardDetail" @click.self="onBackdrop('cardDetail')" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-3xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-start border-b border-slate-800 pb-3">
@@ -1224,7 +1225,7 @@
         </transition>
 
         <!-- 已實現損益計算明細 -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="showRealizedModal" data-modal="showRealizedModal" @click.self="onBackdrop('showRealizedModal')" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-4xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-start border-b border-slate-800 pb-3">
@@ -1270,7 +1271,7 @@
         </transition>
 
         <!-- 匯入預覽 -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="showImportPreviewModal && importPreview" data-modal="showImportPreviewModal" @click.self="onBackdrop('showImportPreviewModal')" class="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-2xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1324,7 +1325,7 @@
         </transition>
 
         <!-- 清空重來（加強確認） -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="showResetModal" data-modal="showResetModal" @click.self="onBackdrop('showResetModal')" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-md p-6 space-y-4 border border-rose-500/40 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1356,7 +1357,7 @@
 
         <!-- 統一提示條 -->
         <div class="fixed top-3 left-1/2 -translate-x-1/2 z-[80] flex flex-col gap-2 w-[min(92vw,26rem)] pointer-events-none" role="status" aria-live="polite" data-keep-live>
-            <transition-group name="fd-toast">
+            <transition-group name="fd-toast" :duration="220">
             <div v-for="t in toasts" :key="t.id" class="pointer-events-auto flex items-start gap-3 rounded-xl border bg-slate-800 px-4 py-3 text-sm shadow-2xl" :class="toastClass(t.type)">
                 <span class="flex-1 whitespace-pre-line">{{ t.text }}</span>
                 <button v-if="t.action" @click="runToastAction(t)" class="font-bold underline shrink-0">{{ t.actionLabel }}</button>
@@ -1366,7 +1367,7 @@
         </div>
 
         <!-- 統一確認／輸入視窗 -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="dialog" data-dialog class="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
             <div class="glass-modal rounded-2xl w-full max-w-sm p-6 space-y-4 border" :class="dialog.danger ? 'border-rose-500/40' : 'border-slate-700/80'">
                 <h3 class="text-base font-bold" :class="dialog.danger ? 'text-rose-400' : 'text-slate-100'">{{ dialog.title }}</h3>
@@ -1390,7 +1391,7 @@
         </div>
 
         <!-- MODAL 1: Expense Edit/Create -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="showExpenseModal" data-modal="showExpenseModal" @click.self="onBackdrop('showExpenseModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-lg p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1482,7 +1483,7 @@
         </transition>
 
         <!-- MODAL 2: Stock Edit/Create -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="showStockModal" data-modal="showStockModal" @click.self="onBackdrop('showStockModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
             <div class="glass-modal rounded-2xl w-full max-w-md p-6 space-y-4 border border-slate-700/80">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1557,7 +1558,7 @@
         </transition>
 
         <!-- MODAL 3: Batch Update Dates -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="showBatchDateModal" data-modal="showBatchDateModal" @click.self="onBackdrop('showBatchDateModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
             <div class="glass-modal rounded-2xl w-full max-w-sm p-6 space-y-4 border border-slate-700/80">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1577,7 +1578,7 @@
         </transition>
 
         <!-- MODAL 4: Batch Copy Modal -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="showBatchCopyModal" data-modal="showBatchCopyModal" @click.self="onBackdrop('showBatchCopyModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
             <div class="glass-modal rounded-2xl w-full max-w-sm p-6 space-y-4 border border-slate-700/80">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1598,7 +1599,7 @@
         </transition>
 
         <!-- MODAL 5: Import Help Documentation & Download Template -->
-        <transition name="fd-modal">
+        <transition name="fd-modal" :duration="{ enter: 220, leave: 200 }">
         <div v-if="showImportHelpModal" data-modal="showImportHelpModal" @click.self="onBackdrop('showImportHelpModal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
             <div class="glass-modal rounded-2xl w-full max-w-2xl p-6 space-y-4 border border-slate-700/80 my-8">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -1654,6 +1655,7 @@
         import { useMobileCards } from './js/features/mobile-cards.js';
         import { useCardDrag } from './js/features/card-drag.js';
         import { useNav } from './js/features/nav.js';
+        import { useMotion, FdNum } from './js/features/motion.js';
         import { renameInSettings as renameInSettingsOn, removeFromSettings as removeFromSettingsOn } from './js/logic/settings-ops.js';
 
         const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick, provide, inject } = Vue;
@@ -1713,6 +1715,7 @@
                 Object.assign(ctx, useMobileCards(ctx));
         Object.assign(ctx, useNav(ctx));
         Object.assign(ctx, useCardDrag(ctx));
+        Object.assign(ctx, useMotion(ctx));
                 Object.assign(ctx, { COLOR_CHOICES });   // 範本用到的 import 進來的常數
 
                 const {
@@ -1803,7 +1806,7 @@
                 ];
                 return Object.fromEntries(TEMPLATE_MEMBERS.map(k => [k, ctx[k]]));
             }
-        }).component('multi-select', MultiSelect).mount('#app');
+        }).component('multi-select', MultiSelect).component('fd-num', FdNum).mount('#app');
     </script>
     <div id="app-version" class="fd-version select-none"></div>
     <script>

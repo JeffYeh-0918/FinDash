@@ -10,7 +10,8 @@ let bad = 0;
 for (const f of fs.readdirSync(DIR).filter(n => n.endsWith('.js'))) {
     const ast = parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
     let body = null;
-    ast.body.forEach(n => { if (n.type === 'ExportNamedDeclaration' && n.declaration) body = n.declaration.declarations[0].init.body.body; });
+    // 只看「use 開頭、函式本體是區塊」的匯出（motion.js 另外匯出元件與小工具，略過）
+    ast.body.forEach(n => { const init = n.type === 'ExportNamedDeclaration' && n.declaration && n.declaration.declarations && n.declaration.declarations[0].init; if (init && init.type === 'ArrowFunctionExpression' && init.body && init.body.body) body = init.body.body; });
     const lets = body.filter(s => s.type === 'VariableDeclaration' && s.kind === 'let').flatMap(s => s.declarations.map(d => d.id.name));
     const ret = body.find(s => s.type === 'ReturnStatement').argument.properties.map(p => p.key.name);
     const exported = lets.filter(n => ret.includes(n));

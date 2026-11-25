@@ -439,10 +439,39 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 .fd-pop-enter-from, .fd-pop-leave-to { opacity: 0; transform: translateY(8px); }
 @media (max-width: 1023px) {
     .fd-pop-enter-active, .fd-pop-leave-active { transition: opacity .25s ease, transform .25s cubic-bezier(.2, .8, .2, 1); }
-    .fd-pop-enter-from, .fd-pop-leave-to { opacity: .6; transform: translateY(32px); }
+    .fd-pop-enter-from { opacity: .6; transform: translateY(32px); }
+    .fd-pop-leave-to { opacity: 0; transform: translateY(100%); }
 }
+.fd-pop-leave-active, .fd-scrim-leave-active { pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
     .fd-modal-enter-active > div, .fd-modal-leave-active > div, .fd-pop-enter-active, .fd-pop-leave-active { transition-property: opacity !important; transition-duration: .12s !important; }
     .fd-modal-enter-from > div, .fd-modal-leave-to > div, .fd-pop-enter-from, .fd-pop-leave-to, .fd-toast-enter-from, .fd-toast-leave-to, .fd-dd-enter-from, .fd-dd-leave-to { transform: none !important; }
     .fd-toast-move { transition: none !important; }
+}
+
+/* --- V25 切換按鈕：選取塊滑動（--n＝選項數、--i＝目前第幾個，由範本帶入） --- */
+.fd-seg2 { --n: 2; --i: 0; --pad: 3px; --seg-accent: #4f46e5; position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; flex: none; padding: var(--pad); background: #0f172a; border: 1px solid #334155; border-radius: .5rem; }
+.fd-seg2::before { content: ""; position: absolute; top: var(--pad); bottom: var(--pad); left: var(--pad); width: calc((100% - 2 * var(--pad)) / var(--n)); background: var(--seg-accent); border-radius: .375rem; transform: translateX(calc(var(--i) * 100%)); transition: transform .22s cubic-bezier(.2, .8, .2, 1), opacity .2s ease; }
+.fd-seg2.is-none::before { opacity: 0; }
+.fd-seg2 > button { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; min-height: 1.75rem; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; color: #94a3b8; background: transparent; border: 0; border-radius: .375rem; cursor: pointer; white-space: nowrap; transition: color .2s ease; }
+.fd-seg2 > button.is-on { color: #fff; }
+.fd-seg2 > button:focus-visible { outline: 2px solid #818cf8; outline-offset: 1px; }
+.fd-seg-lg { height: 2.5rem; }
+.fd-seg-lg > button { height: 100%; }
+.fd-seg-block { display: grid; width: 100%; }
+/* 底線式分頁：底線滑動 */
+.fd-tabs2 { --n: 2; --i: 0; position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-bottom: 1px solid rgba(30, 41, 59, .8); }
+.fd-tabs2::after { content: ""; position: absolute; left: 0; bottom: -1px; height: 2px; width: calc(100% / var(--n)); background: #10b981; transform: translateX(calc(var(--i) * 100%)); transition: transform .22s cubic-bezier(.2, .8, .2, 1); }
+.fd-tabs2 > button { padding: .5rem .75rem; font-size: .75rem; font-weight: 500; color: #94a3b8; background: none; border: 0; text-align: center; white-space: nowrap; cursor: pointer; transition: color .2s ease; }
+.fd-tabs2 > button:hover { color: #e2e8f0; }
+.fd-tabs2 > button.is-on { color: #34d399; }
+@media (min-width: 640px) { .fd-tabs2 > button { font-size: .875rem; } }
+/* 信用卡切換期間：從左／右滑入 */
+.fd-slide-l { animation: fd-slide-l .22s ease-out; }
+.fd-slide-r { animation: fd-slide-r .22s ease-out; }
+@keyframes fd-slide-l { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+@keyframes fd-slide-r { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+    .fd-slide-l, .fd-slide-r { animation-name: fd-fade !important; animation-duration: .12s !important; }
+    .fd-seg2::before, .fd-tabs2::after { transition: none !important; }
 }

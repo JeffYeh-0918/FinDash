@@ -66,20 +66,27 @@ export const useModals = (ctx) => {
     };
     // 彈窗開啟時：補上對話框標記、把焦點移進去；關閉後把焦點還給原本的按鈕
     let currentModalEl = null, lastFocusEl = null;
-    // 彈窗開啟時，背景（導覽、內容、其他彈窗）設為 inert：讀屏軟體與 Tab 都碰不到；關閉後還原
-    let inerted = [];
-    const setBackgroundInert = (top) => {
-        inerted.forEach(e => e.removeAttribute('inert')); inerted = [];
+    // 背景 inert：每次都「依畫面上實際有沒有彈窗」重新計算，不靠上一次記住的狀態，所以不會卡死。
+    // 彈窗開著＝背景（導覽、內容、其他彈窗）inert；沒有彈窗＝一律清掉。
+    const MARK = 'data-fd-inert';
+    const clearInert = () => document.querySelectorAll('[' + MARK + ']').forEach(e => { e.removeAttribute('inert'); e.removeAttribute(MARK); });
+    const syncInert = () => {
+        const top = topModalEl();
+        clearInert();
         if (!top) return;
         let node = top;
         while (node && node.id !== 'app' && node.parentElement) {
             Array.from(node.parentElement.children).forEach(sib => {
                 if (sib === node || sib.tagName === 'SCRIPT' || sib.hasAttribute('data-keep-live')) return;
-                sib.setAttribute('inert', ''); inerted.push(sib);
+                sib.setAttribute('inert', ''); sib.setAttribute(MARK, '');
             });
             node = node.parentElement;
         }
     };
+    // 自我修復：沒有彈窗卻還有 inert → 立刻清掉（定時檢查，加上按滑鼠／鍵盤時檢查）
+    const heal = () => { if (!topModalEl() && document.querySelector('[' + MARK + ']')) clearInert(); };
+    setInterval(heal, 400);
+    ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, heal, true));
     const enhanceModals = () => {
         document.querySelectorAll('[data-modal],[data-dialog]').forEach(el => {
             if (el.hasAttribute('role')) return;
@@ -89,16 +96,15 @@ export const useModals = (ctx) => {
             const h = el.querySelector('h3');
             if (h) { if (!h.id) h.id = 'dlg-' + Math.random().toString(36).slice(2, 8); el.setAttribute('aria-labelledby', h.id); }
         });
+        syncInert();
         const top = topModalEl();
         if (top && top !== currentModalEl) {
             if (!currentModalEl) lastFocusEl = document.activeElement;
             currentModalEl = top;
-            setBackgroundInert(top);
             const target = top.querySelector('[data-autofocus]') || top.querySelector('input:not([type=hidden]):not([disabled]):not([type=checkbox]),select,textarea') || top;
             try { target.focus({ preventScroll: true }); } catch (e) {}
         } else if (!top && currentModalEl) {
             currentModalEl = null;
-            setBackgroundInert(null);
             if (lastFocusEl && document.contains(lastFocusEl)) { try { lastFocusEl.focus({ preventScroll: true }); } catch (e) {} }
             lastFocusEl = null;
         }
