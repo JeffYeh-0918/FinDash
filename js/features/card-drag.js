@@ -8,13 +8,14 @@
 // 畫面：浮動的卡片堆（數量徽章、整併動畫）、插入位置指示線、原位置淡化、靠近邊緣自動捲動、Esc／拖回原處可取消。
 // 排序邏輯在 js/logic/order.js（moveToDay）與 js/logic/drag.js，這裡只負責手勢與畫面。
 import { moveToDay, isLinkedOtherDay, retargetLinked } from '../logic/order.js';
+import { swipeIntent, swipeOffset, swipeReached } from '../logic/swipe.js';
 import { slotFromY, edgeScrollDelta, movedBeyond, groupIdsFor, isNoopSlot, clampSlotToDay, dayAtY } from '../logic/drag.js';
 
 const { ref, computed, nextTick } = Vue;
 
 export const useCardDrag = (ctx) => {
     // 取用前面模組已建立的成員
-    const { selectedExpenseIds, selectedStockIds, expenses, stockTrades, pushToCloud, renderCharts, filteredExpenses, filteredStockTrades, fdmToggleSel, captureUndo, armUndo } = ctx;
+    const { selectedExpenseIds, selectedStockIds, expenses, stockTrades, pushToCloud, renderCharts, filteredExpenses, filteredStockTrades, fdmToggleSel, captureUndo, armUndo, confirmDeleteExpense, confirmDeleteStockTrade, expenseDeleteNeedsConfirm } = ctx;
 
     const LONG_MS = 450;      // 觸控長按時間
     const SCROLL_SLOP = 10;   // 長按前手指移動超過這個距離＝在捲動，不算長按
@@ -229,6 +230,82 @@ export const useCardDrag = (ctx) => {
         }
     };
 
+    /* ---------- 左滑刪除（手機、平板的卡片列） ---------- */
+    const reduceMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const vibrate = (ms) => { if (typeof navigator !== 'undefined' && navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) { /* 不支援震動就算了 */ } } };
+    // 只有「卡片列」、沒有進入選取模式時才能滑；選取中左右滑回到原本行為（當成捲動取消）
+    const canSwipe = () => !!(g && g.row && g.row.classList && g.row.classList.contains('fdm-item') && !ui && !selRef(g.kind).value.length);
+    const resetSwipe = (row) => {
+        if (!row) return;
+        row.classList.remove('is-swiping', 'is-ready', 'is-returning');
+        ['transform', 'transition', 'opacity', 'height', 'padding-top', 'padding-bottom', 'border-bottom-width', '--sw'].forEach(p => row.style.removeProperty(p));
+        row.removeAttribute('data-sw-label');
+    };
+    const springBack = (row) => {   // 彈回原位
+        if (!row) return;
+        row.style.transition = '';
+        row.classList.add('is-returning');
+        row.style.transform = ''; row.style.setProperty('--sw', '0px');
+        setTimeout(() => resetSwipe(row), 240);
+    };
+    // 刪除動畫：卡片順勢滑出（約 0.18 秒），再把這一列的高度收合（約 0.2 秒）；回傳 Promise，動畫播完才 resolve
+    const animateOut = (row, w) => new Promise(resolve => {
+        if (reduceMotion()) { resolve(); return; }
+        const h = row.offsetHeight;
+        row.classList.add('is-swiping');
+        row.style.transition = 'transform .18s ease-in, opacity .18s ease-in';
+        row.style.setProperty('--sw', w + 'px');
+        row.style.transform = 'translate3d(-' + w + 'px,0,0)'; row.style.opacity = '0';
+        setTimeout(() => {
+            row.style.transition = 'height .2s ease, padding .2s ease, border-width .2s ease';
+            row.style.height = h + 'px'; void row.offsetHeight;
+            row.style.height = '0px'; row.style.paddingTop = '0'; row.style.paddingBottom = '0'; row.style.borderBottomWidth = '0';
+            setTimeout(resolve, 210);
+        }, 180);
+    });
+    const runSwipeDelete = async (kind, id, row) => {
+        const w = row.offsetWidth || 1;
+        const out = () => animateOut(row, w);
+        try {
+            if (kind === 'stock') {
+                const t = stockTrades.value.find(x => String(x.id) === id);
+                if (!t) { springBack(row); return; }
+                await confirmDeleteStockTrade(t, { beforeRemove: out });
+            } else {
+                const e = expenses.value.find(x => String(x.id) === id);
+                if (!e) { springBack(row); return; }
+                if (expenseDeleteNeedsConfirm(e)) springBack(row);   // 連動股票交易：先彈回，確認後才播刪除動畫
+                await confirmDeleteExpense(e, { beforeRemove: out });
+            }
+        } finally {
+            setTimeout(() => { if (row.isConnected) resetSwipe(row); }, 80);   // 沒有真的被刪掉（例如取消）：還原樣式
+        }
+    };
+    const startSwipe = () => {
+        clearTimeout(g.timer); g.timer = null;
+        g.phase = 'swiping'; g.swallow = true; g.swReady = false; g.w = g.row.offsetWidth || 1;
+        g.row.classList.remove('is-returning'); g.row.classList.add('is-swiping');
+        g.row.style.transition = 'none'; g.row.setAttribute('data-sw-label', '刪除');
+        try { if (g.row.setPointerCapture) g.row.setPointerCapture(g.pid); } catch (e) { /* 追不到指標也沒關係 */ }
+        moveSwipe();
+    };
+    const moveSwipe = () => {
+        const dx = g.x - g.sx, off = swipeOffset(dx, g.w), ready = swipeReached(dx, g.w);
+        g.row.style.transform = 'translate3d(' + (-off) + 'px,0,0)';
+        g.row.style.setProperty('--sw', off + 'px');
+        if (ready !== g.swReady) {
+            g.swReady = ready;
+            g.row.classList.toggle('is-ready', ready);
+            g.row.setAttribute('data-sw-label', ready ? '放開刪除' : '刪除');
+            if (ready) vibrate(12);
+        }
+    };
+    const finishSwipe = () => {
+        const { row, kind, id, w } = g;
+        if (!swipeReached(g.x - g.sx, w)) { springBack(row); return; }
+        runSwipeDelete(kind, id, row);
+    };
+
     /* ---------- 手勢 ---------- */
     const arm = () => {
         if (!g) return;
@@ -240,20 +317,27 @@ export const useCardDrag = (ctx) => {
         if (!g || ev.pointerId !== g.pid) return;
         g.x = ev.clientX; g.y = ev.clientY;
         if (g.phase === 'pending') {
-            if (g.touchLike) { if (movedBeyond(g.x - g.sx, g.y - g.sy, SCROLL_SLOP)) endGesture(false); }   // 長按前就移動＝在捲動
+            if (g.touchLike) {   // 長按前就移動：往左橫滑＝滑動刪除（卡片列才有）；其他方向＝在捲動
+                const it = swipeIntent(g.x - g.sx, g.y - g.sy, SCROLL_SLOP);
+                if (it === 'swipe' && canSwipe()) startSwipe();
+                else if (it !== 'none') endGesture(false);
+            }
             else if (movedBeyond(g.x - g.sx, g.y - g.sy, DRAG_PX)) startDrag();
         } else if (g.phase === 'armed') {
             if (movedBeyond(g.x - g.ax, g.y - g.ay, DRAG_PX)) startDrag();
-        } else if (g.phase === 'dragging') schedule();
+        } else if (g.phase === 'swiping') moveSwipe();
+        else if (g.phase === 'dragging') schedule();
     };
     const onUp = (ev) => {
         if (!g || ev.pointerId !== g.pid) return;
         if (g.phase === 'dragging') drop();
+        else if (g.phase === 'swiping') finishSwipe();
         endGesture(g.swallow);
     };
     const onCancel = (ev) => {
         if (!g || (ev && ev.pointerId !== undefined && ev.pointerId !== g.pid)) return;   // blur 事件沒有 pointerId
         teardown();            // 瀏覽器接手捲動、來電、切換視窗等：取消，不搬動
+        if (g.phase === 'swiping') springBack(g.row);
         endGesture(g.swallow);
     };
     const onKey = (ev) => {
@@ -261,7 +345,7 @@ export const useCardDrag = (ctx) => {
         ev.preventDefault(); ev.stopPropagation();   // 不要讓同一個 Esc 又去關別的視窗
         teardown(); g.phase = 'cancelled'; g.swallow = true;   // 手指／滑鼠還按著：等放開再收尾
     };
-    const onTouchMove = (ev) => { if (g && (g.phase === 'armed' || g.phase === 'dragging') && ev.cancelable) ev.preventDefault(); };   // 長按後不要讓頁面跟著捲
+    const onTouchMove = (ev) => { if (g && (g.phase === 'armed' || g.phase === 'dragging' || g.phase === 'swiping') && ev.cancelable) ev.preventDefault(); };   // 長按後、滑動中不要讓頁面跟著捲
 
     const endGesture = (swallow) => {
         if (!g) return;

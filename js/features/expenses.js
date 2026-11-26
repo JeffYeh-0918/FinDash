@@ -139,16 +139,44 @@ export const useExpenses = (ctx) => {
         pushToCloud();
         nextTick(() => renderCharts());
     };
-    const confirmDeleteExpense = (item) => {
-        {   // 單筆刪除不再詢問，改以「復原」提示補救
-            withUndo('已刪除 1 筆收支紀錄', () => { expenses.value = expenses.value.filter(e => e.id !== item.id); });
-            pushToCloud();
-            nextTick(() => renderCharts());
+    // 連動股票交易的收支：找出它連動的那筆股票交易（沒有連動、或交易已不存在就是 null）
+    const linkedTradeOf = (item) => {
+        if (!item || item.stockId === undefined || item.stockId === null || item.stockId === '') return null;
+        return stockTrades.value.find(t => String(t.id) === String(item.stockId)) || null;
+    };
+    const expenseDeleteNeedsConfirm = (item) => !!linkedTradeOf(item);
+    // 單筆刪除：一般收支不詢問、直接刪並提供「復原」；連動股票交易的收支要先確認，確認後股票交易一併刪除（復原會兩邊一起還原）
+    // opts.beforeRemove：真的要刪之前執行（滑動刪除的退場動畫、關掉編輯視窗）。回傳 true＝已刪除、false＝使用者取消
+    const confirmDeleteExpense = async (item, opts = {}) => {
+        const trade = linkedTradeOf(item);
+        if (trade) {
+            const ok = await askConfirm({ title: '刪除連動的股票交易', message: `這筆收支連動一筆股票交易（${trade.date} ${trade.action} ${trade.symbol}）。\n刪除後，該筆股票交易也會一併刪除，持股與損益會重新計算。\n刪除後 10 秒內可以復原。`, confirmText: '一併刪除', danger: true });
+            if (!ok) return false;
         }
+        if (opts.beforeRemove) await opts.beforeRemove();
+        const tid = trade ? String(trade.id) : null;
+        withUndo(trade ? '已刪除 1 筆收支與連動的股票交易' : '已刪除 1 筆收支紀錄', () => {
+            expenses.value = expenses.value.filter(e => e.id !== item.id && !(tid && String(e.stockId) === tid));
+            if (trade) stockTrades.value = stockTrades.value.filter(t => String(t.id) !== tid);
+        });
+        pushToCloud();
+        nextTick(() => renderCharts());
+        return true;
+    };
+    // 編輯視窗裡的「刪除」：先關視窗再刪（連動的會先跳確認）
+    const deleteEditingExpense = () => {
+        const item = expenses.value.find(e => e.id === editingExpenseId.value);
+        if (!item) return;
+        return confirmDeleteExpense(item, { beforeRemove: () => { showExpenseModal.value = false; } });
     };
     const confirmBatchDeleteExpenses = async () => {
-        if (await askConfirm({ title: '批次刪除', message: `確定要刪除勾選的 ${selectedExpenseIds.value.length} 筆收支紀錄？\n刪除後 10 秒內可以復原。`, confirmText: '刪除', danger: true })) {
-            withUndo(`已刪除 ${selectedExpenseIds.value.length} 筆收支紀錄`, () => { expenses.value = expenses.value.filter(e => !selectedExpenseIds.value.includes(e.id)); });
+        const tradeIds = new Set(expenses.value.filter(e => selectedExpenseIds.value.includes(e.id)).map(linkedTradeOf).filter(Boolean).map(t => String(t.id)));
+        const nTrade = tradeIds.size;
+        if (await askConfirm({ title: '批次刪除', message: `確定要刪除勾選的 ${selectedExpenseIds.value.length} 筆收支紀錄？` + (nTrade ? `\n（其中連動的 ${nTrade} 筆股票交易也會一併刪除）` : '') + '\n刪除後 10 秒內可以復原。', confirmText: '刪除', danger: true })) {
+            withUndo(`已刪除 ${selectedExpenseIds.value.length} 筆收支紀錄` + (nTrade ? `與 ${nTrade} 筆連動股票交易` : ''), () => {
+                expenses.value = expenses.value.filter(e => !selectedExpenseIds.value.includes(e.id) && !(e.stockId !== undefined && e.stockId !== '' && tradeIds.has(String(e.stockId))));
+                if (nTrade) stockTrades.value = stockTrades.value.filter(t => !tradeIds.has(String(t.id)));
+            });
             selectedExpenseIds.value = [];
             pushToCloud();
             nextTick(() => renderCharts());
@@ -192,6 +220,6 @@ export const useExpenses = (ctx) => {
         loadMoreExpenses, onExpenseScroll, dateFilterActive, yearsOf, expenseYearOptions, filteredExpenses,
         displayedExpenses, expenseFilterActive, resetFilters, monthSelectOptions, typeSelectOptions, expenseYearSelectOptions,
         isAllExpensesSelected, toggleSelectAllExpenses, openBatchCopyModal, applyBatchCopy, openExpenseModal, saveExpenseSubmit,
-        confirmDeleteExpense, confirmBatchDeleteExpenses, newExpenseId, openBatchDateModal, applyBatchDate, changeMonth
+        confirmDeleteExpense, expenseDeleteNeedsConfirm, deleteEditingExpense, confirmBatchDeleteExpenses, newExpenseId, openBatchDateModal, applyBatchDate, changeMonth
     };
 };

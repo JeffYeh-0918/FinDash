@@ -29,11 +29,11 @@
     "./js/features/charts.js": "./js/features/charts.js?v=4",
     "./js/features/import-export.js": "./js/features/import-export.js?v=4",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
-    "./js/features/expenses.js": "./js/features/expenses.js?v=4",
-    "./js/features/stocks.js": "./js/features/stocks.js?v=3",
+    "./js/features/expenses.js": "./js/features/expenses.js?v=5",
+    "./js/features/stocks.js": "./js/features/stocks.js?v=4",
     "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=4",
     "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=5",
-    "./js/features/card-drag.js": "./js/features/card-drag.js?v=4",
+    "./js/features/card-drag.js": "./js/features/card-drag.js?v=5",
     "./js/features/nav.js": "./js/features/nav.js?v=1",
     "./js/features/motion.js": "./js/features/motion.js?v=1",
     "./js/logic/nav.js": "./js/logic/nav.js?v=1"
@@ -43,7 +43,7 @@
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=2" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=18">
+    <link rel="stylesheet" href="css/app.css?v=21">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -56,7 +56,18 @@
     
 </head>
 <body class="min-h-screen bg-slate-900 text-slate-100 antialiased selection:bg-emerald-500 selection:text-white" @click="closeAllDropdowns">
-    <div id="app" v-cloak>
+    <div id="fd-boot" role="status" aria-live="polite" aria-label="載入中">
+<div class="fd-boot-side"></div>
+<div class="fd-boot-main">
+<div class="fd-boot-bar"></div>
+<div class="fd-boot-grid"><i></i><i></i><i></i><i></i></div>
+<div class="fd-boot-card"></div>
+<div class="fd-boot-card fd-boot-card-2"></div>
+<p class="fd-boot-msg">載入時間比平常久，請確認網路連線後重新整理頁面</p>
+</div>
+</div>
+<script>setTimeout(function () { var b = document.getElementById('fd-boot'); if (b) b.classList.add('is-slow'); }, 8000);</script>
+<div id="app" v-cloak>
 <div class="fd-app" :class="{ 'fd-wide': navWide }">
         <!-- ===== 導覽：768px 以上＝左側邊欄（1280px 以上展開，可收合為窄欄）；768px 以下＝底部導覽列 ===== -->
 <aside class="fd-side" aria-label="主要導覽">
@@ -198,12 +209,12 @@
             <!-- TAB 1: 日常收支儀表板 -->
             <div v-show="activeTab === 'expenses'" data-fd-tab="expenses" class="space-y-6">
                 <div class="space-y-1.5">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-2 min-w-0">
+                    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                        <div class="flex items-center gap-2">
                             <h3 class="text-lg font-semibold text-slate-200 whitespace-nowrap">支出分析</h3>
                             <button type="button" @click="openPaymentSettings('rules')" class="shrink-0 inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-400/60 rounded-md px-1.5 py-0.5 transition" title="調整儲值事件與消費定義"><i data-lucide="sliders-horizontal" class="w-3 h-3"></i>規則</button>
                         </div>
-                        <div class="fd-seg2 fd-seg-lg" role="group" aria-label="圖表是否含投資" :style="{ '--n': 2, '--i': includeInvest ? 1 : 0, '--seg-accent': '#059669' }">
+                        <div class="fd-seg2 fd-seg-lg ml-auto" role="group" aria-label="圖表是否含投資" :style="{ '--n': 2, '--i': includeInvest ? 1 : 0, '--seg-accent': '#059669' }">
 <button type="button" @click="includeInvest = false" :class="{ 'is-on': !includeInvest }" :aria-pressed="!includeInvest">不含投資</button>
 <button type="button" @click="includeInvest = true" :class="{ 'is-on': includeInvest }" :aria-pressed="includeInvest">含投資</button>
 </div>
@@ -238,12 +249,12 @@
                         </div>
                     </div>
                     <div class="glass-card rounded-2xl p-5 flex flex-col fd-chart-card" data-fd-refresh="paymode">
-                        <div class="flex items-start justify-between gap-3 fd-chart-head">
-                            <h3 class="text-base font-semibold text-slate-200 flex items-center gap-2">
+                        <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 fd-chart-head">
+                            <h3 class="text-base font-semibold text-slate-200 flex items-center gap-2 whitespace-nowrap">
                                 <i data-lucide="credit-card" class="w-4 h-4 text-indigo-400"></i>
                                 付款管道支出統計
                             </h3>
-                            <div class="fd-seg2" role="group" aria-label="付款管道圖顯示方式" :style="{ '--n': 2, '--i': payChartMode === 'share' ? 1 : 0 }">
+                            <div class="fd-seg2 ml-auto" role="group" aria-label="付款管道圖顯示方式" :style="{ '--n': 2, '--i': payChartMode === 'share' ? 1 : 0 }">
                                 <button type="button" :class="{ 'is-on': payChartMode === 'amount' }" :aria-pressed="payChartMode === 'amount'" @click="payChartMode = 'amount'">金額</button>
                                 <button type="button" :class="{ 'is-on': payChartMode === 'share' }" :aria-pressed="payChartMode === 'share'" @click="payChartMode = 'share'">占比</button>
                             </div>
@@ -378,10 +389,14 @@
                     <div class="fd-mobile fdm" style="--fdm-accent:#34d399;--fdm-accent-bg:rgba(52,211,153,.15)">
                         <div class="fdm-sec">
                             <span class="fdm-sq"><i data-lucide="receipt" class="w-4 h-4"></i></span>
-                            <div style="min-width:0"><div class="fdm-title">日常交易明細</div><div class="fdm-sub fdm-sub-1"><span>{{ filteredExpenses.length }} 筆</span><span class="fdm-sub-hint">· 長按選取、拖曳移動</span></div></div>
+                            <div style="min-width:0"><div class="fdm-title">日常交易明細</div><div class="fdm-sub fdm-sub-1"><span>{{ filteredExpenses.length }} 筆</span><span class="fdm-sub-hint">· 長按選取、拖曳移動、左滑刪除</span></div></div>
                             <button type="button" class="fdm-sel-btn" @click="fdmSelecting('expense') ? fdmDone('expense') : fdmEnter('expense')">{{ fdmSelecting('expense') ? '完成' : '選取' }}</button>
                         </div>
-                        <div v-if="filteredExpenses.length === 0" class="fdm-empty">無符合條件的收支紀錄</div>
+                        <div v-if="filteredExpenses.length === 0" class="fdm-empty fd-empty">
+<template v-if="!expenses.length"><b>還沒有任何收支紀錄</b><span>點下方「＋」記第一筆，或到「⋯」匯入既有的 Excel 檔</span><button type="button" class="fd-empty-btn" @click="openExpenseModal()">記第一筆收支</button></template>
+<template v-else-if="expenseFilterActive"><b>找不到符合條件的紀錄</b><span>試試放寬或清除篩選條件</span><button type="button" class="fd-empty-btn" @click="resetFilters">重設篩選器</button></template>
+<template v-else><b>這段期間還沒有紀錄</b><button type="button" class="fd-empty-btn" @click="openExpenseModal()">記一筆</button></template>
+</div>
                         <template v-for="g in expenseDayGroups" :key="g.id">
                             <div class="fdm-day"><span>{{ g.label }}</span><span class="fdm-day-sum"><span v-if="g.exp">支出 {{ formatCurrency(g.exp) }}</span><span v-if="g.exp && g.inc" class="fdm-sep">・</span><span v-if="g.inc">收入 {{ formatCurrency(g.inc) }}</span></span></div>
                             <div class="fdm-list" data-fd-refresh="month">
@@ -473,7 +488,11 @@
                                     </td>
                                 </tr>
                                 <tr v-if="filteredExpenses.length === 0">
-                                    <td colspan="9" class="py-8 text-center text-slate-400">無符合條件的收支紀錄</td>
+                                    <td colspan="9" class="py-8 text-center text-slate-400"><div class="fd-empty">
+<template v-if="!expenses.length"><b>還沒有任何收支紀錄</b><span>按右上角「記收支」記第一筆，或從左側工具的「匯入檔案」匯入既有的 Excel 檔</span><button type="button" class="fd-empty-btn" @click="openExpenseModal()">記第一筆收支</button></template>
+<template v-else-if="expenseFilterActive"><b>找不到符合條件的紀錄</b><span>試試放寬或清除篩選條件</span><button type="button" class="fd-empty-btn" @click="resetFilters">重設篩選器</button></template>
+<template v-else><b>這段期間還沒有紀錄</b><button type="button" class="fd-empty-btn" @click="openExpenseModal()">記一筆</button></template>
+</div></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -647,41 +666,43 @@
                             <span v-else class="text-amber-400">按上方「更新市價」取得報價</span>
                         </div>
                     </div>
-                    <p v-if="!gasApiUrl && stockHoldings.length" class="text-xs text-amber-400 -mt-2">尚未連接 API：目前只能取得「前一個交易日的收盤價」。到「API 設定」連接後，盤中可看到即時價。</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <p v-if="!gasApiUrl && stockHoldings.length" class="text-xs text-amber-400 leading-relaxed mb-3">尚未連接 API：目前只能取得「前一個交易日的收盤價」。到「API 設定」連接後，盤中可看到即時價。</p>
+            <div v-if="!stockHoldings.length" class="glass-card rounded-2xl p-6"><div class="fd-empty"><b>目前沒有持股</b><span>記下第一筆買進後，這裡會顯示持股、成本與損益</span><button type="button" class="fd-empty-btn" @click="openStockModal()">記第一筆股票交易</button></div></div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div v-for="holding in stockHoldings" :key="holding.symbol" class="glass-card rounded-2xl p-4 space-y-3 relative overflow-hidden group hover:border-indigo-500/40 transition">
                             <div class="flex items-start justify-between">
-                                <div>
+                                <div class="min-w-0">
                                     <span class="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
                                         {{ holding.symbol }}
                                     </span>
                                     <h4 class="text-base font-bold text-slate-100 mt-1">{{ holding.name }}</h4>
                                 </div>
-                                <div class="text-right">
+                                <div class="text-right shrink-0">
                                     <span class="text-xs text-slate-400 block flex items-center justify-end gap-1">
                                         現價
                                         <span class="w-1.5 h-1.5 rounded-full" :class="holding.isLive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
                                     </span>
                                     <span class="text-sm font-semibold" :class="holding.isStale ? 'text-slate-400' : 'text-slate-200'">NT$ {{ holding.currentPrice.toFixed(2) }}</span>
-                                    <span class="block text-xs mt-0.5" :class="holding.isStale ? 'text-amber-400' : 'text-slate-400'">{{ holding.isStale ? '舊價 · ' : '' }}{{ holding.priceSource }}</span>
+                                    
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-2 text-xs bg-slate-900/50 p-2.5 rounded-xl border border-slate-800">
+<p class="text-xs -mt-1 text-right" :class="holding.isStale ? 'text-amber-400' : 'text-slate-400'">{{ holding.isStale ? '舊價 · ' : '' }}{{ holding.priceSource }}</p>
+                            <div class="grid grid-cols-2 gap-x-2 gap-y-3 text-xs bg-slate-900/50 p-3 rounded-xl border border-slate-800">
                                 <div>
                                     <span class="text-slate-400 block">持有股數</span>
-                                    <span class="font-medium text-slate-200">{{ holding.shares.toLocaleString() }} 股</span>
+                                    <span class="fd-val font-medium text-slate-200">{{ holding.shares.toLocaleString() }} 股</span>
                                 </div>
                                 <div>
                                     <span class="text-slate-400 block">平均成本</span>
-                                    <span class="font-medium text-slate-200">NT$ {{ holding.avgCost.toFixed(2) }}</span>
+                                    <span class="fd-val font-medium text-slate-200">NT$ {{ holding.avgCost.toFixed(2) }}</span>
                                 </div>
                                 <div>
                                     <span class="text-slate-400 block">投入總成本</span>
-                                    <span class="font-medium text-slate-200"><fd-num :value="holding.totalCost"></fd-num></span>
+                                    <span class="fd-val font-medium text-slate-200"><fd-num :value="holding.totalCost"></fd-num></span>
                                 </div>
                                 <div>
                                     <span class="text-slate-400 block">目前總市值</span>
-                                    <span class="font-medium text-slate-200"><fd-num :value="holding.marketValue"></fd-num></span>
+                                    <span class="fd-val font-medium text-slate-200"><fd-num :value="holding.marketValue"></fd-num></span>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between pt-1 border-t border-slate-800/60">
@@ -750,10 +771,13 @@
                     <div class="fd-mobile fdm" style="--fdm-accent:#818cf8;--fdm-accent-bg:rgba(129,140,248,.17)">
                         <div class="fdm-sec">
                             <span class="fdm-sq"><i data-lucide="trending-up" class="w-4 h-4"></i></span>
-                            <div style="min-width:0"><div class="fdm-title">ETF ＆ 股票交易</div><div class="fdm-sub fdm-sub-1"><span>{{ filteredStockTrades.length }} 筆</span><span class="fdm-sub-hint">· 長按選取、拖曳移動</span></div></div>
+                            <div style="min-width:0"><div class="fdm-title">ETF ＆ 股票交易</div><div class="fdm-sub fdm-sub-1"><span>{{ filteredStockTrades.length }} 筆</span><span class="fdm-sub-hint">· 長按選取、拖曳移動、左滑刪除</span></div></div>
                             <button type="button" class="fdm-sel-btn" @click="fdmSelecting('stock') ? fdmDone('stock') : fdmEnter('stock')">{{ fdmSelecting('stock') ? '完成' : '選取' }}</button>
                         </div>
-                        <div v-if="filteredStockTrades.length === 0" class="fdm-empty">無符合條件的交易紀錄</div>
+                        <div v-if="filteredStockTrades.length === 0" class="fdm-empty fd-empty">
+<template v-if="!stockTrades.length"><b>還沒有任何股票交易</b><span>記下第一筆買進，持股與損益就會自動算出來</span><button type="button" class="fd-empty-btn" @click="openStockModal()">記第一筆股票交易</button></template>
+<template v-else><b>找不到符合條件的交易</b><button v-if="stockFilterActive" type="button" class="fd-empty-btn" @click="resetStockFilters">重設篩選器</button></template>
+</div>
                         <template v-for="g in stockDayGroups" :key="g.id">
                             <div class="fdm-day"><span>{{ g.label }}</span><span>{{ g.items.length }} 筆</span></div>
                             <div class="fdm-list">
@@ -1473,7 +1497,8 @@
                             <input v-model="expenseForm.settlementDate" type="date" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                     </div>
-                    <div class="pt-3 flex justify-end space-x-2 border-t border-slate-800">
+                    <div class="pt-3 flex items-center justify-end space-x-2 border-t border-slate-800">
+                        <button v-if="editingExpenseId" type="button" @click="deleteEditingExpense" class="mr-auto px-3 py-2 text-sm text-rose-400 hover:text-rose-300 rounded-lg hover:bg-rose-500/10" aria-label="刪除這筆收支">刪除</button>
                         <button type="button" @click="requestClose('showExpenseModal')" class="px-4 py-2 text-slate-400">取消</button>
                         <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg">儲存</button>
                     </div>
@@ -1548,7 +1573,8 @@
                             NT$ {{ calculatedStockTotal.toLocaleString() }}
                         </span>
                     </div>
-                    <div class="pt-3 flex justify-end space-x-2 border-t border-slate-800">
+                    <div class="pt-3 flex items-center justify-end space-x-2 border-t border-slate-800">
+                        <button v-if="editingStockId" type="button" @click="deleteEditingStock" class="mr-auto px-3 py-2 text-sm text-rose-400 hover:text-rose-300 rounded-lg hover:bg-rose-500/10" aria-label="刪除這筆股票交易">刪除</button>
                         <button type="button" @click="requestClose('showStockModal')" class="px-4 py-2 text-slate-400">取消</button>
                         <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">儲存紀錄</button>
                     </div>
@@ -1756,7 +1782,7 @@
                 });
 
                 // 範本（HTML）會用到的成員。範本新增用到的名稱時，要加在這裡；npm run check 會檢查每一個都存在。
-                const TEMPLATE_MEMBERS = [
+                const TEMPLATE_MEMBERS = ['deleteEditingExpense', 'deleteEditingStock', 
             // V24 導覽
             'navWide', 'toggleNavPref', 'activeTabIndex', 'activeTabInfo', 'setTab',
                 'COLOR_CHOICES', 'activeDropdown', 'activeTab', 'addFundingRule', 'allKnownItems',
@@ -1807,11 +1833,13 @@
                 return Object.fromEntries(TEMPLATE_MEMBERS.map(k => [k, ctx[k]]));
             }
         }).component('multi-select', MultiSelect).component('fd-num', FdNum).mount('#app');
+        // 載入骨架畫面：Vue 啟動完成後淡出並移除
+        (function () { var b = document.getElementById('fd-boot'); if (b) { b.classList.add('is-done'); setTimeout(function () { b.remove(); }, 300); } })();
     </script>
     <div id="app-version" class="fd-version select-none"></div>
     <script>
         (function () {
-            var APP = 'V25';
+            var APP = 'V26';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');

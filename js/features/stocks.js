@@ -245,8 +245,10 @@ export const useStocks = (ctx) => {
         pushToCloud();
         nextTick(() => renderCharts());
     };
-    const confirmDeleteStockTrade = (trade) => {
+    // opts.beforeRemove：真的要刪之前執行（滑動刪除的退場動畫、關掉編輯視窗）
+    const confirmDeleteStockTrade = async (trade, opts = {}) => {
         const hasLink = !!findLinkedExpense(trade.id);
+        if (opts.beforeRemove) await opts.beforeRemove();
         {   // 單筆刪除不再詢問，改以「復原」提示補救
             withUndo(hasLink ? '已刪除 1 筆股票交易與對應收支' : '已刪除 1 筆股票交易', () => {
                 stockTrades.value = stockTrades.value.filter(t => t.id !== trade.id);
@@ -255,6 +257,12 @@ export const useStocks = (ctx) => {
             pushToCloud();
             nextTick(() => renderCharts());
         }
+    };
+    // 編輯視窗裡的「刪除」：先關視窗再刪
+    const deleteEditingStock = () => {
+        const t = stockTrades.value.find(x => x.id === editingStockId.value);
+        if (!t) return;
+        return confirmDeleteStockTrade(t, { beforeRemove: () => { showStockModal.value = false; } });
     };
     const confirmBatchDeleteStockTrades = async () => {
         const ids = new Set(selectedStockIds.value.map(String));
@@ -338,6 +346,6 @@ export const useStocks = (ctx) => {
         totalUnrealizedPL, totalUnrealizedPLRate, realizedInfo, totalRealizedPL, realizedRowsDesc, realizedBySymbolList,
         totalDividend, stockSymbolOptions, stockYearOptions, filteredStockTrades, stockFilterActive, resetStockFilters,
         stockYearSelectOptions, stockSymbolSelectOptions, stockActionSelectOptions, isAllStocksSelected, toggleSelectAllStocks, stockExpenseFields,
-        openStockModal, saveStockTradeSubmit, confirmDeleteStockTrade, confirmBatchDeleteStockTrades, syncLegacyStockExpenses
+        openStockModal, saveStockTradeSubmit, confirmDeleteStockTrade, deleteEditingStock, confirmBatchDeleteStockTrades, syncLegacyStockExpenses
     };
 };

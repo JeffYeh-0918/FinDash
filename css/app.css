@@ -1,7 +1,8 @@
 /* FinDash 手寫樣式（Tailwind 以外的部分）。v-cloak 規則要在最前面：Vue 啟動前先隱藏畫面，避免閃現 {{ }} */
 [v-cloak] { display: none !important; }
 body {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: #0f172a;
     color: #f8fafc;
 }
@@ -485,3 +486,49 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 /* 側邊欄導覽：圖示不被壓縮；文字與圖示的間距改由文字的 margin 提供（窄欄時為 0，圖示大小與位置才不會變） */
 .fd-nav-item > svg, .fd-nav-item > i { flex: none; }
 .fd-wide .fd-nav-item .fd-label { margin-left: 12px; }
+
+/* --- V26 --- */
+/* 數字等寬：位數不同時寬度不跳；表單控制項不會自動繼承，這裡補上 */
+input, select, textarea, button { font-variant-numeric: inherit; }
+/* 持股卡的數值：手機 13px、電腦 14px */
+.fd-val { display: block; margin-top: .25rem; font-size: 13px; line-height: 1.3; }
+@media (min-width: 1024px) { .fd-val { font-size: 14px; } }
+/* 觸控熱區：觸控裝置上，小按鈕用透明的偽元素往外擴大點擊範圍（圖示與排版不變） */
+@media (pointer: coarse) {
+    button:is(.p-1, .p-1\.5):not(.absolute):not(.fixed):not(.sticky),
+    .fdm-sel-btn, .fdm-btn, .fdm-toggle { position: relative; }
+    button:is(.p-1, .p-1\.5)::after, .fdm-sel-btn::after, .fdm-btn::after, .fdm-toggle::after { content: ""; position: absolute; inset: -8px; }
+}
+/* 空狀態引導 */
+.fd-empty { display: flex; flex-direction: column; align-items: center; gap: .5rem; padding: 1.5rem 1rem; color: #94a3b8; font-size: .85rem; line-height: 1.5; }
+.fd-empty b { color: #e2e8f0; font-size: .95rem; font-weight: 600; }
+.fd-empty-btn { margin-top: .25rem; min-height: 2.5rem; padding: 0 1rem; border-radius: .5rem; border: 1px solid rgba(52, 211, 153, .45); background: rgba(16, 185, 129, .12); color: #6ee7b7; font-size: .85rem; font-weight: 600; cursor: pointer; transition: background-color .15s ease, transform .1s ease; }
+.fd-empty-btn:hover { background: rgba(16, 185, 129, .22); }
+.fd-empty-btn:active { transform: scale(.97); }
+/* 載入骨架畫面（Vue 啟動前顯示，啟動後淡出） */
+#fd-boot { position: fixed; inset: 0; z-index: 100; display: flex; background: #0f172a; transition: opacity .25s ease; }
+#fd-boot.is-done { opacity: 0; pointer-events: none; }
+.fd-boot-side { display: none; width: 72px; flex: none; background: #0b1220; border-right: 1px solid #1e293b; }
+.fd-boot-main { flex: 1; min-width: 0; padding: 16px; overflow: hidden; }
+.fd-boot-bar, .fd-boot-grid i, .fd-boot-card { background: rgba(148, 163, 184, .12); border-radius: .75rem; animation: fd-boot-pulse 1.4s ease-in-out infinite; }
+.fd-boot-bar { height: 44px; margin-bottom: 16px; }
+.fd-boot-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+.fd-boot-grid i { display: block; height: 88px; }
+.fd-boot-card { height: 160px; margin-bottom: 16px; }
+.fd-boot-card-2 { height: 220px; animation-delay: .2s; }
+.fd-boot-msg { display: none; margin-top: 8px; text-align: center; font-size: .8rem; color: #94a3b8; }
+#fd-boot.is-slow .fd-boot-msg { display: block; }
+@keyframes fd-boot-pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@media (min-width: 1024px) { .fd-boot-side { display: block; } .fd-boot-main { padding: 24px; } .fd-boot-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1280px) { .fd-boot-side { width: 232px; } }
+@media (prefers-reduced-motion: reduce) { .fd-boot-bar, .fd-boot-grid i, .fd-boot-card { animation: none; } #fd-boot { transition: none; } }
+
+/* --- V26 左滑刪除（手機、平板的卡片列）：紅色色塊跟在卡片右緣，隨卡片移動；.fdm-list 的 overflow:hidden 負責裁掉 --- */
+.fdm-item.is-swiping { z-index: 2; will-change: transform; }
+.fdm-item.is-swiping::before, .fdm-item.is-swiping::after { position: absolute; top: 0; bottom: -1px; left: 100%; width: var(--sw, 0px); }
+.fdm-item.is-swiping::before { content: ""; background: #9f1239; }
+.fdm-item.is-swiping::after { content: attr(data-sw-label); display: flex; align-items: center; box-sizing: border-box; padding-left: 48px; overflow: hidden; white-space: nowrap; color: #fff; font-size: .8rem; font-weight: 700; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6'/%3E%3C/svg%3E") no-repeat 18px center / 20px 20px; transition: background-color .15s ease; }
+.fdm-item.is-ready::before { background: #e11d48; }
+.fdm-item.is-returning { transition: transform .2s cubic-bezier(.2, .8, .2, 1); }
+.fdm-item.is-returning::before, .fdm-item.is-returning::after { transition: width .2s cubic-bezier(.2, .8, .2, 1); }
+@media (prefers-reduced-motion: reduce) { .fdm-item.is-returning, .fdm-item.is-returning::before, .fdm-item.is-returning::after { transition: none; } }
