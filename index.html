@@ -35,7 +35,7 @@
     "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=5",
     "./js/features/card-drag.js": "./js/features/card-drag.js?v=5",
     "./js/features/nav.js": "./js/features/nav.js?v=1",
-    "./js/features/motion.js": "./js/features/motion.js?v=1",
+    "./js/features/motion.js": "./js/features/motion.js?v=2",
     "./js/logic/nav.js": "./js/logic/nav.js?v=1"
   }
 }
@@ -43,7 +43,7 @@
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=2" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=21">
+    <link rel="stylesheet" href="css/app.css?v=23">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -209,7 +209,7 @@
             <!-- TAB 1: 日常收支儀表板 -->
             <div v-show="activeTab === 'expenses'" data-fd-tab="expenses" class="space-y-6">
                 <div class="space-y-1.5">
-                    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                    <div class="fd-seg-row fd-seg-row-sp flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                         <div class="flex items-center gap-2">
                             <h3 class="text-lg font-semibold text-slate-200 whitespace-nowrap">支出分析</h3>
                             <button type="button" @click="openPaymentSettings('rules')" class="shrink-0 inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-400/60 rounded-md px-1.5 py-0.5 transition" title="調整儲值事件與消費定義"><i data-lucide="sliders-horizontal" class="w-3 h-3"></i>規則</button>
@@ -249,7 +249,7 @@
                         </div>
                     </div>
                     <div class="glass-card rounded-2xl p-5 flex flex-col fd-chart-card" data-fd-refresh="paymode">
-                        <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 fd-chart-head">
+                        <div class="fd-seg-row flex flex-wrap items-start justify-between gap-x-3 gap-y-2 fd-chart-head">
                             <h3 class="text-base font-semibold text-slate-200 flex items-center gap-2 whitespace-nowrap">
                                 <i data-lucide="credit-card" class="w-4 h-4 text-indigo-400"></i>
                                 付款管道支出統計
@@ -670,24 +670,14 @@
             <div v-if="!stockHoldings.length" class="glass-card rounded-2xl p-6"><div class="fd-empty"><b>目前沒有持股</b><span>記下第一筆買進後，這裡會顯示持股、成本與損益</span><button type="button" class="fd-empty-btn" @click="openStockModal()">記第一筆股票交易</button></div></div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div v-for="holding in stockHoldings" :key="holding.symbol" class="glass-card rounded-2xl p-4 space-y-3 relative overflow-hidden group hover:border-indigo-500/40 transition">
-                            <div class="flex items-start justify-between">
-                                <div class="min-w-0">
-                                    <span class="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
-                                        {{ holding.symbol }}
-                                    </span>
-                                    <h4 class="text-base font-bold text-slate-100 mt-1">{{ holding.name }}</h4>
-                                </div>
-                                <div class="text-right shrink-0">
-                                    <span class="text-xs text-slate-400 block flex items-center justify-end gap-1">
-                                        現價
-                                        <span class="w-1.5 h-1.5 rounded-full" :class="holding.isLive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
-                                    </span>
-                                    <span class="text-sm font-semibold" :class="holding.isStale ? 'text-slate-400' : 'text-slate-200'">NT$ {{ holding.currentPrice.toFixed(2) }}</span>
-                                    
-                                </div>
-                            </div>
-<p class="text-xs -mt-1 text-right" :class="holding.isStale ? 'text-amber-400' : 'text-slate-400'">{{ holding.isStale ? '舊價 · ' : '' }}{{ holding.priceSource }}</p>
-                            <div class="grid grid-cols-2 gap-x-2 gap-y-3 text-xs bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                            <div class="fd-hold-head">
+<span class="fd-hold-tag text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">{{ holding.symbol }}</span>
+<span class="fd-hold-live text-xs text-slate-400">現價<span class="w-1.5 h-1.5 rounded-full" :class="holding.isLive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span></span>
+<h4 class="fd-hold-name text-lg font-bold text-slate-100">{{ holding.name }}</h4>
+<span class="fd-hold-price text-lg font-semibold" :class="holding.isStale ? 'text-slate-400' : 'text-slate-200'">NT$ {{ holding.currentPrice.toFixed(2) }}</span>
+</div>
+<p class="text-xs text-right fd-hold-src" :class="holding.isStale ? 'text-amber-400' : 'text-slate-400'">{{ holding.isStale ? '舊價 · ' : '' }}{{ holding.priceSource }}</p>
+                            <div class="fd-hold-grid grid grid-cols-2 text-xs bg-slate-900/50 p-3 rounded-xl border border-slate-800">
                                 <div>
                                     <span class="text-slate-400 block">持有股數</span>
                                     <span class="fd-val font-medium text-slate-200">{{ holding.shares.toLocaleString() }} 股</span>
@@ -1498,7 +1488,7 @@
                         </div>
                     </div>
                     <div class="pt-3 flex items-center justify-end space-x-2 border-t border-slate-800">
-                        <button v-if="editingExpenseId" type="button" @click="deleteEditingExpense" class="mr-auto px-3 py-2 text-sm text-rose-400 hover:text-rose-300 rounded-lg hover:bg-rose-500/10" aria-label="刪除這筆收支">刪除</button>
+                        <button v-if="editingExpenseId" type="button" @click="deleteEditingExpense" class="fd-del-btn" aria-label="刪除這筆收支">刪除</button>
                         <button type="button" @click="requestClose('showExpenseModal')" class="px-4 py-2 text-slate-400">取消</button>
                         <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg">儲存</button>
                     </div>
@@ -1574,7 +1564,7 @@
                         </span>
                     </div>
                     <div class="pt-3 flex items-center justify-end space-x-2 border-t border-slate-800">
-                        <button v-if="editingStockId" type="button" @click="deleteEditingStock" class="mr-auto px-3 py-2 text-sm text-rose-400 hover:text-rose-300 rounded-lg hover:bg-rose-500/10" aria-label="刪除這筆股票交易">刪除</button>
+                        <button v-if="editingStockId" type="button" @click="deleteEditingStock" class="fd-del-btn" aria-label="刪除這筆股票交易">刪除</button>
                         <button type="button" @click="requestClose('showStockModal')" class="px-4 py-2 text-slate-400">取消</button>
                         <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">儲存紀錄</button>
                     </div>

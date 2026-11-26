@@ -55,3 +55,36 @@ test('V26：左滑刪除的樣式存在，且卡片仍維持 touch-action: pan-y
     assert.match(css, /\.fdm-item\.is-ready::before/);
     assert.match(css, /\.fdm-item \{[^}]*touch-action: pan-y/);
 });
+test('範本裡的 Tailwind 工具類別都存在於 tailwind.css（它是預先編譯的，缺的類別不會生效，新樣式要寫進 app.css）', () => {
+    const tw = fs.readFileSync(new URL('../css/tailwind.css', import.meta.url), 'utf8');
+    const esc = (t) => t.replace(/([:/.\[\]%()#,])/g, '\\$1');
+    const prefix = /^-?(?:(?:sm|md|lg|xl|hover|focus|active|disabled|group-hover):)*-?(?:flex|grid|gap|p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|space|text|font|bg|border|rounded|w|h|min|max|items|justify|shrink|grow|leading|whitespace|overflow|opacity|transition|ring|shadow|col|row|self|z|top|left|right|bottom|inset|tracking|divide|from|to|via)(?:-|$)/;
+    const missing = new Set();
+    for (const m of html.matchAll(/\sclass="([^"{}]*)"/g)) {
+        for (const tok of m[1].split(/\s+/).filter(Boolean)) {
+            if (!prefix.test(tok) || /^fd|^fdm|^fdd/.test(tok) || tok.includes('[')) continue;   // [..] 任意值的類別在編譯後會被轉義成別的寫法，這裡不比對
+            if (!tw.includes('.' + esc(tok))) missing.add(tok);
+        }
+    }
+    assert.deepEqual([...missing], []);
+});
+test('V26：自訂類別名稱不可和既有的撞名（.fd-kv 是別處在用的 flex 排版，不能拿來當網格）', () => {
+    assert.ok(!/class="fd-kv grid/.test(html));
+    assert.equal((css.match(/^\.fd-kv \{/gm) || []).length, 1, '.fd-kv 只應該定義一次');
+    // 頂層（不在 @media 裡）規則：同一個 .fd- 類別若有兩條都設了 display，後面的會蓋掉前面的，多半是撞名
+    const top = css.replace(/@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, '');
+    const dup = [];
+    for (const name of new Set([...top.matchAll(/^\.(fd[\w-]*) \{[^}]*\bdisplay:/gm)].map(m => m[1]))) {
+        const n = [...top.matchAll(new RegExp('^\\.' + name + ' \\{[^}]*\\bdisplay:', 'gm'))].length;
+        if (n > 1) dup.push(name);
+    }
+    assert.deepEqual(dup, []);
+});
+test('V26：持股卡標題列是「代碼｜現價／名稱｜價格」的 2×2 網格；液態切換的樣式與重播程式都在', () => {
+    assert.match(html, /<div class="fd-hold-head">/);
+    assert.match(css, /\.fd-hold-name \{[^}]*align-self: baseline/);
+    assert.match(css, /\.fd-seg2\.is-liquid::before \{ animation: fd-liquid/);
+    assert.match(css, /@keyframes fd-liquid/);
+    const m = fs.readFileSync(new URL('../js/features/motion.js', import.meta.url), 'utf8');
+    assert.ok(m.includes("is-liquid") && m.includes("data-dir"));
+});

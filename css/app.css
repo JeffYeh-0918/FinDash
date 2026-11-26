@@ -449,8 +449,8 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 }
 
 /* --- V25 切換按鈕：選取塊滑動（--n＝選項數、--i＝目前第幾個，由範本帶入） --- */
-.fd-seg2 { --n: 2; --i: 0; --pad: 3px; --seg-accent: #4f46e5; position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; flex: none; padding: var(--pad); background: #0f172a; border: 1px solid #334155; border-radius: .5rem; }
-.fd-seg2::before { content: ""; position: absolute; top: var(--pad); bottom: var(--pad); left: var(--pad); width: calc((100% - 2 * var(--pad)) / var(--n)); background: var(--seg-accent); border-radius: .375rem; transform: translateX(calc(var(--i) * 100%)); transition: transform .22s cubic-bezier(.2, .8, .2, 1), opacity .2s ease; }
+.fd-seg2 { overflow: hidden; --n: 2; --i: 0; --pad: 3px; --seg-accent: #4f46e5; position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; flex: none; padding: var(--pad); background: #0f172a; border: 1px solid #334155; border-radius: .5rem; }
+.fd-seg2::before { content: ""; position: absolute; top: var(--pad); bottom: var(--pad); left: var(--pad); width: calc((100% - 2 * var(--pad)) / var(--n)); background: var(--seg-accent); border-radius: .375rem; translate: calc(var(--i) * 100%) 0; transition: translate .45s cubic-bezier(.34, 1.3, .64, 1), opacity .2s ease; }
 .fd-seg2.is-none::before { opacity: 0; }
 .fd-seg2 > button { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; min-height: 1.75rem; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; color: #94a3b8; background: transparent; border: 0; border-radius: .375rem; cursor: pointer; white-space: nowrap; transition: color .2s ease; }
 .fd-seg2 > button.is-on { color: #fff; }
@@ -532,3 +532,28 @@ input, select, textarea, button { font-variant-numeric: inherit; }
 .fdm-item.is-returning { transition: transform .2s cubic-bezier(.2, .8, .2, 1); }
 .fdm-item.is-returning::before, .fdm-item.is-returning::after { transition: width .2s cubic-bezier(.2, .8, .2, 1); }
 @media (prefers-reduced-motion: reduce) { .fdm-item.is-returning, .fdm-item.is-returning::before, .fdm-item.is-returning::after { transition: none; } }
+
+/* --- V26 修正：tailwind.css 是預先編譯的，只含舊版用過的類別；新增的樣式一律寫在這裡，不要再用 tailwind.css 沒有的工具類別 --- */
+.fd-hold-src { margin-top: -.25rem; }
+.fd-del-btn { margin-right: auto; padding: .5rem 1rem; font-size: inherit; color: #fb7185; background: none; border: 0; border-radius: .5rem; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+.fd-del-btn:hover { color: #fda4af; background: rgba(244, 63, 94, .1); }
+/* 手機：切換按鈕固定獨佔標題下方一整列、與標題左右對齊（不再因為放得下／放不下而忽左忽右） */
+@media (max-width: 479px) {
+    .fd-seg-row { row-gap: .75rem; }
+    .fd-seg-row > .fd-seg2 { display: grid; flex: 1 1 100%; width: 100%; margin-left: 0; margin-bottom: .875rem; }
+    .fd-seg-row-sp > .fd-seg2 { margin-bottom: .5rem; }
+}
+
+/* --- V26 持股卡標題列：第一行「代碼｜現價」、第二行「名稱｜價格」（基準線對齊）、四格 2×2 --- */
+.fd-hold-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: .75rem; row-gap: .375rem; }
+.fd-hold-tag { justify-self: start; align-self: center; }
+.fd-hold-live { justify-self: end; align-self: center; display: inline-flex; align-items: center; gap: .25rem; }
+.fd-hold-name { align-self: baseline; min-width: 0; line-height: 1.3; overflow-wrap: anywhere; }
+.fd-hold-price { align-self: baseline; line-height: 1.3; white-space: nowrap; }
+.fd-hold-grid { column-gap: .75rem; row-gap: 1rem; }
+/* --- V26 液態切換：移動時滑塊先往前伸長（約 1.3 倍）再收回原寬；往右滑＝右邊先伸出、往左滑＝左邊先伸出 --- */
+.fd-seg2[data-dir="r"]::before { transform-origin: left center; }
+.fd-seg2[data-dir="l"]::before { transform-origin: right center; }
+.fd-seg2.is-liquid::before { animation: fd-liquid .45s cubic-bezier(.4, 0, .2, 1); }
+@keyframes fd-liquid { 0% { scale: 1 1; } 40% { scale: 1.3 1; } 100% { scale: 1 1; } }
+@media (prefers-reduced-motion: reduce) { .fd-seg2.is-liquid::before { animation: none; } }

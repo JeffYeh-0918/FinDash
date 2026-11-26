@@ -42,6 +42,20 @@ export const replayIn = (sel, dir) => nextTick(() => {
 });
 
 export const useMotion = (ctx) => {
+    // 液態切換：點膠囊式切換按鈕時，記下移動方向並重播滑塊的伸長動畫（滑塊位置由範本的 --i 控制）
+    if (typeof document !== 'undefined' && document.addEventListener) {
+        document.addEventListener('click', (ev) => {
+            const btn = ev.target && ev.target.closest ? ev.target.closest('.fd-seg2 > button') : null;
+            if (!btn || prefersReduce()) return;
+            const box = btn.parentElement;
+            const kids = Array.prototype.filter.call(box.children, el => el.tagName === 'BUTTON');
+            const to = kids.indexOf(btn), from = parseFloat(box.style.getPropertyValue('--i'));
+            if (to < 0 || isNaN(from) || to === from) return;
+            box.setAttribute('data-dir', to > from ? 'r' : 'l');
+            box.classList.remove('is-liquid'); void box.offsetWidth; box.classList.add('is-liquid');
+            setTimeout(() => box.classList.remove('is-liquid'), 480);
+        });
+    }
     const { selectedYear, selectedMonth, includeInvest, payChartMode, catTab, payTab, cardOffset } = ctx;
     watch(() => [selectedYear.value, selectedMonth.value], () => replayIn('[data-fd-refresh~="month"]'));
     watch(includeInvest, () => replayIn('[data-fd-refresh~="invest"]'));
