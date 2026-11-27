@@ -95,7 +95,7 @@ export const useLedgerView = (ctx) => {
     const payChartClipNote = computed(() => {
         const p = payChartClip.value, rows = paymentChartData.value.rows;
         if (!p.indexes.length) return '';
-        return '長條已截斷，避免壓縮其他管道：' + p.indexes.map(i => `${rows[i].method} 實際 ${Math.round(rows[i].total).toLocaleString()}`).join('、') + '。切到「占比」可看完整構成。';
+        return '長條已截斷，避免壓縮其他管道：' + p.indexes.map(i => `${rows[i].method} 實際 $ ${Math.round(rows[i].total).toLocaleString()}`).join('、') + '。切到「占比」可看完整構成。';
     });
     const itemDetail = ref(null);
     const openItemDetail = (it) => {

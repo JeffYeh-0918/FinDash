@@ -450,10 +450,10 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 }
 
 /* --- V25 切換按鈕：選取塊滑動（--n＝選項數、--i＝目前第幾個，由範本帶入） --- */
-.fd-seg2 { overflow: hidden; --n: 2; --i: 0; --pad: 3px; --seg-accent: #4f46e5; position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; flex: none; padding: var(--pad); background: #0f172a; border: 1px solid #334155; border-radius: .5rem; }
+.fd-seg2 { overflow: hidden; --n: 2; --i: 0; --pad: 3px; --seg-accent: #4f46e5; position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); flex: none; padding: var(--pad); background: #0f172a; border: 1px solid #334155; border-radius: .5rem; }
 .fd-seg2::before { content: ""; position: absolute; top: var(--pad); bottom: var(--pad); left: var(--pad); width: calc((100% - 2 * var(--pad)) / var(--n)); background: var(--seg-accent); border-radius: .375rem; translate: calc(var(--i) * 100%) 0; transition: translate .28s cubic-bezier(.2, .8, .2, 1), opacity .2s ease; }
 .fd-seg2.is-none::before { opacity: 0; }
-.fd-seg2 > button { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; min-height: 1.75rem; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; color: #94a3b8; background: transparent; border: 0; border-radius: .375rem; cursor: pointer; white-space: nowrap; transition: color .2s ease; }
+.fd-seg2 > button { position: relative; z-index: 1; min-width: 0; display: flex; align-items: center; justify-content: center; min-height: 1.75rem; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; color: #94a3b8; background: transparent; border: 0; border-radius: .375rem; cursor: pointer; white-space: nowrap; transition: color .2s ease; }
 .fd-seg2 > button.is-on { color: #fff; }
 .fd-seg2 > button:focus-visible { outline: 2px solid #818cf8; outline-offset: 1px; }
 .fd-seg-lg { height: 2.5rem; }

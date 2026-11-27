@@ -82,7 +82,7 @@ if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
                     plugins: {
                         legend: { display: false },
                         valueLabels: { display: true },
-                        tooltip: { callbacks: { label: (c) => `${c.dataset.label}：${Number(c.raw || 0).toLocaleString()}` } }
+                        tooltip: { callbacks: { label: (c) => `${c.dataset.label}：$ ${Number(c.raw || 0).toLocaleString()}` } }
                     },
                     scales: { x: valueAxisStyle({ stacked: true }), y: categoryAxisStyle({ stacked: true }) },
                     onClick: (evt, els) => { if (els.length) openItemDetail(itemChartData.value[els[0].index]); },
@@ -118,8 +118,8 @@ if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
                         tooltip: {
                             filter: (c) => Number(rawOf(c) || 0) > 0,
                             callbacks: {
-                                label: (c) => share ? `${c.dataset.label}：${Math.round(c.raw)}%（${Number(rawOf(c) || 0).toLocaleString()}）` : `${c.dataset.label}：${Number(c.raw || 0).toLocaleString()}`,
-                                footer: (items) => items.length ? `合計：${Math.round(totals[items[0].dataIndex] || 0).toLocaleString()}` : ''
+                                label: (c) => share ? `${c.dataset.label}：${Math.round(c.raw)}%（$ ${Number(rawOf(c) || 0).toLocaleString()}）` : `${c.dataset.label}：$ ${Number(c.raw || 0).toLocaleString()}`,
+                                footer: (items) => items.length ? `合計：$ ${Math.round(totals[items[0].dataIndex] || 0).toLocaleString()}` : ''
                             }
                         }
                     },

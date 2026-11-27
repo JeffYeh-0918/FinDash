@@ -205,7 +205,7 @@ export const useStocks = (ctx) => {
         if (trade) {
             editingStockId.value = trade.id;
             const linked = findLinkedExpense(trade.id) || findMatchingExpense(trade, new Set());
-            stockForm.value = { ...trade, symbol: cleanSymbol(trade.symbol), payMethod: linked ? (linked.paymentMethod || '') : lastStockPay() };
+            stockForm.value = { ...trade, symbol: cleanSymbol(trade.symbol), payMethod: (linked && linked.paymentMethod) || lastStockPay() };   // 沒有「（不指定）」選項了：舊紀錄的付款方式若是空白，顯示預設付款方式，避免下拉選單空白
         } else {
             editingStockId.value = null;
             stockForm.value = { action: '買進', date: todayStr(), symbol: '0050', name: '元大台灣50', price: null, shares: null, fee: 0, tax: 0, payMethod: lastStockPay() };

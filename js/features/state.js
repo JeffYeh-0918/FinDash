@@ -96,7 +96,7 @@ export const useState = (ctx) => {
     const stockFilterMonths = ref('');
     // ---------- 股票交易 ↔ 收支 連動 ----------
     const DEFAULT_STOCK_PAY = '國泰帳戶';
-    const formatCurrency = (val) => Math.round(val || 0).toLocaleString('zh-TW');
+    const formatCurrency = (val) => '$ ' + Math.round(val || 0).toLocaleString('zh-TW');
 
     return {
         STORAGE_KEY_EXPENSES, STORAGE_KEY_STOCKS, STORAGE_KEY_PRICES, STORAGE_KEY_GAS_URL, STORAGE_KEY_CATEGORIES, STORAGE_KEY_ITEMS,
