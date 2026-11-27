@@ -26,24 +26,25 @@
     "./js/features/ui.js": "./js/features/ui.js?v=1",
     "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=2",
     "./js/features/modals.js": "./js/features/modals.js?v=3",
-    "./js/features/charts.js": "./js/features/charts.js?v=4",
+    "./js/features/charts.js": "./js/features/charts.js?v=5",
     "./js/features/import-export.js": "./js/features/import-export.js?v=4",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
     "./js/features/expenses.js": "./js/features/expenses.js?v=5",
-    "./js/features/stocks.js": "./js/features/stocks.js?v=4",
+    "./js/features/stocks.js": "./js/features/stocks.js?v=5",
     "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=4",
     "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=5",
     "./js/features/card-drag.js": "./js/features/card-drag.js?v=5",
     "./js/features/nav.js": "./js/features/nav.js?v=1",
-    "./js/features/motion.js": "./js/features/motion.js?v=2",
-    "./js/logic/nav.js": "./js/logic/nav.js?v=1"
+    "./js/features/motion.js": "./js/features/motion.js?v=3",
+    "./js/logic/nav.js": "./js/logic/nav.js?v=1",
+    "./js/logic/pl.js": "./js/logic/pl.js?v=1"
   }
 }
     </script>
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=2" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=23">
+    <link rel="stylesheet" href="css/app.css?v=24">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -83,7 +84,7 @@
         <button type="button" class="fd-nav-item" :class="{ 'is-active': activeTab === 'cards' }" :aria-current="activeTab === 'cards' ? 'page' : null" title="信用卡" @click="setTab('cards')"><i data-lucide="credit-card" class="w-5 h-5"></i><span class="fd-label">信用卡</span></button>
     </nav>
     <div class="fd-side-scroll">
-        <button type="button" class="fd-nav-item fd-tools-btn" title="工具與設定" aria-haspopup="true" :aria-expanded="activeDropdown === 'tools'" @click.stop="toggleDropdown('tools')"><i data-lucide="settings" class="w-5 h-5"></i></button>
+        <button type="button" class="fd-nav-item fd-tools-btn" title="工具與設定" aria-label="工具與設定" aria-haspopup="true" :aria-expanded="activeDropdown === 'tools'" @click.stop="toggleDropdown('tools')"><i data-lucide="settings" class="w-5 h-5"></i></button>
         <div class="fd-tools-inline" @click="closeAllDropdowns">
 <div class="fd-group">單次設定</div>
 <button type="button" class="fd-tool" @click="showApiConfigModal = true"><i data-lucide="settings" class="w-4 h-4 text-sky-300"></i><span>API 設定</span></button>
@@ -127,8 +128,8 @@
             <button type="button" class="fd-month-btn" title="下個月" aria-label="下一個月" :disabled="isCurrentMonthOrFuture" @click="changeMonth(1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
         </div>
             <div class="fd-top-sp"></div>
-            <button type="button" class="fd-top-btn text-emerald-400" :class="{ 'is-dirty': syncState === 'dirty', 'is-error': syncState === 'error' }" @click="syncFromCloud()" :disabled="isSyncing" title="同步 Google 雲端試算表"><span :class="{ 'animate-bounce': isSyncing }" class="inline-flex"><i data-lucide="cloud-download" class="w-4 h-4"></i></span></button>
-            <button type="button" v-if="activeTab === 'investments'" class="fd-top-btn text-indigo-300" @click="fetchStockPrices()" :disabled="isFetchingPrices" title="更新即時股價"><span :class="{ 'animate-spin': isFetchingPrices }" class="inline-flex"><i data-lucide="refresh-cw" class="w-4 h-4"></i></span></button>
+            <button type="button" class="fd-top-btn text-emerald-400" :class="{ 'is-dirty': syncState === 'dirty', 'is-error': syncState === 'error' }" @click="syncFromCloud()" :disabled="isSyncing" title="同步 Google 雲端試算表" aria-label="同步 Google 雲端試算表"><span :class="{ 'animate-bounce': isSyncing }" class="inline-flex"><i data-lucide="cloud-download" class="w-4 h-4"></i></span></button>
+            <button type="button" v-if="activeTab === 'investments'" class="fd-top-btn text-indigo-300" @click="fetchStockPrices()" :disabled="isFetchingPrices" title="更新即時股價" aria-label="更新即時股價"><span :class="{ 'animate-spin': isFetchingPrices }" class="inline-flex"><i data-lucide="refresh-cw" class="w-4 h-4"></i></span></button>
             <button type="button" class="fd-top-btn" :class="{ 'is-dirty': syncState === 'dirty', 'is-error': syncState === 'error' }" aria-label="工具與設定" aria-haspopup="true" :aria-expanded="activeDropdown === 'tools'" @click.stop="toggleDropdown('tools')"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>
         </div>
     </div>
@@ -184,20 +185,20 @@
                         <div class="text-lg sm:text-2xl font-bold text-slate-100 whitespace-nowrap"><fd-num :value="totalInvestmentMarketValue"></fd-num></div>
                         <p class="text-xs sm:text-xs text-slate-400 mt-1 flex flex-col sm:flex-row sm:justify-between">
                             <span>未實現損益</span>
-                            <span :class="totalUnrealizedPL >= 0 ? 'text-emerald-400' : 'text-rose-400'" class="font-medium">
-                                {{ totalUnrealizedPL >= 0 ? '+' : '' }}<fd-num :value="totalUnrealizedPL"></fd-num> ({{ totalUnrealizedPLRate }}%)
+                            <span :class="plClass(totalUnrealizedPL)" class="font-medium">
+                                <span class="fd-pl-arrow" aria-hidden="true">{{ plArrow(totalUnrealizedPL) }}</span>{{ plSign(totalUnrealizedPL) }}<fd-num :value="totalUnrealizedPL"></fd-num> ({{ plSign(totalUnrealizedPL) }}{{ totalUnrealizedPLRate }}%)
                             </span>
                         </p>
                     </div>
                 </div>
-                <div @click="showRealizedModal = true" class="glass-card rounded-2xl p-3 sm:p-5 cursor-pointer hover:border-amber-500/40 transition">
+                <div @click="showRealizedModal = true" role="button" tabindex="0" aria-label="查看累積已實現損益明細" @keydown.enter.self="showRealizedModal = true" @keydown.space.prevent.self="showRealizedModal = true" class="glass-card rounded-2xl p-3 sm:p-5 cursor-pointer hover:border-amber-500/40 transition">
                     <div class="flex items-center justify-between gap-1">
                         <span class="fd-ct text-xs sm:text-xs font-medium text-slate-400">累積已實現損益</span>
                         <div class="fd-ci p-1.5 sm:p-2 bg-amber-500/10 rounded-lg text-amber-400 shrink-0"><i data-lucide="coins" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
                     </div>
                     <div class="mt-2 sm:mt-3">
-                        <div class="text-lg sm:text-2xl font-bold whitespace-nowrap" :class="totalRealizedPL >= 0 ? 'text-emerald-400' : 'text-rose-400'">
-                            {{ totalRealizedPL >= 0 ? '+' : '' }}<fd-num :value="totalRealizedPL"></fd-num>
+                        <div class="text-lg sm:text-2xl font-bold whitespace-nowrap" :class="plClass(totalRealizedPL)">
+                            <span class="fd-pl-arrow" aria-hidden="true">{{ plArrow(totalRealizedPL) }}</span>{{ plSign(totalRealizedPL) }}<fd-num :value="totalRealizedPL"></fd-num>
                         </div>
                         <p class="hidden sm:block text-xs text-slate-400 mt-1">賣出後落袋的損益（移動平均成本，已扣手續費與稅）</p>
                         <p class="text-xs sm:text-xs text-slate-400 mt-1 sm:mt-0.5">累積股息 <fd-num :value="totalDividend"></fd-num></p>
@@ -214,7 +215,7 @@
                             <h3 class="text-lg font-semibold text-slate-200 whitespace-nowrap">支出分析</h3>
                             <button type="button" @click="openPaymentSettings('rules')" class="shrink-0 inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:border-amber-400/60 rounded-md px-1.5 py-0.5 transition" title="調整儲值事件與消費定義"><i data-lucide="sliders-horizontal" class="w-3 h-3"></i>規則</button>
                         </div>
-                        <div class="fd-seg2 fd-seg-lg ml-auto" role="group" aria-label="圖表是否含投資" :style="{ '--n': 2, '--i': includeInvest ? 1 : 0, '--seg-accent': '#059669' }">
+                        <div class="fd-seg2 fd-seg-lg ml-auto" role="group" aria-label="圖表是否含投資" :style="{ '--n': 2, '--i': includeInvest ? 1 : 0, '--seg-accent': '#047857' }">
 <button type="button" @click="includeInvest = false" :class="{ 'is-on': !includeInvest }" :aria-pressed="!includeInvest">不含投資</button>
 <button type="button" @click="includeInvest = true" :class="{ 'is-on': includeInvest }" :aria-pressed="includeInvest">含投資</button>
 </div>
@@ -252,16 +253,16 @@
                         <div class="fd-seg-row flex flex-wrap items-start justify-between gap-x-3 gap-y-2 fd-chart-head">
                             <h3 class="text-base font-semibold text-slate-200 flex items-center gap-2 whitespace-nowrap">
                                 <i data-lucide="credit-card" class="w-4 h-4 text-indigo-400"></i>
-                                付款管道支出統計
+                                付款方式支出統計
                             </h3>
-                            <div class="fd-seg2 ml-auto" role="group" aria-label="付款管道圖顯示方式" :style="{ '--n': 2, '--i': payChartMode === 'share' ? 1 : 0 }">
+                            <div class="fd-seg2 ml-auto" role="group" aria-label="付款方式圖顯示方式" :style="{ '--n': 2, '--i': payChartMode === 'share' ? 1 : 0 }">
                                 <button type="button" :class="{ 'is-on': payChartMode === 'amount' }" :aria-pressed="payChartMode === 'amount'" @click="payChartMode = 'amount'">金額</button>
                                 <button type="button" :class="{ 'is-on': payChartMode === 'share' }" :aria-pressed="payChartMode === 'share'" @click="payChartMode = 'share'">占比</button>
                             </div>
                         </div>
-                        <p class="text-xs text-slate-400 mb-3 fd-chart-desc">{{ payChartMode === 'share' ? '占比：每個管道都當成 100%，看錢花在哪些類別；右側數字是該管道的實際總額。' : '以「金額」計，代表錢實際從哪個管道流出（含給家裡的每月費用、悠遊卡儲值）；長條內依類別分色，顏色與左圖相同。' }}</p>
+                        <p class="text-xs text-slate-400 mb-3 fd-chart-desc">{{ payChartMode === 'share' ? '占比：每個付款方式都當成 100%，看錢花在哪些類別；右側數字是該付款方式的實際總額。' : '以「金額」計，代表錢實際從哪個付款方式流出（含給家裡的每月費用、悠遊卡儲值）；長條內依類別分色，顏色與左圖相同。' }}</p>
                         <div class="relative h-56 w-full">
-                            <canvas id="paymentChart" role="img" aria-label="付款管道支出統計堆疊長條圖，每個管道依類別分段"></canvas>
+                            <canvas id="paymentChart" role="img" aria-label="付款方式支出統計堆疊長條圖，每個付款方式依類別分段"></canvas>
                             <div v-if="!paymentChartData.rows.length" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">{{ chartHiddenCats.length ? '目前的類別篩選下沒有紀錄' : '本月沒有支出紀錄' }}</div>
                         </div>
                         <div class="fd-chart-foot"><p v-if="payChartClipNote" class="fd-chart-note">{{ payChartClipNote }}</p></div>
@@ -296,7 +297,7 @@
                             <p class="fd-desktop text-xs text-slate-400">點選可修改；<span class="text-emerald-400 font-semibold">點左側圓形圖示可勾選，按住列並拖曳可調整順序</span>（勾選的會整疊一起搬，Esc 取消）；勾選後可批次複製、填日期或刪除</p>
                         </div>
                         <div class="fd-desktop grid grid-cols-2 sm:grid-cols-4 gap-2 w-full lg:w-auto lg:grid-cols-[repeat(4,7.5rem)]">
-                            <button @click="openBatchCopyModal" :disabled="selectedExpenseIds.length === 0" class="w-full h-10 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-emerald-600 hover:bg-emerald-500">批次複製 ({{ selectedExpenseIds.length }})</button>
+                            <button @click="openBatchCopyModal" :disabled="selectedExpenseIds.length === 0" class="w-full h-10 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap fd-btn-primary">批次複製 ({{ selectedExpenseIds.length }})</button>
                             <button @click="openBatchDateModal('payment')" :disabled="selectedExpenseIds.length === 0" class="w-full h-10 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-indigo-600 hover:bg-indigo-500">填付款日 ({{ selectedExpenseIds.length }})</button>
                             <button @click="openBatchDateModal('settlement')" :disabled="selectedExpenseIds.length === 0" class="w-full h-10 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-amber-600 hover:bg-amber-500">填結算日 ({{ selectedExpenseIds.length }})</button>
                             <button @click="confirmBatchDeleteExpenses" :disabled="selectedExpenseIds.length === 0" class="w-full h-10 px-2 rounded-lg text-xs font-medium text-white disabled:opacity-40 transition flex items-center justify-center whitespace-nowrap bg-rose-600 hover:bg-rose-500">批次刪除 ({{ selectedExpenseIds.length }})</button>
@@ -309,7 +310,7 @@
                             <input v-model="expenseSearch" type="text" placeholder="搜尋類別/項目/內容/備註..." class="w-full h-10 bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:border-emerald-500 focus:outline-none">
                         </div>
                         
-                        <div class="fd-seg2 fd-seg-lg fd-seg-block" :class="{ 'is-none': dateFilterActive }" role="group" aria-label="日期範圍" :style="{ '--n': 2, '--i': expenseMonthFilterScope === 'ALL' ? 1 : 0, '--seg-accent': '#059669' }">
+                        <div class="fd-seg2 fd-seg-lg fd-seg-block" :class="{ 'is-none': dateFilterActive }" role="group" aria-label="日期範圍" :style="{ '--n': 2, '--i': expenseMonthFilterScope === 'ALL' ? 1 : 0, '--seg-accent': '#047857' }">
 <button type="button" @click="expenseMonthFilterScope = 'MONTH'; filterYears = []; filterMonths = []" :class="{ 'is-on': expenseMonthFilterScope === 'MONTH' && !dateFilterActive }">僅當月</button>
 <button type="button" @click="expenseMonthFilterScope = 'ALL'; filterYears = []; filterMonths = []" :class="{ 'is-on': expenseMonthFilterScope === 'ALL' && !dateFilterActive }">全部歷史</button>
 </div>
@@ -512,7 +513,7 @@
                 </div>
             </div>
 
-            <!-- TAB 2: ETF & 股票投資儀表板 -->
+            <!-- TAB 2: ETF 與股票投資儀表板 -->
             <div v-show="activeTab === 'monthly'" data-fd-tab="monthly" class="space-y-4">
                 <div>
                     <div class="flex items-center gap-2 flex-wrap">
@@ -697,12 +698,12 @@
                             </div>
                             <div class="flex items-center justify-between pt-1 border-t border-slate-800/60">
                                 <span class="text-xs text-slate-400">未實現損益</span>
-                                <div class="text-right" :class="holding.unrealizedPL >= 0 ? 'text-emerald-400' : 'text-rose-400'">
+                                <div class="text-right" :class="plClass(holding.unrealizedPL)">
                                     <span class="text-sm font-bold">
-                                        {{ holding.unrealizedPL >= 0 ? '+' : '' }}<fd-num :value="holding.unrealizedPL"></fd-num>
+                                        <span class="fd-pl-arrow" aria-hidden="true">{{ plArrow(holding.unrealizedPL) }}</span>{{ plSign(holding.unrealizedPL) }}<fd-num :value="holding.unrealizedPL"></fd-num>
                                     </span>
                                     <span class="text-xs block font-semibold">
-                                        ({{ holding.unrealizedPL >= 0 ? '+' : '' }}{{ holding.unrealizedPLRate }}%)
+                                        ({{ plSign(holding.unrealizedPL) }}{{ holding.unrealizedPLRate }}%)
                                     </span>
                                 </div>
                             </div>
@@ -710,9 +711,9 @@
                                 <span class="text-xs text-slate-400">含息損益
                                     <span class="block text-xs text-slate-400">已領股息 {{ formatCurrency(holding.dividends) }}</span>
                                 </span>
-                                <div class="text-right" :class="holding.totalPL >= 0 ? 'text-emerald-400' : 'text-rose-400'">
-                                    <span class="text-sm font-bold">{{ holding.totalPL >= 0 ? '+' : '' }}<fd-num :value="holding.totalPL"></fd-num></span>
-                                    <span class="text-xs block font-semibold">({{ holding.totalPL >= 0 ? '+' : '' }}{{ holding.totalPLRate }}%)</span>
+                                <div class="text-right" :class="plClass(holding.totalPL)">
+                                    <span class="text-sm font-bold"><span class="fd-pl-arrow" aria-hidden="true">{{ plArrow(holding.totalPL) }}</span>{{ plSign(holding.totalPL) }}<fd-num :value="holding.totalPL"></fd-num></span>
+                                    <span class="text-xs block font-semibold">({{ plSign(holding.totalPL) }}{{ holding.totalPLRate }}%)</span>
                                 </div>
                             </div>
                         </div>
@@ -739,7 +740,7 @@
                 <div class="glass-card rounded-2xl p-5 space-y-4">
                     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div>
-                            <h3 class="text-lg font-semibold text-slate-200">ETF & 股票交易歷史紀錄</h3>
+                            <h3 class="text-lg font-semibold text-slate-200">ETF 與股票交易歷史紀錄</h3>
                             <p class="fd-desktop text-xs text-slate-400"><span class="text-indigo-400 font-semibold">點左側圓形圖示可勾選，按住列並拖曳可調整順序</span>，系統自動依買賣計算總市值與平均成本</p>
                         </div>
                         <div class="fd-desktop w-full lg:w-auto lg:ml-auto">
@@ -761,7 +762,7 @@
                     <div class="fd-mobile fdm" style="--fdm-accent:#818cf8;--fdm-accent-bg:rgba(129,140,248,.17)">
                         <div class="fdm-sec">
                             <span class="fdm-sq"><i data-lucide="trending-up" class="w-4 h-4"></i></span>
-                            <div style="min-width:0"><div class="fdm-title">ETF ＆ 股票交易</div><div class="fdm-sub fdm-sub-1"><span>{{ filteredStockTrades.length }} 筆</span><span class="fdm-sub-hint">· 長按選取、拖曳移動、左滑刪除</span></div></div>
+                            <div style="min-width:0"><div class="fdm-title">ETF 與股票交易</div><div class="fdm-sub fdm-sub-1"><span>{{ filteredStockTrades.length }} 筆</span><span class="fdm-sub-hint">· 長按選取、拖曳移動、左滑刪除</span></div></div>
                             <button type="button" class="fdm-sel-btn" @click="fdmSelecting('stock') ? fdmDone('stock') : fdmEnter('stock')">{{ fdmSelecting('stock') ? '完成' : '選取' }}</button>
                         </div>
                         <div v-if="filteredStockTrades.length === 0" class="fdm-empty fd-empty">
@@ -1032,7 +1033,7 @@
                                     <option value="">（請選擇類別）</option>
                                     <option v-for="c in catMapKeys" :key="c" :value="c">{{ c }}</option>
                                 </select>
-                                <button @click="applyCategoryFix(g)" :disabled="!getFixTarget(g)" class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40">套用</button>
+                                <button @click="applyCategoryFix(g)" :disabled="!getFixTarget(g)" class="px-2 py-1 rounded fd-btn-primary text-white disabled:opacity-40">套用</button>
                             </span>
                         </div>
                     </div>
@@ -1091,8 +1092,8 @@
                         <div class="flex flex-wrap gap-1.5 bg-slate-900 p-2.5 rounded-xl border border-slate-800">
                             <div v-for="(cat, idx) in categoriesList" :key="cat" class="flex items-center space-x-1 bg-slate-800 px-2 py-1 rounded border border-slate-700">
                                 <span>{{ cat }}</span>
-                                <button @click="editOptionName('category', idx)" class="text-slate-400 hover:text-sky-300 ml-1">✎</button>
-                                <button @click="deleteOptionItem('category', idx)" class="text-slate-400 hover:text-rose-400">×</button>
+                                <button @click="editOptionName('category', idx)" aria-label="改名" title="改名" class="text-slate-400 hover:text-sky-300 ml-1">✎</button>
+                                <button @click="deleteOptionItem('category', idx)" aria-label="從選單移除" title="從選單移除" class="text-slate-400 hover:text-rose-400">×</button>
                             </div>
                         </div>
                     </div>
@@ -1104,15 +1105,15 @@
                         <div class="flex flex-wrap gap-1.5 bg-slate-900 p-2.5 rounded-xl border border-slate-800 max-h-48 overflow-y-auto">
                             <div v-for="(it, idx) in itemsList" :key="it" class="flex items-center space-x-1 bg-slate-800 px-2 py-1 rounded border border-slate-700">
                                 <span>{{ it }}</span>
-                                <button @click="editOptionName('item', idx)" class="text-slate-400 hover:text-sky-300 ml-1">✎</button>
-                                <button @click="deleteOptionItem('item', idx)" class="text-slate-400 hover:text-rose-400">×</button>
+                                <button @click="editOptionName('item', idx)" aria-label="改名" title="改名" class="text-slate-400 hover:text-sky-300 ml-1">✎</button>
+                                <button @click="deleteOptionItem('item', idx)" aria-label="從選單移除" title="從選單移除" class="text-slate-400 hover:text-rose-400">×</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="pt-3 flex justify-end border-t border-slate-800">
-                    <button @click="requestClose('showCategoryMapModal')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">完成</button>
+                    <button @click="requestClose('showCategoryMapModal')" class="px-4 py-2 fd-btn-primary text-white rounded-lg text-xs font-bold">完成</button>
                 </div>
             </div>
         </div>
@@ -1141,8 +1142,8 @@
                             <div class="flex items-center justify-between">
                                 <span class="text-sm text-slate-100 font-medium">{{ pm }}</span>
                                 <span class="flex items-center gap-3 text-sm">
-                                    <button @click="editOptionName('payment', idx)" class="text-slate-400 hover:text-sky-300" title="改名">✎</button>
-                                    <button @click="deleteOptionItem('payment', idx)" class="text-slate-400 hover:text-rose-400" title="從選單移除">×</button>
+                                    <button @click="editOptionName('payment', idx)" aria-label="改名" class="text-slate-400 hover:text-sky-300" title="改名">✎</button>
+                                    <button @click="deleteOptionItem('payment', idx)" aria-label="從選單移除" class="text-slate-400 hover:text-rose-400" title="從選單移除">×</button>
                                 </span>
                             </div>
                             <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
@@ -1152,7 +1153,7 @@
                                 </label>
                                 <span v-if="isCard(pm)" class="flex items-center space-x-1 text-slate-400">
                                     <span>每月</span>
-                                    <input type="number" min="1" max="31" :value="getCardDay(pm)" @input="setCardDay(pm, $event.target.value)" class="w-16 bg-slate-900 border border-slate-700 rounded p-1 text-center text-slate-200">
+                                    <input type="number" inputmode="numeric" min="1" max="31" :value="getCardDay(pm)" @input="setCardDay(pm, $event.target.value)" class="w-16 bg-slate-900 border border-slate-700 rounded p-1 text-center text-slate-200">
                                     <span>日結帳</span>
                                 </span>
                                 <label class="flex items-center space-x-1.5 text-slate-200 cursor-pointer">
@@ -1167,7 +1168,7 @@
                 <div v-show="payTab === 'rules'" class="space-y-5" data-fd-refresh="paytab">
                 <div class="space-y-2">
                     <h4 class="text-sm font-semibold text-slate-200">儲值事件（先出錢、之後才分項使用）</h4>
-                    <p class="text-xs text-slate-400">符合「類別＋項目」的支出會從項目圖排除（避免和之後的分項使用重複），但仍計入付款管道統計與月收支表。目前符合 {{ fundingMatchCount }} 筆。</p>
+                    <p class="text-xs text-slate-400">符合「類別＋項目」的支出會從項目圖排除（避免和之後的分項使用重複），但仍計入付款方式統計與月收支表。目前符合 {{ fundingMatchCount }} 筆。</p>
                     <div v-for="(r, i) in appSettings.fundingRules" :key="i" class="flex items-center gap-2">
                         <select v-model="r.category" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
                             <option v-for="c in categoriesList" :key="c" :value="c">{{ c }}</option>
@@ -1183,7 +1184,7 @@
                 </div>
 
                 <div class="pt-3 flex justify-end border-t border-slate-800">
-                    <button @click="requestClose('showCardSettingsModal')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">完成</button>
+                    <button @click="requestClose('showCardSettingsModal')" class="px-4 py-2 fd-btn-primary text-white rounded-lg text-xs font-bold">完成</button>
                 </div>
             </div>
         </div>
@@ -1245,7 +1246,7 @@
                 <div class="flex justify-between items-start border-b border-slate-800 pb-3">
                     <div>
                         <h3 class="text-base font-bold text-slate-100">已實現損益計算明細</h3>
-                        <p class="text-xs text-slate-400 mt-1">合計 <span class="font-bold" :class="realizedInfo.total >= 0 ? 'text-emerald-400' : 'text-rose-400'">{{ realizedInfo.total >= 0 ? '+' : '' }}{{ formatCurrency(Math.round(realizedInfo.total)) }}</span>・共 {{ realizedInfo.rows.length }} 筆賣出</p>
+                        <p class="text-xs text-slate-400 mt-1">合計 <span class="font-bold" :class="plClass(realizedInfo.total)"><span class="fd-pl-arrow" aria-hidden="true">{{ plArrow(realizedInfo.total) }}</span>{{ plSign(realizedInfo.total) }}{{ formatCurrency(Math.round(realizedInfo.total)) }}</span>・共 {{ realizedInfo.rows.length }} 筆賣出</p>
                     </div>
                     <button @click="requestClose('showRealizedModal')" class="text-slate-400 hover:text-white text-lg leading-none" aria-label="關閉">✕</button>
                 </div>
@@ -1259,7 +1260,7 @@
                     <p v-for="(g, i) in realizedInfo.ignored" :key="i">{{ g.date }} {{ g.symbol }} {{ g.shares }} 股：{{ g.reason }}</p>
                 </div>
                 <div class="flex flex-wrap gap-2 text-xs">
-                    <span v-for="b in realizedBySymbolList" :key="b.symbol" class="px-2 py-1 rounded bg-slate-800 border border-slate-700" :class="b.gain >= 0 ? 'text-emerald-400' : 'text-rose-400'">{{ b.symbol }}：{{ b.gain >= 0 ? '+' : '' }}{{ formatCurrency(Math.round(b.gain)) }}</span>
+                    <span v-for="b in realizedBySymbolList" :key="b.symbol" class="px-2 py-1 rounded bg-slate-800 border border-slate-700" :class="plClass(b.gain)">{{ b.symbol }}：<span class="fd-pl-arrow" aria-hidden="true">{{ plArrow(b.gain) }}</span>{{ plSign(b.gain) }}{{ formatCurrency(Math.round(b.gain)) }}</span>
                 </div>
                 <div class="overflow-x-auto max-h-[50vh] overflow-y-auto rounded-lg border border-slate-800">
                     <table class="w-full text-left text-xs sm:text-sm">
@@ -1274,7 +1275,7 @@
                                 <td class="py-2 px-3 text-right">{{ r.avgCost.toFixed(2) }}</td>
                                 <td class="py-2 px-3 text-right">{{ Math.round(r.cost).toLocaleString() }}</td>
                                 <td class="py-2 px-3 text-right">{{ Math.round(r.proceeds).toLocaleString() }}</td>
-                                <td class="py-2 px-3 text-right font-bold whitespace-nowrap" :class="r.gain >= 0 ? 'text-emerald-400' : 'text-rose-400'">{{ r.gain >= 0 ? '+' : '' }}{{ Math.round(r.gain).toLocaleString() }}</td>
+                                <td class="py-2 px-3 text-right font-bold whitespace-nowrap" :class="plClass(r.gain)"><span class="fd-pl-arrow" aria-hidden="true">{{ plArrow(r.gain) }}</span>{{ plSign(r.gain) }}{{ Math.round(r.gain).toLocaleString() }}</td>
                             </tr>
                             <tr v-if="realizedInfo.rows.length === 0"><td colspan="7" class="py-6 text-center text-slate-400">目前沒有可計算的賣出紀錄</td></tr>
                         </tbody>
@@ -1332,7 +1333,7 @@
                 </div>
                 <div class="pt-3 flex justify-end gap-2 border-t border-slate-800">
                     <button @click="requestClose('showImportPreviewModal')" class="px-4 h-10 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold">取消</button>
-                    <button @click="commitImport" :disabled="importSummary.exp.will + importSummary.stock.will === 0" class="px-4 h-10 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold disabled:opacity-40">確認匯入（{{ importSummary.exp.will }} 筆收支、{{ importSummary.stock.will }} 筆股票）</button>
+                    <button @click="commitImport" :disabled="importSummary.exp.will + importSummary.stock.will === 0" class="px-4 h-10 fd-btn-primary text-white rounded-lg text-xs font-bold disabled:opacity-40">確認匯入（{{ importSummary.exp.will }} 筆收支、{{ importSummary.stock.will }} 筆股票）</button>
                 </div>
             </div>
         </div>
@@ -1356,7 +1357,7 @@
                     </ul>
                     <p class="text-slate-400">設定（類別與項目、付款與帳單等）不會被清除。清空後無法復原，建議先匯出備份。</p>
                 </div>
-                <button @click="exportToExcel" class="w-full h-10 rounded-lg text-xs font-medium bg-emerald-700 hover:bg-emerald-600 text-white flex items-center justify-center">先匯出 Excel 備份</button>
+                <button @click="exportToExcel" class="w-full h-10 rounded-lg text-xs font-medium fd-btn-primary text-white flex items-center justify-center">先匯出 Excel 備份</button>
                 <div class="space-y-1.5">
                     <label class="block text-xs text-slate-400">請輸入「<b class="text-rose-300">清空</b>」兩個字確認</label>
                     <input v-model="resetConfirmText" type="text" autocomplete="off" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-100 focus:border-rose-500 focus:outline-none">
@@ -1392,7 +1393,7 @@
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button v-if="!dialog.hideCancel" @click="cancelDialog" :data-autofocus="dialog.danger ? '' : null" class="px-4 h-10 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-bold">{{ dialog.cancelText }}</button>
-                    <button @click="submitDialog" :data-autofocus="(!dialog.danger && dialog.kind === 'confirm') ? '' : null" class="px-4 h-10 text-white rounded-lg text-xs font-bold" :class="dialog.danger ? 'bg-rose-600 hover:bg-rose-500' : 'bg-emerald-600 hover:bg-emerald-500'">{{ dialog.confirmText }}</button>
+                    <button @click="submitDialog" :data-autofocus="(!dialog.danger && dialog.kind === 'confirm') ? '' : null" class="px-4 h-10 text-white rounded-lg text-xs font-bold" :class="dialog.danger ? 'bg-rose-600 hover:bg-rose-500' : 'fd-btn-primary'">{{ dialog.confirmText }}</button>
                 </div>
             </div>
         </div>
@@ -1457,11 +1458,12 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-slate-400 mb-1">金額 (NT$)</label>
-                            <input v-model.number="expenseForm.amount" type="number" min="0" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <input v-model.number="expenseForm.amount" type="number" inputmode="numeric" min="0" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                         <div>
                             <label class="block text-slate-400 mb-1">已付金額 (NT$)</label>
-                            <input v-model.number="expenseForm.paidAmount" type="number" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <input v-model.number="expenseForm.paidAmount" type="number" inputmode="numeric" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+<p class="text-xs text-slate-400 mt-1">預付類付款方式使用時，記在這裡</p>
                         </div>
                     </div>
                     <div>
@@ -1490,7 +1492,7 @@
                     <div class="pt-3 flex items-center justify-end space-x-2 border-t border-slate-800">
                         <button v-if="editingExpenseId" type="button" @click="deleteEditingExpense" class="fd-del-btn" aria-label="刪除這筆收支">刪除</button>
                         <button type="button" @click="requestClose('showExpenseModal')" class="px-4 py-2 text-slate-400">取消</button>
-                        <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg">儲存</button>
+                        <button type="submit" class="px-4 py-2 fd-btn-primary text-white rounded-lg">儲存</button>
                     </div>
                 </form>
             </div>
@@ -1532,21 +1534,21 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-slate-400 mb-1">成交單價 (NT$)</label>
-                            <input v-model.number="stockForm.price" type="number" step="0.01" min="0.1" required placeholder="165.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <input v-model.number="stockForm.price" type="number" inputmode="decimal" step="0.01" min="0.1" required placeholder="165.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                         <div>
                             <label class="block text-slate-400 mb-1">成交股數</label>
-                            <input v-model.number="stockForm.shares" type="number" min="1" required placeholder="1000" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <input v-model.number="stockForm.shares" type="number" inputmode="numeric" min="1" required placeholder="1000" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-slate-400 mb-1">手續費 (NT$)</label>
-                            <input v-model.number="stockForm.fee" type="number" min="0" placeholder="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <input v-model.number="stockForm.fee" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                         <div>
                             <label class="block text-slate-400 mb-1">交易稅 (NT$)</label>
-                            <input v-model.number="stockForm.tax" type="number" min="0" placeholder="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
+                            <input v-model.number="stockForm.tax" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                     </div>
                     <div>
@@ -1587,7 +1589,7 @@
                 </div>
                 <div class="pt-3 flex justify-end space-x-2 border-t border-slate-800">
                     <button type="button" @click="requestClose('showBatchDateModal')" class="px-4 py-2 text-xs text-slate-400">取消</button>
-                    <button type="button" @click="applyBatchDate" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs">確認更新</button>
+                    <button type="button" @click="applyBatchDate" class="px-4 py-2 fd-btn-primary text-white rounded-lg text-xs">確認更新</button>
                 </div>
             </div>
         </div>
@@ -1608,7 +1610,7 @@
                 </div>
                 <div class="pt-3 flex justify-end space-x-2 border-t border-slate-800">
                     <button type="button" @click="requestClose('showBatchCopyModal')" class="px-4 py-2 text-xs text-slate-400">取消</button>
-                    <button type="button" @click="applyBatchCopy" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">確認複製</button>
+                    <button type="button" @click="applyBatchCopy" class="px-4 py-2 fd-btn-primary text-white rounded-lg text-xs font-bold">確認複製</button>
                 </div>
             </div>
         </div>
@@ -1772,7 +1774,7 @@
                 });
 
                 // 範本（HTML）會用到的成員。範本新增用到的名稱時，要加在這裡；npm run check 會檢查每一個都存在。
-                const TEMPLATE_MEMBERS = ['deleteEditingExpense', 'deleteEditingStock', 
+                const TEMPLATE_MEMBERS = ['plClass', 'plArrow', 'plSign', 'deleteEditingExpense', 'deleteEditingStock', 
             // V24 導覽
             'navWide', 'toggleNavPref', 'activeTabIndex', 'activeTabInfo', 'setTab',
                 'COLOR_CHOICES', 'activeDropdown', 'activeTab', 'addFundingRule', 'allKnownItems',
@@ -1829,7 +1831,7 @@
     <div id="app-version" class="fd-version select-none"></div>
     <script>
         (function () {
-            var APP = 'V26';
+            var APP = 'V26.1';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');

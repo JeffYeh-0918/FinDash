@@ -21,6 +21,13 @@ export const useCharts = (ctx) => {
     let stockAllocationChartInstance = null;
     // ---------- 圖表共用樣式：格線、刻度顏色、數值標籤（所有長條圖一致） ----------
     const CHART_GRID = 'rgba(148,163,184,0.1)';
+// V26.1：台股慣例紅漲綠跌（與 css 的 --gain／--loss 同色）
+const PL_GAIN_BG = 'rgba(255, 107, 122, 0.8)', PL_LOSS_BG = 'rgba(52, 211, 153, 0.8)';
+// V26.1：圖表字型與文字色（繁中字型堆疊；沒有 Chart.defaults 的環境（測試）就略過）
+if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
+    Chart.defaults.font.family = 'system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+    Chart.defaults.color = '#94a3b8';
+}
     const valueAxisStyle = (extra = {}) => ({ beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: CHART_GRID }, ...extra });
     const categoryAxisStyle = (extra = {}) => ({ ticks: { color: '#e2e8f0' }, grid: { display: false }, ...extra });
     const valueLabelPlugin = {
@@ -130,7 +137,7 @@ export const useCharts = (ctx) => {
                 type: 'bar',
                 data: {
                     labels: holdings.map(h => h.symbol),
-                    datasets: [{ label: '未實現損益 (NT$)', data: holdings.map(h => h.unrealizedPL), backgroundColor: holdings.map(h => h.unrealizedPL >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(244, 63, 94, 0.7)'), borderRadius: 4 }]
+                    datasets: [{ label: '未實現損益 (NT$)', data: holdings.map(h => h.unrealizedPL), backgroundColor: holdings.map(h => h.unrealizedPL >= 0 ? PL_GAIN_BG : PL_LOSS_BG), borderRadius: 4 }]
                 },
                 options: {
                     animation: CHART_ANIM,

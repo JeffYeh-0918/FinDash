@@ -37,7 +37,7 @@ test('V25：切換按鈕都用滑塊（--n／--i），內容更新標記與滾�
     assert.ok(!/<fd-num[^>]*\/>/.test(html), '行內範本的自訂元件不能用自閉合寫法');
 });
 test('V26：版本字樣、載入骨架、空狀態引導、持股卡字級', () => {
-    assert.match(html, /var APP = 'V26'/);
+    assert.match(html, /var APP = 'V26\.1'/);
     assert.ok(html.includes('id="fd-boot"') && html.includes("getElementById('fd-boot')"), '骨架畫面或移除程式不見了');
     assert.ok(html.indexOf('id="fd-boot"') < html.indexOf('id="app"'), '骨架畫面必須在 #app 之外（#app 的內容會被 Vue 當範本）');
     assert.equal((html.match(/class="fd-val font-medium/g) || []).length, 4);

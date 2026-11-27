@@ -2,7 +2,7 @@
 [v-cloak] { display: none !important; }
 body {
     font-variant-numeric: tabular-nums;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
     background-color: #0f172a;
     color: #f8fafc;
 }
@@ -56,8 +56,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, [tabindex]:focus-vi
 .fdm-sec { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 12; display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.25rem; margin: 0 -0.25rem; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid rgba(148, 163, 184, 0.12); }
 .fdm-sq { flex: none; width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; background: var(--fdm-accent-bg); color: var(--fdm-accent); }
 .fdm-title { font-size: 0.9rem; font-weight: 600; color: #f1f5f9; line-height: 1.2; }
-.fdm-sub { font-size: 0.7rem; color: #94a3b8; margin-top: 1px; }
-.fdm-day { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 0.375rem 0.25rem; font-size: 0.7rem; color: #94a3b8; }
+.fdm-sub { font-size: 0.75rem; color: #94a3b8; margin-top: 1px; }
+.fdm-day { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 0.375rem 0.25rem; font-size: 0.75rem; color: #94a3b8; }
 .fdm-list { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 0.75rem; overflow: hidden; }
 .fdm-item { position: relative; display: flex; align-items: center; gap: 0.625rem; padding: 0.625rem 0.75rem; border-bottom: 1px solid rgba(148, 163, 184, 0.1); cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
 .fdm-item:last-child { border-bottom: none; }
@@ -70,16 +70,16 @@ button:focus-visible, a:focus-visible, select:focus-visible, [tabindex]:focus-vi
 .fdm-ic i { font-style: normal; font-size: 0.9rem; font-weight: 600; }   /* 圖示載入失敗時，顯示項目第一個字 */
 .fdm-mid { flex: 1; min-width: 0; }
 .fdm-t1 { font-size: 0.85rem; font-weight: 500; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fdm-t2 { font-size: 0.7rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.fdm-t2 { font-size: 0.75rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 .fdm-chips { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; }
-.fdm-chip { font-size: 0.65rem; padding: 0 0.375rem; border-radius: 0.25rem; background: rgba(148, 163, 184, 0.12); color: #cbd5e1; line-height: 1.25rem; }
+.fdm-chip { font-size: 0.75rem; padding: 0 0.375rem; border-radius: 0.25rem; background: rgba(148, 163, 184, 0.12); color: #cbd5e1; line-height: 1.25rem; }
 .fdm-amt { flex: none; font-size: 0.85rem; font-weight: 600; color: #fb7185; white-space: nowrap; text-align: right; }
 .fdm-amt.is-in { color: #34d399; }
 .fdm-more { display: block; width: 100%; margin: 0.75rem 0 0.25rem; padding: 0.625rem; border-radius: 0.75rem; border: 1px solid rgba(148, 163, 184, 0.2); color: #cbd5e1; font-size: 0.8rem; background: rgba(30, 41, 59, 0.4); }
 .fdm-empty { padding: 1.5rem 0; text-align: center; color: #94a3b8; font-size: 0.85rem; }
 /* 批次操作列（長按選取後出現在畫面底部） */
 .fdm-bar { position: fixed; left: 0.75rem; right: 0.75rem; max-width: 46rem; margin: 0 auto; bottom: 0.75rem; z-index: 45; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0.625rem; padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)); border-radius: 0.875rem; background: rgba(15, 23, 42, 0.97); border: 1px solid rgba(148, 163, 184, 0.3); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
-.fdm-bar-info { min-width: 0; font-size: 0.7rem; color: #94a3b8; line-height: 1.3; }
+.fdm-bar-info { min-width: 0; font-size: 0.75rem; color: #94a3b8; line-height: 1.3; }
 .fdm-bar-info b { display: block; font-size: 0.85rem; color: #f1f5f9; }
 .fdm-bar-actions { display: flex; align-items: center; gap: 0.375rem; flex: none; }
 .fdm-btn { height: 2.25rem; padding: 0 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(148, 163, 184, 0.3); color: #e2e8f0; font-size: 0.75rem; background: transparent; white-space: nowrap; }
@@ -96,14 +96,14 @@ button:focus-visible, a:focus-visible, select:focus-visible, [tabindex]:focus-vi
 .fdm-month:focus-visible { outline: 2px solid var(--fdm-accent); outline-offset: 1px; }
 .fdm-m1 { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
 .fdm-mlabel { font-size: 0.9rem; font-weight: 600; color: #f1f5f9; }
-.fdm-now { margin-left: 0.375rem; font-size: 0.65rem; font-weight: 500; padding: 0 0.375rem; border-radius: 0.25rem; color: var(--fdm-accent); background: var(--fdm-accent-bg); }
+.fdm-now { margin-left: 0.375rem; font-size: 0.75rem; font-weight: 500; padding: 0 0.375rem; border-radius: 0.25rem; color: var(--fdm-accent); background: var(--fdm-accent-bg); }
 .fdm-net { font-size: 1rem; font-weight: 700; color: #f1f5f9; white-space: nowrap; }
-.fdm-net small { font-size: 0.65rem; font-weight: 400; color: #94a3b8; margin-right: 0.25rem; }
+.fdm-net small { font-size: 0.75rem; font-weight: 400; color: #94a3b8; margin-right: 0.25rem; }
 .fdm-net.is-neg { color: #fda4af; }
 .fdm-track { display: flex; height: 0.375rem; border-radius: 0.1875rem; overflow: hidden; margin: 0.5rem 0 0.375rem; background: rgba(148, 163, 184, 0.15); }
-.fdm-m3 { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.7rem; color: #94a3b8; }
-.fdm-toggle { display: block; width: 100%; margin-top: 0.5rem; padding: 0.25rem 0; font-size: 0.7rem; color: #94a3b8; text-align: center; border-top: 1px solid rgba(148, 163, 184, 0.1); background: transparent; }
-.fdm-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(148, 163, 184, 0.1); font-size: 0.7rem; color: #94a3b8; }
+.fdm-m3 { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.75rem; color: #94a3b8; }
+.fdm-toggle { display: block; width: 100%; margin-top: 0.5rem; padding: 0.25rem 0; font-size: 0.75rem; color: #94a3b8; text-align: center; border-top: 1px solid rgba(148, 163, 184, 0.1); background: transparent; }
+.fdm-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(148, 163, 184, 0.1); font-size: 0.75rem; color: #94a3b8; }
 .fdm-detail b { display: block; font-size: 0.8rem; font-weight: 600; color: #e2e8f0; }
 .fdm-detail .is-good { color: #34d399; }
 .fdm-detail .is-bad { color: #fda4af; }
@@ -113,7 +113,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, [tabindex]:focus-vi
 .fdm-sel-btn { margin-left: auto; flex: none; height: 2rem; padding: 0 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(148, 163, 184, 0.3); color: var(--fdm-accent); font-size: 0.75rem; background: transparent; }
 .fdm-sel-btn:active { background: var(--fdm-accent-bg); }
 .fdm-btn:disabled { opacity: 0.4; }
-.fdm-note { margin-top: 0.375rem; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.7rem; color: #6ee7b7; background: rgba(52, 211, 153, 0.1); }
+.fdm-note { margin-top: 0.375rem; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem; color: #6ee7b7; background: rgba(52, 211, 153, 0.1); }
 
 /* 復原提示條：寬度依內容決定。原本只有 left-1/2 定位、沒設寬度，會被限制在螢幕一半寬，文字被擠成多行、「復原」變直排 */
 .fdm-undo { width: max-content; max-width: calc(100vw - 1.5rem); }
@@ -126,7 +126,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, [tabindex]:focus-vi
     .fdm-item { padding: 0.75rem 1rem; gap: 0.875rem; }
     .fdm-t1 { font-size: 0.9rem; }
     .fdm-t2 { font-size: 0.75rem; }
-    .fdm-side { display: flex; flex-direction: column; gap: 1px; flex: none; width: 4.75rem; font-size: 0.7rem; line-height: 1.3; color: #94a3b8; }
+    .fdm-side { display: flex; flex-direction: column; gap: 1px; flex: none; width: 4.75rem; font-size: 0.75rem; line-height: 1.3; color: #94a3b8; }
     .fdm-side > span:first-child { color: #a5b4fc; }
     .fdm-side > span:last-child { color: #fcd34d; }
     .fdm-chip-date { display: none; }
@@ -190,7 +190,7 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
     .fd-catchip { min-height: 0; }
 }
 /* V20：項目明細卡片右側金額下方的「預付／自己付」標示 */
-.fdm-amt-sub { display: block; margin-top: 1px; font-size: 0.7rem; font-weight: 400; color: #94a3b8; text-align: right; }
+.fdm-amt-sub { display: block; margin-top: 1px; font-size: 0.75rem; font-weight: 400; color: #94a3b8; text-align: right; }
 .fdm-amt-sub.is-prepaid { color: #7dd3fc; }
 
 /* ===== V20：付款管道圖的「金額／占比」切換與截斷說明 ===== */
@@ -216,18 +216,18 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 .fdm-sub-1 { display: flex; flex-wrap: wrap; line-height: 1.3; max-height: 1.3em; overflow: hidden; }
 .fdm-sub-1 > span { white-space: nowrap; }
 .fdm-sub-hint { margin-left: 0.4em; }
-.fdm-flow { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem 1rem; font-size: 0.7rem; color: #94a3b8; }
+.fdm-flow { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem 1rem; font-size: 0.75rem; color: #94a3b8; }
 .fdm-flow-l, .fdm-flow-r { display: flex; flex-direction: column; gap: 0.125rem; min-width: 0; }
 .fdm-flow-r { align-items: flex-end; text-align: right; }   /* 左＝進來的錢（收入、淨賣出）；右＝出去的錢（消費、淨投入）與剩餘 */
 .fdm-seg { display: inline-flex; align-items: center; white-space: nowrap; }
 .fdm-dot.is-ring { background: transparent; border: 1px solid #94a3b8; box-sizing: border-box; }
-.fdm-segnote { margin-top: 0.125rem; font-size: 0.7rem; color: #fcd34d; }
+.fdm-segnote { margin-top: 0.125rem; font-size: 0.75rem; color: #fcd34d; }
 @media (max-width: 359px) {
-    .glass-card .fd-ct { font-size: 0.6875rem; letter-spacing: -0.01em; white-space: nowrap; }
+    .glass-card .fd-ct { font-size: 0.75rem; letter-spacing: -0.02em; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .glass-card .fd-ci { padding: 0.25rem; }
     .glass-card .fd-ci svg { width: 0.875rem; height: 0.875rem; }
     .fd-meta { flex-direction: column; gap: 0.125rem; }   /* 窄螢幕：日期、筆數、「點擊看明細」各自一行 */
-    .fdm-day { font-size: 0.68rem; }
+    .fdm-day { font-size: 0.75rem; }
     .fdm-bar { flex-wrap: wrap; row-gap: 0.5rem; }
     .fdm-bar-info, .fdm-bar-actions { flex: 1 1 100%; }
     .fdm-bar-actions > .fdm-btn, .fdm-bar-actions > .fdm-menu-wrap { flex: 1 1 0; }
@@ -330,7 +330,7 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 @media (min-width: 1200px) { .fd-btn-label { display: inline; } }
 .fd-add { display: flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border: 0; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background-color .15s ease, transform .1s ease; }
 .fd-add:active { transform: scale(.98); }
-.fd-add-e { background: #059669; } .fd-add-e:hover { background: #07be85; }
+.fd-add-e { background: #047857; } .fd-add-e:hover { background: #065f46; }
 .fd-add-k { background: #4f46e5; } .fd-add-k:hover { background: #6366f1; }
 /* 手機／平板第二行：月份切換＋最多三顆按鈕要放得進一行（ETF 頁多一顆「更新市價」） */
 @media (max-width: 1023px) {
@@ -357,8 +357,8 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 .fd-bn-item.is-active { color: rgb(var(--a)); font-weight: 600; }
 .fd-bn-item.is-active .fd-bn-pill { background: rgb(var(--a) / .16); }
 .fd-bn-plus { position: relative; justify-content: flex-end; padding-bottom: 9px; color: #e2e8f0; }
-.fd-bn-plus .fd-bn-pill { position: absolute; top: -20px; left: 50%; width: 52px; height: 52px; margin-left: -26px; border-radius: 26px; background: #059669; color: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, .55); transition: transform .28s cubic-bezier(.34, 1.45, .64, 1), background-color .15s ease; }
-.fd-bn-plus:active .fd-bn-pill { background: #10b981; }
+.fd-bn-plus .fd-bn-pill { position: absolute; top: -20px; left: 50%; width: 52px; height: 52px; margin-left: -26px; border-radius: 26px; background: #047857; color: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, .55); transition: transform .28s cubic-bezier(.34, 1.45, .64, 1), background-color .15s ease; }
+.fd-bn-plus:active .fd-bn-pill { background: #065f46; }
 .fd-bn-plus.is-open .fd-bn-pill { transform: rotate(135deg); }
 /* 扇形展開：兩顆圓形按鈕從「＋」的中心往左上、右上彈出（中心距離約 124px，各偏離垂直線約 39°） */
 .fd-fan { position: absolute; left: 50%; top: 12px; width: 0; height: 0; pointer-events: none; }
@@ -369,7 +369,7 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 .fd-fan-ic { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; color: #fff; box-shadow: 0 8px 20px rgba(0, 0, 0, .5); transition: filter .15s ease; }
 .fd-fan-item:active .fd-fan-ic { filter: brightness(1.15); }
 .fd-fan-k .fd-fan-ic { background: #4f46e5; }
-.fd-fan-e .fd-fan-ic { background: #059669; }
+.fd-fan-e .fd-fan-ic { background: #047857; }
 .fd-fan-lb { text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
 
 /* --- 工具面板：手機／平板＝底部面板；窄欄側邊欄＝左下角彈出 --- */
@@ -390,7 +390,7 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
     .fd-pop .fd-tool { height: 38px; }
     .fd-scrim, .fd-mob-only { display: none !important; }
 }
-.fd-version { position: fixed; left: 8px; bottom: 4px; z-index: 31; font-size: 10px; color: #475569; pointer-events: none; }
+.fd-version { position: fixed; left: 8px; bottom: 4px; z-index: 31; font-size: 12px; color: #64748b; pointer-events: none; }
 
 /* --- 圖表卡片：標題列／說明／圖例各列固定高度，左右兩張圖的座標軸才對得齊 --- */
 @media (min-width: 1024px) {
@@ -450,7 +450,7 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 
 /* --- V25 切換按鈕：選取塊滑動（--n＝選項數、--i＝目前第幾個，由範本帶入） --- */
 .fd-seg2 { overflow: hidden; --n: 2; --i: 0; --pad: 3px; --seg-accent: #4f46e5; position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; flex: none; padding: var(--pad); background: #0f172a; border: 1px solid #334155; border-radius: .5rem; }
-.fd-seg2::before { content: ""; position: absolute; top: var(--pad); bottom: var(--pad); left: var(--pad); width: calc((100% - 2 * var(--pad)) / var(--n)); background: var(--seg-accent); border-radius: .375rem; translate: calc(var(--i) * 100%) 0; transition: translate .45s cubic-bezier(.34, 1.3, .64, 1), opacity .2s ease; }
+.fd-seg2::before { content: ""; position: absolute; top: var(--pad); bottom: var(--pad); left: var(--pad); width: calc((100% - 2 * var(--pad)) / var(--n)); background: var(--seg-accent); border-radius: .375rem; translate: calc(var(--i) * 100%) 0; transition: translate .28s cubic-bezier(.2, .8, .2, 1), opacity .2s ease; }
 .fd-seg2.is-none::before { opacity: 0; }
 .fd-seg2 > button { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; min-height: 1.75rem; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; color: #94a3b8; background: transparent; border: 0; border-radius: .375rem; cursor: pointer; white-space: nowrap; transition: color .2s ease; }
 .fd-seg2 > button.is-on { color: #fff; }
@@ -554,6 +554,15 @@ input, select, textarea, button { font-variant-numeric: inherit; }
 /* --- V26 液態切換：移動時滑塊先往前伸長（約 1.3 倍）再收回原寬；往右滑＝右邊先伸出、往左滑＝左邊先伸出 --- */
 .fd-seg2[data-dir="r"]::before { transform-origin: left center; }
 .fd-seg2[data-dir="l"]::before { transform-origin: right center; }
-.fd-seg2.is-liquid::before { animation: fd-liquid .45s cubic-bezier(.4, 0, .2, 1); }
+.fd-seg2.is-liquid::before { animation: fd-liquid .28s cubic-bezier(.2, .8, .2, 1); }
 @keyframes fd-liquid { 0% { scale: 1 1; } 40% { scale: 1.3 1; } 100% { scale: 1 1; } }
 @media (prefers-reduced-motion: reduce) { .fd-seg2.is-liquid::before { animation: none; } }
+
+/* ===== V26.1：損益色（台股慣例：紅漲綠跌；與收入／支出分開）、白字按鈕底色（對比 ≥4.5:1） ===== */
+:root { --gain: #ff6b7a; --loss: #34d399; --flat: #94a3b8; }
+.fd-gain { color: var(--gain); }
+.fd-loss { color: var(--loss); }
+.fd-flat { color: var(--flat); }
+.fd-pl-arrow:not(:empty) { margin-right: 0.2em; }
+.fd-btn-primary { background-color: #047857; }
+.fd-btn-primary:hover:not(:disabled) { background-color: #065f46; }

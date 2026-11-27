@@ -4,6 +4,7 @@ import { cleanSymbol } from '../logic/symbol.js';
 import { sortTrades, calcRealized, calcDividends } from '../logic/trades.js';
 import { dropHiddenSelection } from '../logic/selection.js';
 import { sortByDateDesc, insertAtDayStart, putRecord } from '../logic/order.js';
+import { plClass, plArrow, plSign } from '../logic/pl.js';
 
 const { computed, nextTick, watch } = Vue;
 
@@ -346,6 +347,7 @@ export const useStocks = (ctx) => {
         totalUnrealizedPL, totalUnrealizedPLRate, realizedInfo, totalRealizedPL, realizedRowsDesc, realizedBySymbolList,
         totalDividend, stockSymbolOptions, stockYearOptions, filteredStockTrades, stockFilterActive, resetStockFilters,
         stockYearSelectOptions, stockSymbolSelectOptions, stockActionSelectOptions, isAllStocksSelected, toggleSelectAllStocks, stockExpenseFields,
-        openStockModal, saveStockTradeSubmit, confirmDeleteStockTrade, deleteEditingStock, confirmBatchDeleteStockTrades, syncLegacyStockExpenses
+        openStockModal, saveStockTradeSubmit, confirmDeleteStockTrade, deleteEditingStock, confirmBatchDeleteStockTrades, syncLegacyStockExpenses,
+        plClass, plArrow, plSign
     };
 };

@@ -53,7 +53,7 @@ export const useMotion = (ctx) => {
             if (to < 0 || isNaN(from) || to === from) return;
             box.setAttribute('data-dir', to > from ? 'r' : 'l');
             box.classList.remove('is-liquid'); void box.offsetWidth; box.classList.add('is-liquid');
-            setTimeout(() => box.classList.remove('is-liquid'), 480);
+            setTimeout(() => box.classList.remove('is-liquid'), 320);
         });
     }
     const { selectedYear, selectedMonth, includeInvest, payChartMode, catTab, payTab, cardOffset } = ctx;
