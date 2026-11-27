@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build:css": "tailwindcss -c tailwind.config.cjs -i src/tailwind.input.css -o css/tailwind.css --minify",
+    "build:theme": "node tools/gen_theme.mjs map && node tools/gen_theme.mjs tokens",
     "watch:css": "tailwindcss -c tailwind.config.cjs -i src/tailwind.input.css -o css/tailwind.css --watch",
     "test": "node --test",
     "smoke": "node tests/smoke.mjs",

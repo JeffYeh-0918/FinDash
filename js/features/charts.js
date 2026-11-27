@@ -20,16 +20,22 @@ export const useCharts = (ctx) => {
     let stockPLChartInstance = null;
     let stockAllocationChartInstance = null;
     // ---------- 圖表共用樣式：格線、刻度顏色、數值標籤（所有長條圖一致） ----------
-    const CHART_GRID = 'rgba(148,163,184,0.1)';
+    // V27：圖表顏色從 CSS 色票（--c-*／--t-*）讀取，亮色／深色主題各自正確；切換主題時由 theme 模組呼叫 renderCharts 重畫
+    const cssVar = (name) => { try { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); } catch (e) { return ''; } };
+    const tok = (name, fallback, a = 1) => { const v = cssVar(name); const t = (v ? v.split(/\s+/) : fallback.split(' ')).join(','); return a === 1 ? `rgb(${t})` : `rgba(${t},${a})`; };
+    const hexA = (name, fallback, a) => { const h = (cssVar(name) || fallback).replace('#', ''); const n = parseInt(h.length === 3 ? h.replace(/./g, '$&$&') : h, 16); return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`; };
+    const chartGrid = () => tok('--c-slate-400', '148 163 184', 0.1);
+    const chartMuted = () => tok('--t-slate-400', '148 163 184');
+    const chartStrong = () => tok('--t-slate-200', '226 232 240');
 // V26.1：台股慣例紅漲綠跌（與 css 的 --gain／--loss 同色）
-const PL_GAIN_BG = 'rgba(255, 107, 122, 0.8)', PL_LOSS_BG = 'rgba(52, 211, 153, 0.8)';
+const plGainBg = () => hexA('--gain', '#ff6b7a', 0.8), plLossBg = () => hexA('--loss', '#34d399', 0.8);
 // V26.1：圖表字型與文字色（繁中字型堆疊；沒有 Chart.defaults 的環境（測試）就略過）
 if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
     Chart.defaults.font.family = 'system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif';
-    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.color = chartMuted();
 }
-    const valueAxisStyle = (extra = {}) => ({ beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: CHART_GRID }, ...extra });
-    const categoryAxisStyle = (extra = {}) => ({ ticks: { color: '#e2e8f0' }, grid: { display: false }, ...extra });
+    const valueAxisStyle = (extra = {}) => ({ beginAtZero: true, ticks: { color: chartMuted() }, grid: { color: chartGrid() }, ...extra });
+    const categoryAxisStyle = (extra = {}) => ({ ticks: { color: chartStrong() }, grid: { display: false }, ...extra });
     const valueLabelPlugin = {
         id: 'valueLabels',
         afterDatasetsDraw(chart, args, opts) {
@@ -38,7 +44,7 @@ if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
             const horizontal = chart.options.indexAxis === 'y';
             ctx.save();
             ctx.font = '12px sans-serif';
-            ctx.fillStyle = '#e2e8f0';
+            ctx.fillStyle = chartStrong();
             ctx.textBaseline = 'middle';
             chart.data.labels.forEach((_, i) => {
                 let total = 0, visible = false;
@@ -50,7 +56,7 @@ if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
                 const clipped = horizontal && total > scales.x.max + 1e-6;   // 加一點容差：占比模式各段加總可能是 100.00000000000001
                 const text = Math.round(real).toLocaleString() + (clipped ? ' ⫽' : '');
                 if (horizontal && clipped) {
-                    ctx.save(); ctx.strokeStyle = '#1b2336'; ctx.lineWidth = 5;
+                    ctx.save(); ctx.strokeStyle = tok('--c-slate-840', '27 35 54'); ctx.lineWidth = 5;
                     [-16, -8].forEach(dx => { ctx.beginPath(); ctx.moveTo(chart.chartArea.right + dx + 4, bar.y - bar.height / 2 - 2); ctx.lineTo(chart.chartArea.right + dx - 4, bar.y + bar.height / 2 + 2); ctx.stroke(); });
                     ctx.restore();
                 }
@@ -61,11 +67,12 @@ if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
         }
     };
     const renderCharts = () => {
+        if (typeof Chart !== 'undefined' && Chart.defaults) Chart.defaults.color = chartMuted();
         const itemCtx = document.getElementById('itemChart')?.getContext('2d');
         if (itemCtx) {
             if (categoryChartInstance) categoryChartInstance.destroy();
             const items = itemChartData.value;
-            const base = items.map(x => x.isOther ? '#64748b' : catChartColor(x.category));
+            const base = items.map(x => x.isOther ? tok('--c-slate-500', '100 116 139') : catChartColor(x.category));
             categoryChartInstance = new Chart(itemCtx, {
                 type: 'bar',
                 data: {
@@ -105,7 +112,7 @@ if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
                     labels: pay.rows.map(r => r.method),
                     datasets: pay.categories.map(cat => {
                         const raw = pay.rows.map(r => r.cats[cat] || 0);
-                        return { label: cat, raw, data: share ? raw.map((v, i) => (totals[i] ? (v / totals[i]) * 100 : 0)) : raw, backgroundColor: catChartColor(cat), borderColor: 'rgba(15, 23, 42, 0.9)', borderWidth: 1, borderRadius: 3, clip: { right: 0, left: false, top: false, bottom: false } };   // 只在右側裁切：超過刻度上限的長條在圖框邊緣截斷
+                        return { label: cat, raw, data: share ? raw.map((v, i) => (totals[i] ? (v / totals[i]) * 100 : 0)) : raw, backgroundColor: catChartColor(cat), borderColor: tok('--c-slate-900', '15 23 42', 0.9), borderWidth: 1, borderRadius: 3, clip: { right: 0, left: false, top: false, bottom: false } };   // 只在右側裁切：超過刻度上限的長條在圖框邊緣截斷
                     })
                 },
                 options: {
@@ -123,7 +130,7 @@ if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
                             }
                         }
                     },
-                    scales: { x: valueAxisStyle({ stacked: true, ...(share ? { max: 100, ticks: { color: '#94a3b8', callback: (v) => v + '%' } } : (clip.max ? { max: clip.max } : {})) }), y: categoryAxisStyle({ stacked: true }) }
+                    scales: { x: valueAxisStyle({ stacked: true, ...(share ? { max: 100, ticks: { color: chartMuted(), callback: (v) => v + '%' } } : (clip.max ? { max: clip.max } : {})) }), y: categoryAxisStyle({ stacked: true }) }
                 },
                 plugins: [valueLabelPlugin]
             });
@@ -137,7 +144,7 @@ if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
                 type: 'bar',
                 data: {
                     labels: holdings.map(h => h.symbol),
-                    datasets: [{ label: '未實現損益', data: holdings.map(h => h.unrealizedPL), backgroundColor: holdings.map(h => h.unrealizedPL >= 0 ? PL_GAIN_BG : PL_LOSS_BG), borderRadius: 4 }]
+                    datasets: [{ label: '未實現損益', data: holdings.map(h => h.unrealizedPL), backgroundColor: holdings.map(h => h.unrealizedPL >= 0 ? plGainBg() : plLossBg()), borderRadius: 4 }]
                 },
                 options: {
                     animation: CHART_ANIM,
@@ -160,7 +167,7 @@ if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
                     labels: holdings.map(h => `${h.symbol} ${h.name}`),
                     datasets: [{ data: holdings.map(h => h.marketValue), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'], borderWidth: 0 }]
                 },
-                options: { animation: CHART_ANIM, responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
+                options: { animation: CHART_ANIM, responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: chartMuted() } } } }
             });
         }
     };

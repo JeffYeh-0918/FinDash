@@ -25,7 +25,7 @@ test('V26.1 損益色變數：紅漲綠跌，且範本的損益不再用 emerald
 test('V26.1 白字按鈕底色對比 ≥4.5:1：沒有 bg-emerald-600／#059669 當白字底', () => {
     assert.ok(!html.includes('bg-emerald-600'));
     assert.ok(!html.includes('#059669') && !css.includes('#059669'));
-    assert.match(css, /\.fd-btn-primary\s*\{\s*background-color:\s*#047857/);
+    assert.match(css, /\.fd-btn-primary\s*\{\s*background-color:\s*(#047857|rgb\(var\(--c-emerald-700\)\))/);   // V27：色碼已換成 token（深色等值）
 });
 test('V26.1 手機次要資訊字級不低於 12px', () => {
     const small = [];

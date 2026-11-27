@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinDash 智慧資產管理系統</title>
+    <!-- V27：主題啟動（同步執行，第一次繪製就是正確主題；偏好存在 localStorage findash.theme） -->
+    <script src="js/theme-boot.js?v=1"></script>
     
     <!-- 版本對照表：改了哪個模組，就只把它後面的 v= 數字加 1（避免瀏覽器吃到舊快取）。其他檔案不用動。 -->
     <script type="importmap">
@@ -26,7 +28,7 @@
     "./js/features/ui.js": "./js/features/ui.js?v=1",
     "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=2",
     "./js/features/modals.js": "./js/features/modals.js?v=4",
-    "./js/features/charts.js": "./js/features/charts.js?v=7",
+    "./js/features/charts.js": "./js/features/charts.js?v=8",
     "./js/features/import-export.js": "./js/features/import-export.js?v=4",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
     "./js/features/expenses.js": "./js/features/expenses.js?v=5",
@@ -36,6 +38,7 @@
     "./js/features/card-drag.js": "./js/features/card-drag.js?v=5",
     "./js/features/nav.js": "./js/features/nav.js?v=1",
     "./js/features/motion.js": "./js/features/motion.js?v=4",
+    "./js/features/theme.js": "./js/features/theme.js?v=1",
     "./js/logic/nav.js": "./js/logic/nav.js?v=1",
     "./js/logic/money.js": "./js/logic/money.js?v=2",
     "./js/logic/pl.js": "./js/logic/pl.js?v=1"
@@ -45,7 +48,8 @@
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=2" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=26">
+    <link rel="stylesheet" href="css/theme-map.css?v=1">
+    <link rel="stylesheet" href="css/app.css?v=27">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -93,6 +97,10 @@
 <div class="fd-group">常態設定</div>
 <button type="button" class="fd-tool" @click="openCategorySettings('map')"><i data-lucide="list-tree" class="w-4 h-4 text-teal-300"></i><span>類別與項目</span><span v-if="mismatchTotal" class="fd-badge">{{ mismatchTotal }}</span></button>
 <button type="button" class="fd-tool" @click="openPaymentSettings('methods')"><i data-lucide="credit-card" class="w-4 h-4 text-amber-300"></i><span>付款與帳單</span></button>
+<div class="fd-group">外觀</div>
+<div class="fd-seg2 fd-theme-seg" role="group" aria-label="外觀主題" :style="{ '--n': 3, '--i': themeIndex }" @click.stop>
+<button type="button" v-for="o in THEME_OPTIONS" :key="o.v" :class="{ 'is-on': themePref === o.v }" :aria-pressed="themePref === o.v" @click="setThemePref(o.v)">{{ o.label }}</button>
+</div>
 <div class="fd-group">資料</div>
 <button type="button" class="fd-tool" @click="exportToExcel"><i data-lucide="download" class="w-4 h-4 text-emerald-300"></i><span>匯出 Excel</span></button>
 <button type="button" class="fd-tool" @click="fileInputRef && fileInputRef.click()"><i data-lucide="upload" class="w-4 h-4 text-sky-300"></i><span>匯入檔案</span></button>
@@ -247,7 +255,7 @@
                         </div>
                         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 fd-chart-foot">
                             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-slate-400"></span>實心＝自己付</span>
-                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm border border-slate-400" style="background: rgba(148,163,184,0.35)"></span>淺色＝每月預付</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm border border-slate-400" style="background: rgb(var(--c-slate-400) / 0.35)"></span>淺色＝每月預付</span>
                         </div>
                     </div>
                     <div class="glass-card rounded-2xl p-5 flex flex-col fd-chart-card" data-fd-refresh="paymode">
@@ -410,10 +418,10 @@
                                     <span v-if="fdmIsSel('expense', item.id)" class="fdm-check"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
                                     <span class="fdm-ic" :style="catCircleStyle(item.category)"><span :key="expenseIconName(item)"><i :data-lucide="expenseIconName(item)">{{ (item.item || '?').slice(0, 1) }}</i></span></span>
                                     <div class="fdm-mid">
-                                        <div class="fdm-t1">{{ item.item }}<span v-if="item.content" style="font-weight:400;color:#cbd5e1"> · {{ item.content }}</span></div>
+                                        <div class="fdm-t1">{{ item.item }}<span v-if="item.content" style="font-weight:400;color:rgb(var(--t-slate-300))"> · {{ item.content }}</span></div>
                                         <div class="fdm-t2">{{ item.paymentMethod || '未填付款方式' }}<span v-if="item.note"> · {{ item.note }}</span></div>
                                         <div v-if="item.paidAmount > 0 || item.paymentDate || item.settlementDate || item.stockId" class="fdm-chips">
-                                            <span v-if="item.stockId" class="fdm-chip" style="color:#a5b4fc">股票連動</span>
+                                            <span v-if="item.stockId" class="fdm-chip" style="color:rgb(var(--t-indigo-300))">股票連動</span>
                                             <span v-if="item.paidAmount > 0" class="fdm-chip">已付 {{ formatCurrency(item.paidAmount) }}</span>
                                             <span v-if="item.paymentDate" class="fdm-chip fdm-chip-date">付 {{ item.paymentDate.slice(5) }}</span>
                                             <span v-if="item.settlementDate" class="fdm-chip fdm-chip-date">結 {{ item.settlementDate.slice(5) }}</span>
@@ -559,7 +567,7 @@
                     </div>
                     <div v-if="ledgerYearRows.length" class="fdm-subhead">年度合計（日曆年）與月均</div>
                     <div v-for="r in ledgerYearRows" :key="r.key" class="fdm-month" style="cursor:default">
-                        <div class="fdm-m1"><span class="fdm-mlabel" :style="r.kind === 'avg' ? 'font-weight:400;color:#cbd5e1' : ''">{{ r.label }}</span><span class="fdm-net" :class="{ 'is-neg': r.net < 0 }"><small>結餘</small>{{ signedCurrency(r.net) }}</span></div>
+                        <div class="fdm-m1"><span class="fdm-mlabel" :style="r.kind === 'avg' ? 'font-weight:400;color:rgb(var(--t-slate-300))' : ''">{{ r.label }}</span><span class="fdm-net" :class="{ 'is-neg': r.net < 0 }"><small>結餘</small>{{ signedCurrency(r.net) }}</span></div>
                         <div class="fdm-m3" style="margin-top:.375rem"><span>收入 <fd-num :value="r.income"></fd-num></span><span>消費 <fd-num :value="r.consume"></fd-num></span></div>
                         <div class="fdm-m3" style="margin-top:.125rem"><span>{{ r.invest < 0 ? '投資淨回收 ' : '投資淨投入 ' }}{{ formatCurrency(Math.abs(r.invest)) }}</span><span>投資後現金 {{ signedCurrency(r.after) }}</span></div>
                     </div>
@@ -779,9 +787,9 @@
                                     @pointerdown="rowDown('stock', t.id, $event)" @contextmenu.prevent
                                     @click="fdmTap('stock', t)" @keydown.enter.self="fdmTap('stock', t)">
                                     <span v-if="fdmIsSel('stock', t.id)" class="fdm-check"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
-                                    <span class="fdm-ic" :style="t.action === '買進' ? { background: 'rgba(129,140,248,.18)', borderColor: 'rgba(129,140,248,.4)', color: '#c7d2fe' } : { background: 'rgba(251,191,36,.16)', borderColor: 'rgba(251,191,36,.4)', color: '#fde68a' }" style="font-size:.8rem;font-weight:700">{{ t.action === '買進' ? '買' : '賣' }}</span>
+                                    <span class="fdm-ic" :style="t.action === '買進' ? { background: 'rgb(var(--c-indigo-400) / 0.18)', borderColor: 'rgb(var(--c-indigo-400) / 0.4)', color: 'rgb(var(--t-indigo-200))' } : { background: 'rgb(var(--c-amber-400) / 0.16)', borderColor: 'rgb(var(--c-amber-400) / 0.4)', color: '#fde68a' }" style="font-size:.8rem;font-weight:700">{{ t.action === '買進' ? '買' : '賣' }}</span>
                                     <div class="fdm-mid">
-                                        <div class="fdm-t1"><b style="color:#a5b4fc">{{ t.symbol }}</b> {{ t.name }}</div>
+                                        <div class="fdm-t1"><b style="color:rgb(var(--t-indigo-300))">{{ t.symbol }}</b> {{ t.name }}</div>
                                         <div class="fdm-t2">$ {{ t.price }} × {{ (t.shares || 0).toLocaleString() }} 股 · 費用 {{ ((t.fee || 0) + (t.tax || 0)).toLocaleString() }}</div>
                                     </div>
                                     <div class="fdm-amt" :class="{ 'is-in': t.action === '賣出' }">{{ t.action === '賣出' ? '+' : '-' }}{{ formatCurrency(t.totalAmount) }}</div>
@@ -818,7 +826,7 @@
                                     @click="openStockModal(trade)" tabindex="0" @keydown.enter.self="openStockModal(trade)"
                                 >
                                     <td class="py-2 px-2 text-center" @click.stop>
-                                        <button type="button" class="fdd-ic" :class="{ 'is-sel': fdmIsSel('stock', trade.id) }" :style="trade.action === '買進' ? { background: 'rgba(129,140,248,.18)', borderColor: 'rgba(129,140,248,.4)', color: '#c7d2fe' } : { background: 'rgba(251,191,36,.16)', borderColor: 'rgba(251,191,36,.4)', color: '#fde68a' }" :aria-pressed="fdmIsSel('stock', trade.id)" :aria-label="'選取：' + (trade.symbol || '')" title="點一下選取／取消" @click.stop="fdmToggleSel('stock', trade.id)">
+                                        <button type="button" class="fdd-ic" :class="{ 'is-sel': fdmIsSel('stock', trade.id) }" :style="trade.action === '買進' ? { background: 'rgb(var(--c-indigo-400) / 0.18)', borderColor: 'rgb(var(--c-indigo-400) / 0.4)', color: 'rgb(var(--t-indigo-200))' } : { background: 'rgb(var(--c-amber-400) / 0.16)', borderColor: 'rgb(var(--c-amber-400) / 0.4)', color: '#fde68a' }" :aria-pressed="fdmIsSel('stock', trade.id)" :aria-label="'選取：' + (trade.symbol || '')" title="點一下選取／取消" @click.stop="fdmToggleSel('stock', trade.id)">
                                             <span class="fdd-ic-icon" style="font-size:.8rem;font-weight:700">{{ trade.action === '買進' ? '買' : '賣' }}</span>
                                             <span class="fdd-ic-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
                                         </button>
@@ -893,6 +901,10 @@
 <div class="fd-group">常態設定</div>
 <button type="button" class="fd-tool" @click="openCategorySettings('map')"><i data-lucide="list-tree" class="w-4 h-4 text-teal-300"></i><span>類別與項目</span><span v-if="mismatchTotal" class="fd-badge">{{ mismatchTotal }}</span></button>
 <button type="button" class="fd-tool" @click="openPaymentSettings('methods')"><i data-lucide="credit-card" class="w-4 h-4 text-amber-300"></i><span>付款與帳單</span></button>
+<div class="fd-group">外觀</div>
+<div class="fd-seg2 fd-theme-seg" role="group" aria-label="外觀主題" :style="{ '--n': 3, '--i': themeIndex }" @click.stop>
+<button type="button" v-for="o in THEME_OPTIONS" :key="o.v" :class="{ 'is-on': themePref === o.v }" :aria-pressed="themePref === o.v" @click="setThemePref(o.v)">{{ o.label }}</button>
+</div>
 <div class="fd-group">資料</div>
 <button type="button" class="fd-tool" @click="exportToExcel"><i data-lucide="download" class="w-4 h-4 text-emerald-300"></i><span>匯出 Excel</span></button>
 <button type="button" class="fd-tool" @click="fileInputRef && fileInputRef.click()"><i data-lucide="upload" class="w-4 h-4 text-sky-300"></i><span>匯入檔案</span></button>
@@ -907,7 +919,7 @@
 
         <!-- 手機版：長按選取後，畫面底部的批次操作列 -->
         <div v-if="activeTab === 'expenses' && fdmSelecting('expense')" class="fdm-bar" style="--fdm-accent:#34d399;--fdm-accent-bg:rgba(52,211,153,.15)" role="region" aria-label="批次操作">
-            <div class="fdm-bar-info"><b>已選 {{ selectedExpenseStats.n }} 筆</b><span v-if="selectedExpenseStats.exp" style="color:#fb7185">支出 -{{ formatCurrency(selectedExpenseStats.exp) }}</span><span v-if="selectedExpenseStats.exp && selectedExpenseStats.inc"> ・ </span><span v-if="selectedExpenseStats.inc" style="color:#34d399">收入 +{{ formatCurrency(selectedExpenseStats.inc) }}</span><span v-if="!selectedExpenseStats.n">點卡片來選取</span></div>
+            <div class="fdm-bar-info"><b>已選 {{ selectedExpenseStats.n }} 筆</b><span v-if="selectedExpenseStats.exp" style="color:rgb(var(--t-rose-400))">支出 -{{ formatCurrency(selectedExpenseStats.exp) }}</span><span v-if="selectedExpenseStats.exp && selectedExpenseStats.inc"> ・ </span><span v-if="selectedExpenseStats.inc" style="color:rgb(var(--t-emerald-400))">收入 +{{ formatCurrency(selectedExpenseStats.inc) }}</span><span v-if="!selectedExpenseStats.n">點卡片來選取</span></div>
             <div class="fdm-bar-actions">
                 <button type="button" class="fdm-btn" @click="fdmToggleAll('expense')">{{ fdmAllSelected('expense') ? '取消全選' : '全選' }}</button>
                 <button type="button" class="fdm-btn" @click="fdmDone('expense')">完成</button>
@@ -972,7 +984,7 @@
                         <div v-for="r in itemDetail.rows" :key="r.e.id" class="fdm-item" style="cursor:default">
                             <span class="fdm-ic" :style="catCircleStyle(r.e.category)"><span :key="expenseIconName(r.e)"><i :data-lucide="expenseIconName(r.e)">{{ (r.e.item || '?').slice(0, 1) }}</i></span></span>
                             <div class="fdm-mid">
-                                <div class="fdm-t1">{{ r.e.item }}<span v-if="r.e.content" style="font-weight:400;color:#cbd5e1"> · {{ r.e.content }}</span></div>
+                                <div class="fdm-t1">{{ r.e.item }}<span v-if="r.e.content" style="font-weight:400;color:rgb(var(--t-slate-300))"> · {{ r.e.content }}</span></div>
                                 <div class="fdm-t2">{{ r.e.date }} · {{ r.e.category }}<span v-if="r.e.note"> · {{ r.e.note }}</span></div>
                                 <div class="fdm-chips">
                                     <span class="fdm-chip">{{ r.e.paymentMethod || '未填' }}</span>
@@ -1209,7 +1221,7 @@
                         <div v-for="r in cardDetail.rows" :key="r.id" class="fdm-item" style="cursor:default">
                             <span class="fdm-ic" :style="catCircleStyle(r.category)"><span :key="expenseIconName(r)"><i :data-lucide="expenseIconName(r)">{{ (r.item || '?').slice(0, 1) }}</i></span></span>
                             <div class="fdm-mid">
-                                <div class="fdm-t1">{{ r.item }}<span v-if="r.content" style="font-weight:400;color:#cbd5e1"> · {{ r.content }}</span></div>
+                                <div class="fdm-t1">{{ r.item }}<span v-if="r.content" style="font-weight:400;color:rgb(var(--t-slate-300))"> · {{ r.content }}</span></div>
                                 <div class="fdm-t2">{{ r.date }}<span v-if="r.note"> · {{ r.note }}</span></div>
                                 <div class="fdm-chips"><span class="fdm-chip">付 {{ r.paymentDate ? r.paymentDate.slice(5) : '未填' }}</span><span class="fdm-chip">結 {{ r.settlementDate ? r.settlementDate.slice(5) : '未填' }}</span></div>
                             </div>
@@ -1673,6 +1685,7 @@
         import { useCardDrag } from './js/features/card-drag.js';
         import { useNav } from './js/features/nav.js';
         import { useMotion, FdNum } from './js/features/motion.js';
+        import { useTheme } from './js/features/theme.js';
         import { renameInSettings as renameInSettingsOn, removeFromSettings as removeFromSettingsOn } from './js/logic/settings-ops.js';
 
         const { createApp, ref, computed, onMounted, onUpdated, watch, nextTick, provide, inject } = Vue;
@@ -1733,6 +1746,7 @@
         Object.assign(ctx, useNav(ctx));
         Object.assign(ctx, useCardDrag(ctx));
         Object.assign(ctx, useMotion(ctx));
+        Object.assign(ctx, useTheme(ctx));
                 Object.assign(ctx, { COLOR_CHOICES });   // 範本用到的 import 進來的常數
 
                 const {
@@ -1773,7 +1787,7 @@
                 });
 
                 // 範本（HTML）會用到的成員。範本新增用到的名稱時，要加在這裡；npm run check 會檢查每一個都存在。
-                const TEMPLATE_MEMBERS = ['plClass', 'plArrow', 'plSign', 'deleteEditingExpense', 'deleteEditingStock', 
+                const TEMPLATE_MEMBERS = ['THEME_OPTIONS', 'themePref', 'themeIndex', 'setThemePref', 'plClass', 'plArrow', 'plSign', 'deleteEditingExpense', 'deleteEditingStock', 
             // V24 導覽
             'navWide', 'toggleNavPref', 'activeTabIndex', 'activeTabInfo', 'setTab',
                 'COLOR_CHOICES', 'activeDropdown', 'activeTab', 'addFundingRule', 'allKnownItems',
@@ -1830,7 +1844,7 @@
     <div id="app-version" class="fd-version select-none"></div>
     <script>
         (function () {
-            var APP = 'V26.1';
+            var APP = 'V27.1';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');
