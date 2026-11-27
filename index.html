@@ -21,22 +21,23 @@
     "./js/data/convert.js": "./js/data/convert.js?v=1",
     "./js/data/api.js": "./js/data/api.js?v=1",
     "./js/data/sync.js": "./js/data/sync.js?v=1",
-    "./js/features/state.js": "./js/features/state.js?v=2",
+    "./js/features/state.js": "./js/features/state.js?v=3",
     "./js/features/options.js": "./js/features/options.js?v=2",
     "./js/features/ui.js": "./js/features/ui.js?v=1",
     "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=2",
-    "./js/features/modals.js": "./js/features/modals.js?v=3",
-    "./js/features/charts.js": "./js/features/charts.js?v=5",
+    "./js/features/modals.js": "./js/features/modals.js?v=4",
+    "./js/features/charts.js": "./js/features/charts.js?v=6",
     "./js/features/import-export.js": "./js/features/import-export.js?v=4",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
     "./js/features/expenses.js": "./js/features/expenses.js?v=5",
     "./js/features/stocks.js": "./js/features/stocks.js?v=5",
-    "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=4",
+    "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=5",
     "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=5",
     "./js/features/card-drag.js": "./js/features/card-drag.js?v=5",
     "./js/features/nav.js": "./js/features/nav.js?v=1",
-    "./js/features/motion.js": "./js/features/motion.js?v=3",
+    "./js/features/motion.js": "./js/features/motion.js?v=4",
     "./js/logic/nav.js": "./js/logic/nav.js?v=1",
+    "./js/logic/money.js": "./js/logic/money.js?v=1",
     "./js/logic/pl.js": "./js/logic/pl.js?v=1"
   }
 }
@@ -44,7 +45,7 @@
 
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=2" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
-    <link rel="stylesheet" href="css/app.css?v=24">
+    <link rel="stylesheet" href="css/app.css?v=25">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -158,7 +159,7 @@
                         <div class="fd-ci p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg text-emerald-400 shrink-0"><i data-lucide="arrow-down-left" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
                     </div>
                     <div class="mt-2 sm:mt-3">
-                        <div class="text-lg sm:text-2xl font-bold text-emerald-400 whitespace-nowrap"><fd-num :value="monthlyTotalIncome"></fd-num></div>
+                        <div class="text-lg sm:text-2xl font-bold text-emerald-400 whitespace-nowrap"><fd-num :value="monthlyTotalIncome" compact></fd-num></div>
                         <p class="text-xs sm:text-xs text-slate-400 mt-1">{{ selectedYear }} / {{ selectedMonth }} 月計</p>
                     </div>
                 </div>
@@ -168,12 +169,12 @@
                         <div class="fd-ci p-1.5 sm:p-2 bg-rose-500/10 rounded-lg text-rose-400 shrink-0"><i data-lucide="arrow-up-right" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
                     </div>
                     <div class="mt-2 sm:mt-3">
-                        <div class="text-lg sm:text-2xl font-bold text-rose-400 whitespace-nowrap"><fd-num :value="monthlyTotalExpense"></fd-num></div>
+                        <div class="text-lg sm:text-2xl font-bold text-rose-400 whitespace-nowrap"><fd-num :value="monthlyTotalExpense" compact></fd-num></div>
                         <p class="fd-kv text-xs sm:text-xs text-slate-400 mt-1">
                             <span>淨儲蓄率</span>
                             <span class="text-slate-200 font-bold">{{ monthlySavingsRate }}%</span>
                         </p>
-                        <p class="fd-kv text-xs sm:text-xs text-slate-400 mt-0.5"><span>{{ monthlyInvestNet < 0 ? '投資淨回收' : '投資淨投入' }}</span><span :class="monthlyInvestNet < 0 ? 'text-emerald-400' : 'text-slate-300'"><fd-num :value="Math.abs(monthlyInvestNet)"></fd-num></span></p>
+                        <p class="fd-kv text-xs sm:text-xs text-slate-400 mt-0.5"><span>{{ monthlyInvestNet < 0 ? '投資淨回收' : '投資淨投入' }}</span><span :class="monthlyInvestNet < 0 ? 'text-emerald-400' : 'text-slate-300'"><fd-num :value="Math.abs(monthlyInvestNet)" compact></fd-num></span></p>
                     </div>
                 </div>
                 <div class="glass-card rounded-2xl p-3 sm:p-5">
@@ -182,11 +183,11 @@
                         <div class="fd-ci p-1.5 sm:p-2 bg-indigo-500/10 rounded-lg text-indigo-400 shrink-0"><i data-lucide="pie-chart" class="w-4 h-4 sm:w-5 sm:h-5"></i></div>
                     </div>
                     <div class="mt-2 sm:mt-3">
-                        <div class="text-lg sm:text-2xl font-bold text-slate-100 whitespace-nowrap"><fd-num :value="totalInvestmentMarketValue"></fd-num></div>
+                        <div class="text-lg sm:text-2xl font-bold text-slate-100 whitespace-nowrap"><fd-num :value="totalInvestmentMarketValue" compact></fd-num></div>
                         <p class="text-xs sm:text-xs text-slate-400 mt-1 flex flex-col sm:flex-row sm:justify-between">
                             <span>未實現損益</span>
                             <span :class="plClass(totalUnrealizedPL)" class="font-medium">
-                                <span class="fd-pl-arrow" aria-hidden="true">{{ plArrow(totalUnrealizedPL) }}</span>{{ plSign(totalUnrealizedPL) }}<fd-num :value="totalUnrealizedPL"></fd-num> ({{ plSign(totalUnrealizedPL) }}{{ totalUnrealizedPLRate }}%)
+                                <span class="fd-pl-arrow" aria-hidden="true">{{ plArrow(totalUnrealizedPL) }}</span>{{ plSign(totalUnrealizedPL) }}<fd-num :value="totalUnrealizedPL" compact></fd-num> ({{ plSign(totalUnrealizedPL) }}{{ totalUnrealizedPLRate }}%)
                             </span>
                         </p>
                     </div>
@@ -198,10 +199,10 @@
                     </div>
                     <div class="mt-2 sm:mt-3">
                         <div class="text-lg sm:text-2xl font-bold whitespace-nowrap" :class="plClass(totalRealizedPL)">
-                            <span class="fd-pl-arrow" aria-hidden="true">{{ plArrow(totalRealizedPL) }}</span>{{ plSign(totalRealizedPL) }}<fd-num :value="totalRealizedPL"></fd-num>
+                            <span class="fd-pl-arrow" aria-hidden="true">{{ plArrow(totalRealizedPL) }}</span>{{ plSign(totalRealizedPL) }}<fd-num :value="totalRealizedPL" compact :compact-from="100000"></fd-num>
                         </div>
                         <p class="hidden sm:block text-xs text-slate-400 mt-1">賣出後落袋的損益（移動平均成本，已扣手續費與稅）</p>
-                        <p class="text-xs sm:text-xs text-slate-400 mt-1 sm:mt-0.5">累積股息 <fd-num :value="totalDividend"></fd-num></p>
+                        <p class="text-xs sm:text-xs text-slate-400 mt-1 sm:mt-0.5">累積股息 <fd-num :value="totalDividend" compact></fd-num></p>
                         <p class="text-xs sm:text-xs text-amber-400/80 mt-0.5">點擊查看明細</p>
                     </div>
                 </div>
@@ -474,7 +475,7 @@
                                         <div class="font-bold" :class="item.type === '收入' ? 'text-emerald-400' : 'text-rose-400'">
                                             {{ item.type === '收入' ? '+' : '-' }}{{ formatCurrency(item.amount) }}
                                         </div>
-                                        <div class="text-xs text-slate-400">已付: NT$ {{ (item.paidAmount || 0).toLocaleString() }}</div>
+                                        <div class="text-xs text-slate-400">已付: {{ (item.paidAmount || 0).toLocaleString() }}</div>
                                     </td>
                                     <td class="py-3 px-3 text-slate-400 max-w-[150px] truncate text-xs">{{ item.note || '-' }}</td>
                                     <td class="py-3 px-3 whitespace-nowrap text-xs text-slate-300">{{ item.paymentMethod }}</td>
@@ -675,7 +676,7 @@
 <span class="fd-hold-tag text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">{{ holding.symbol }}</span>
 <span class="fd-hold-live text-xs text-slate-400">現價<span class="w-1.5 h-1.5 rounded-full" :class="holding.isLive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span></span>
 <h4 class="fd-hold-name text-lg font-bold text-slate-100">{{ holding.name }}</h4>
-<span class="fd-hold-price text-lg font-semibold" :class="holding.isStale ? 'text-slate-400' : 'text-slate-200'">NT$ {{ holding.currentPrice.toFixed(2) }}</span>
+<span class="fd-hold-price text-lg font-semibold" :class="holding.isStale ? 'text-slate-400' : 'text-slate-200'">{{ holding.currentPrice.toFixed(2) }}</span>
 </div>
 <p class="text-xs text-right fd-hold-src" :class="holding.isStale ? 'text-amber-400' : 'text-slate-400'">{{ holding.isStale ? '舊價 · ' : '' }}{{ holding.priceSource }}</p>
                             <div class="fd-hold-grid grid grid-cols-2 text-xs bg-slate-900/50 p-3 rounded-xl border border-slate-800">
@@ -685,7 +686,7 @@
                                 </div>
                                 <div>
                                     <span class="text-slate-400 block">平均成本</span>
-                                    <span class="fd-val font-medium text-slate-200">NT$ {{ holding.avgCost.toFixed(2) }}</span>
+                                    <span class="fd-val font-medium text-slate-200">{{ holding.avgCost.toFixed(2) }}</span>
                                 </div>
                                 <div>
                                     <span class="text-slate-400 block">投入總成本</span>
@@ -781,7 +782,7 @@
                                     <span class="fdm-ic" :style="t.action === '買進' ? { background: 'rgba(129,140,248,.18)', borderColor: 'rgba(129,140,248,.4)', color: '#c7d2fe' } : { background: 'rgba(251,191,36,.16)', borderColor: 'rgba(251,191,36,.4)', color: '#fde68a' }" style="font-size:.8rem;font-weight:700">{{ t.action === '買進' ? '買' : '賣' }}</span>
                                     <div class="fdm-mid">
                                         <div class="fdm-t1"><b style="color:#a5b4fc">{{ t.symbol }}</b> {{ t.name }}</div>
-                                        <div class="fdm-t2">NT$ {{ t.price }} × {{ (t.shares || 0).toLocaleString() }} 股 · 費用 {{ ((t.fee || 0) + (t.tax || 0)).toLocaleString() }}</div>
+                                        <div class="fdm-t2">{{ t.price }} × {{ (t.shares || 0).toLocaleString() }} 股 · 費用 {{ ((t.fee || 0) + (t.tax || 0)).toLocaleString() }}</div>
                                     </div>
                                     <div class="fdm-amt" :class="{ 'is-in': t.action === '賣出' }">{{ t.action === '賣出' ? '+' : '-' }}{{ formatCurrency(t.totalAmount) }}</div>
                                 </div>
@@ -831,10 +832,10 @@
                                     <td class="py-3 px-4 font-medium text-slate-100 whitespace-nowrap">
                                         <span class="font-bold text-indigo-400 mr-1">{{ trade.symbol }}</span> {{ trade.name }}
                                     </td>
-                                    <td class="py-3 px-4 text-right font-medium text-slate-200">NT$ {{ trade.price }}</td>
+                                    <td class="py-3 px-4 text-right font-medium text-slate-200">{{ trade.price }}</td>
                                     <td class="py-3 px-4 text-right text-slate-300">{{ (trade.shares || 0).toLocaleString() }} 股</td>
                                     <td class="py-3 px-4 text-right text-slate-400 text-xs">
-                                        NT$ {{ ((trade.fee || 0) + (trade.tax || 0)).toLocaleString() }}
+                                        {{ ((trade.fee || 0) + (trade.tax || 0)).toLocaleString() }}
                                     </td>
                                     <td class="py-3 px-4 font-bold text-right text-slate-100 whitespace-nowrap">{{ formatCurrency(trade.totalAmount) }}</td>
                                     <td class="py-3 px-4 text-center" @click.stop>
@@ -1457,13 +1458,12 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-slate-400 mb-1">金額 (NT$)</label>
+                            <label class="block text-slate-400 mb-1">金額</label>
                             <input v-model.number="expenseForm.amount" type="number" inputmode="numeric" min="0" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                         <div>
-                            <label class="block text-slate-400 mb-1">已付金額 (NT$)</label>
+                            <div class="fd-lbl-row"><label class="text-slate-400">已付金額</label><span class="relative" @click.stop><button type="button" class="fd-info-btn" aria-label="已付金額說明" :aria-expanded="activeDropdown === 'paidHint'" @click="toggleDropdown('paidHint')"><i data-lucide="info" class="w-4 h-4"></i></button><div v-if="activeDropdown === 'paidHint'" class="fd-info-pop" role="note">預付類付款方式使用時，記在這裡</div></span></div>
                             <input v-model.number="expenseForm.paidAmount" type="number" inputmode="numeric" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
-<p class="text-xs text-slate-400 mt-1">預付類付款方式使用時，記在這裡</p>
                         </div>
                     </div>
                     <div>
@@ -1533,7 +1533,7 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-slate-400 mb-1">成交單價 (NT$)</label>
+                            <label class="block text-slate-400 mb-1">成交單價</label>
                             <input v-model.number="stockForm.price" type="number" inputmode="decimal" step="0.01" min="0.1" required placeholder="165.0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                         <div>
@@ -1543,18 +1543,17 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-slate-400 mb-1">手續費 (NT$)</label>
+                            <label class="block text-slate-400 mb-1">手續費</label>
                             <input v-model.number="stockForm.fee" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                         <div>
-                            <label class="block text-slate-400 mb-1">交易稅 (NT$)</label>
+                            <label class="block text-slate-400 mb-1">交易稅</label>
                             <input v-model.number="stockForm.tax" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                     </div>
                     <div>
                         <label class="block text-slate-400 mb-1">付款方式／帳戶（會寫入自動產生的收支）</label>
                         <select v-model="stockForm.payMethod" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
-                            <option value="">（不指定）</option>
                             <option v-for="pm in paymentMethodsList" :key="pm" :value="pm">{{ pm }}</option>
                         </select>
                         <p class="text-xs text-slate-400 mt-1">儲存後會自動新增一筆收支：{{ stockForm.action === '賣出' ? '收入／ETF賣出' : '支出／ETF投資' }}，類別「投資儲蓄」。</p>
@@ -1562,7 +1561,7 @@
                     <div class="bg-indigo-950/60 border border-indigo-800/80 p-3 rounded-xl flex justify-between items-center">
                         <span class="text-indigo-300">估計總金額 (自動計算):</span>
                         <span class="text-base font-bold text-slate-100">
-                            NT$ {{ calculatedStockTotal.toLocaleString() }}
+                            {{ calculatedStockTotal.toLocaleString() }}
                         </span>
                     </div>
                     <div class="pt-3 flex items-center justify-end space-x-2 border-t border-slate-800">

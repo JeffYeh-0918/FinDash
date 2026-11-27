@@ -1,13 +1,14 @@
+import { fmtMoney, fmtCompact, COMPACT_FROM } from '../logic/money.js';
 // FinDash 功能模組：動態回饋（內容更新時重播過渡、大數字滾動）
 // 只動 opacity／transform；系統設為「減少動態」時，數字直接換成新值、位移改成單純淡入（CSS 處理）。
-const { ref, watch, nextTick, onBeforeUnmount } = Vue;
+const { ref, computed, watch, nextTick, onBeforeUnmount } = Vue;
 
 const prefersReduce = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-export const fmtNTD = (v) => 'NT$ ' + Math.round(v || 0).toLocaleString('zh-TW');
+export const fmtNTD = (v) => fmtMoney(v);
 
 // <fd-num :value="數字"></fd-num>：數字變動時，從舊值滾到新值（約 0.4 秒）；格式與 formatCurrency 相同
 export const FdNum = {
-    props: { value: { type: Number, default: 0 } },
+    props: { value: { type: Number, default: 0 }, compact: { type: Boolean, default: false }, compactFrom: { type: Number, default: COMPACT_FROM } },
     setup(props) {
         const shown = ref(props.value || 0);
         let raf = 0;
@@ -25,9 +26,11 @@ export const FdNum = {
             raf = requestAnimationFrame(step);
         });
         if (onBeforeUnmount) onBeforeUnmount(() => { if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(raf); });
-        return { shown, fmtNTD };
+        const isBig = computed(() => Math.abs(Math.round(shown.value || 0)) >= props.compactFrom);
+        return { shown, fmtNTD, fmtCompact, isBig };
     },
-    template: '<span>{{ fmtNTD(shown) }}</span>'
+    // compact：窄螢幕（<480px）且 ≥100 萬時改顯示萬／億（兩種都畫出來，用 CSS 擇一，捲動動畫不受影響）
+    template: '<span v-if="compact && isBig"><span class="fd-amt-full">{{ fmtNTD(shown) }}</span><span class="fd-amt-short">{{ fmtCompact(shown, compactFrom) }}</span></span><span v-else>{{ fmtNTD(shown) }}</span>'
 };
 
 const ANIM = ['fd-tab-in', 'fd-slide-l', 'fd-slide-r'];

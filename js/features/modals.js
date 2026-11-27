@@ -52,6 +52,7 @@ export const useModals = (ctx) => {
         if (ev.key === 'Escape') {
             const top = topModalEl();
             if (dialog.value) { ev.preventDefault(); cancelDialog(); return; }
+            if (ctx.activeDropdown && ctx.activeDropdown.value === 'paidHint') { ev.preventDefault(); closeAllDropdowns(); return; }   // 先關說明氣泡，不要連整個視窗一起關
             if (top && top.dataset.modal) { ev.preventDefault(); requestClose(top.dataset.modal); return; }
             closeAllDropdowns();
         } else if (ev.key === 'Tab') {
@@ -66,6 +67,7 @@ export const useModals = (ctx) => {
     };
     // 彈窗開啟時：補上對話框標記、把焦點移進去；關閉後把焦點還給原本的按鈕
     let currentModalEl = null, lastFocusEl = null;
+    const isTouch = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     // 背景 inert：每次都「依畫面上實際有沒有彈窗」重新計算，不靠上一次記住的狀態，所以不會卡死。
     // 彈窗開著＝背景（導覽、內容、其他彈窗）inert；沒有彈窗＝一律清掉。
     const MARK = 'data-fd-inert';
@@ -101,8 +103,15 @@ export const useModals = (ctx) => {
         if (top && top !== currentModalEl) {
             if (!currentModalEl) lastFocusEl = document.activeElement;
             currentModalEl = top;
-            const target = top.querySelector('[data-autofocus]') || top.querySelector('input:not([type=hidden]):not([disabled]):not([type=checkbox]),select,textarea') || top;
-            try { target.focus({ preventScroll: true }); } catch (e) {}
+            if (!top.hasAttribute('data-fd-focused')) {
+                top.setAttribute('data-fd-focused', '');   // 這個彈窗（這一次開啟）已處理過焦點，之後的畫面更新不再搬動
+                const ae = document.activeElement, inside = !!(ae && ae !== top && top.contains(ae));
+                if (!inside) {
+                    const explicit = top.querySelector('[data-autofocus]');
+                    const first = isTouch() ? null : top.querySelector('input:not([type=hidden]):not([disabled]):not([type=checkbox]),select,textarea');
+                    try { (explicit || first || top).focus({ preventScroll: true }); } catch (e) {}
+                }
+            }
         } else if (!top && currentModalEl) {
             currentModalEl = null;
             if (lastFocusEl && document.contains(lastFocusEl)) { try { lastFocusEl.focus({ preventScroll: true }); } catch (e) {} }

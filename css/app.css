@@ -34,7 +34,8 @@ body {
     background: rgba(100, 116, 139, 0.7);
 }
 [data-modal]:focus, [data-dialog]:focus { outline: none; }
-button:focus-visible, a:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+[data-modal]:focus-visible, [data-dialog]:focus-visible { outline: none; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -175,7 +176,7 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 .fd-catchip-sq { width: 0.625rem; height: 0.625rem; border-radius: 2px; background: var(--chip); border: 1px solid var(--chip); flex: none; }
 .fd-catchip.is-off { color: #64748b; border-color: rgba(51, 65, 85, 0.9); text-decoration: line-through; }
 .fd-catchip.is-off .fd-catchip-sq { background: transparent; }
-.fd-catchip:focus-visible, .fd-catchip-reset:focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+.fd-catchip:focus-visible, .fd-catchip-reset:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .fd-catchip-reset { font-size: 0.75rem; color: #34d399; background: transparent; border: 0; padding: 0.25rem 0.25rem; cursor: pointer; }
 .fd-catchip-reset:hover { text-decoration: underline; }
 
@@ -559,10 +560,19 @@ input, select, textarea, button { font-variant-numeric: inherit; }
 @media (prefers-reduced-motion: reduce) { .fd-seg2.is-liquid::before { animation: none; } }
 
 /* ===== V26.1：損益色（台股慣例：紅漲綠跌；與收入／支出分開）、白字按鈕底色（對比 ≥4.5:1） ===== */
-:root { --gain: #ff6b7a; --loss: #34d399; --flat: #94a3b8; }
+:root { --gain: #ff6b7a; --loss: #34d399; --flat: #94a3b8; --focus: #34d399; }
 .fd-gain { color: var(--gain); }
 .fd-loss { color: var(--loss); }
 .fd-flat { color: var(--flat); }
 .fd-pl-arrow:not(:empty) { margin-right: 0.2em; }
 .fd-btn-primary { background-color: #047857; }
 .fd-btn-primary:hover:not(:disabled) { background-color: #065f46; }
+
+/* ===== V26.2：窄螢幕大卡片的金額縮寫（100 萬以上顯示萬／億）、欄位說明 ⓘ 氣泡 ===== */
+.fd-amt-short { display: none; }
+@media (max-width: 479px) { .fd-amt-full { display: none; } .fd-amt-short { display: inline; } }
+.fd-lbl-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem; }
+.fd-info-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 0; border: 0; background: transparent; color: #94a3b8; cursor: pointer; }
+.fd-info-btn::after { content: ""; position: absolute; inset: -10px; }
+.fd-info-btn:hover { color: var(--focus); }
+.fd-info-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; width: max-content; max-width: min(220px, 60vw); padding: 8px 10px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: #e2e8f0; font-size: 12px; line-height: 1.5; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); }
