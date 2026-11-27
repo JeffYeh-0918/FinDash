@@ -1462,7 +1462,7 @@
                             <input v-model.number="expenseForm.amount" type="number" inputmode="numeric" min="0" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                         <div>
-                            <div class="fd-lbl-row"><label class="text-slate-400">已付金額</label><span class="relative" @click.stop><button type="button" class="fd-info-btn" aria-label="已付金額說明" :aria-expanded="activeDropdown === 'paidHint'" @click="toggleDropdown('paidHint')"><i data-lucide="info" class="w-4 h-4"></i></button><div v-if="activeDropdown === 'paidHint'" class="fd-info-pop" role="note">預付類付款方式使用時，記在這裡</div></span></div>
+                            <div class="fd-lbl-row"><label class="text-slate-400">已付金額</label><span class="relative" @click.stop><button type="button" class="fd-info-btn" aria-label="已付金額說明" :aria-expanded="activeDropdown === 'paidHint'" @click="toggleDropdown('paidHint')"><i data-lucide="info" class="w-4 h-4"></i></button><div v-if="activeDropdown === 'paidHint'" class="fd-info-pop" role="note">供預付類付款方式使用</div></span></div>
                             <input v-model.number="expenseForm.paidAmount" type="number" inputmode="numeric" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200">
                         </div>
                     </div>
