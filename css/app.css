@@ -10,12 +10,12 @@
     --c-sky-700: 3 105 161; --c-slate-200: 226 232 240; --c-slate-400: 148 163 184; --c-slate-500: 100 116 139; --c-slate-600: 71 85 105;
     --c-slate-700: 51 65 85; --c-slate-800: 30 41 59; --c-slate-825: 24 35 58; --c-slate-840: 27 35 54; --c-slate-850: 19 30 50;
     --c-slate-875: 19 28 46; --c-slate-900: 15 23 42; --c-slate-950: 2 6 23; --c-slate-975: 11 18 32; --c-teal-400: 45 212 191;
-    --t-amber-300: 252 211 77; --t-amber-400: 251 191 36; --t-emerald-200: 167 243 208; --t-emerald-300: 110 231 183; --t-emerald-400: 52 211 153;
-    --t-emerald-500: 16 185 129; --t-emerald-950: 2 44 34; --t-hoverfg: 255 255 255; --t-indigo-200: 199 210 254; --t-indigo-300: 165 180 252;
-    --t-indigo-400: 129 140 248; --t-indigo-500: 99 102 241; --t-rose-200: 254 205 211; --t-rose-300: 253 164 175; --t-rose-400: 251 113 133;
-    --t-sky-200: 186 230 253; --t-sky-300: 125 211 252; --t-sky-400: 56 189 248; --t-slate-100: 241 245 249; --t-slate-200: 226 232 240;
-    --t-slate-300: 203 213 225; --t-slate-400: 148 163 184; --t-slate-50: 248 250 252; --t-slate-500: 100 116 139; --t-slate-600: 71 85 105;
-    --t-slate-900: 15 23 42; --t-slate-950: 2 6 23; --t-teal-300: 94 234 212; --t-teal-400: 45 212 191;
+    --t-amber-200: 253 230 138; --t-amber-300: 252 211 77; --t-amber-400: 251 191 36; --t-emerald-200: 167 243 208; --t-emerald-300: 110 231 183;
+    --t-emerald-400: 52 211 153; --t-emerald-500: 16 185 129; --t-emerald-950: 2 44 34; --t-hoverfg: 255 255 255; --t-indigo-200: 199 210 254;
+    --t-indigo-300: 165 180 252; --t-indigo-400: 129 140 248; --t-indigo-500: 99 102 241; --t-rose-200: 254 205 211; --t-rose-300: 253 164 175;
+    --t-rose-400: 251 113 133; --t-sky-200: 186 230 253; --t-sky-300: 125 211 252; --t-sky-400: 56 189 248; --t-slate-100: 241 245 249;
+    --t-slate-200: 226 232 240; --t-slate-300: 203 213 225; --t-slate-400: 148 163 184; --t-slate-50: 248 250 252; --t-slate-500: 100 116 139;
+    --t-slate-600: 71 85 105; --t-slate-900: 15 23 42; --t-slate-950: 2 6 23; --t-teal-300: 94 234 212; --t-teal-400: 45 212 191;
     color-scheme: dark;
     /* 語意 token（新樣式請用這些，不要再寫色碼） */
     --bg: rgb(var(--c-slate-900)); --surface: rgb(var(--c-slate-850)); --surface-2: rgb(var(--c-slate-800)); --border: rgb(var(--c-slate-700));
@@ -24,18 +24,21 @@
     --warn: rgb(var(--t-amber-400));
 }
 :root[data-theme="light"] {
-    --c-fg: 42 31 20; --c-indigo-800: 165 180 252; --c-indigo-950: 224 231 255; --c-slate-200: 61 49 37; --c-slate-400: 125 107 85;
-    --c-slate-500: 154 136 112; --c-slate-600: 184 166 136; --c-slate-700: 220 203 171; --c-slate-800: 233 219 194; --c-slate-825: 240 229 208;
-    --c-slate-840: 236 224 200; --c-slate-850: 242 232 213; --c-slate-875: 246 237 220; --c-slate-900: 250 243 230; --c-slate-950: 255 252 246;
-    --c-slate-975: 255 255 255; --t-amber-300: 120 53 15; --t-amber-400: 146 64 14; --t-emerald-200: 6 78 59; --t-emerald-300: 6 95 70;
-    --t-emerald-400: 4 120 87; --t-emerald-500: 5 150 105; --t-hoverfg: 28 20 12; --t-indigo-200: 49 46 129; --t-indigo-300: 55 48 163;
-    --t-indigo-400: 67 56 202; --t-indigo-500: 79 70 229; --t-rose-200: 136 19 55; --t-rose-300: 159 18 57; --t-rose-400: 190 18 60;
-    --t-sky-200: 12 74 110; --t-sky-300: 7 89 133; --t-sky-400: 3 105 161; --t-slate-100: 42 31 20; --t-slate-200: 61 49 37; --t-slate-300: 85 71 58;
-    --t-slate-400: 112 96 74; --t-slate-50: 28 20 12; --t-slate-500: 116 100 78; --t-slate-600: 184 166 136; --t-slate-900: 250 243 230;
-    --t-slate-950: 255 252 246; --t-teal-300: 17 94 89; --t-teal-400: 15 118 110;
+    --c-emerald-400: 120 150 80; --c-emerald-500: 98 130 62; --c-emerald-600: 78 110 50; --c-emerald-700: 180 83 47; --c-emerald-800: 154 66 36;
+    --c-fg: 74 52 38; --c-indigo-400: 60 120 145; --c-indigo-500: 31 86 108; --c-indigo-600: 40 105 131; --c-indigo-800: 160 195 210;
+    --c-indigo-950: 225 238 244; --c-rose-400: 190 95 70; --c-rose-500: 170 70 48; --c-rose-600: 150 58 38; --c-sky-500: 192 100 66;
+    --c-sky-600: 154 66 36; --c-sky-700: 180 83 47; --c-slate-200: 86 64 48; --c-slate-400: 138 117 96; --c-slate-500: 160 142 118;
+    --c-slate-600: 201 184 154; --c-slate-700: 224 210 184; --c-slate-800: 237 226 207; --c-slate-825: 244 236 220; --c-slate-840: 252 247 236;
+    --c-slate-850: 250 244 232; --c-slate-875: 243 234 218; --c-slate-900: 246 238 224; --c-slate-950: 252 247 236; --c-slate-975: 235 223 201;
+    --t-amber-200: 120 53 15; --t-amber-300: 120 53 15; --t-amber-400: 146 64 14; --t-emerald-200: 28 90 36; --t-emerald-300: 34 110 44;
+    --t-emerald-400: 38 122 50; --t-emerald-500: 38 122 50; --t-hoverfg: 60 42 30; --t-indigo-200: 24 70 90; --t-indigo-300: 31 86 108;
+    --t-indigo-400: 40 105 131; --t-indigo-500: 40 105 131; --t-rose-200: 120 28 20; --t-rose-300: 160 36 26; --t-rose-400: 186 44 32;
+    --t-sky-200: 110 44 22; --t-sky-300: 138 58 30; --t-sky-400: 169 73 42; --t-slate-100: 74 52 38; --t-slate-200: 86 64 48;
+    --t-slate-300: 106 86 68; --t-slate-400: 120 100 80; --t-slate-50: 60 42 30; --t-slate-500: 124 104 82; --t-slate-600: 201 184 154;
+    --t-slate-900: 246 238 224; --t-slate-950: 252 247 236; --t-teal-300: 17 94 89; --t-teal-400: 15 118 110;
     color-scheme: light;
-    --accent: #d97757; --accent-text: #a9492a; --on-accent: #2a1f14;
-    --gain: #c0182e; --loss: #047857; --flat: rgb(var(--t-slate-400)); --focus: #047857;
+    --accent: #b4532f; --accent-text: #a9492a; --on-accent: #fff;
+    --gain: #c23a2e; --loss: #2e7d3a; --flat: rgb(var(--t-slate-400)); --focus: #2e7d3a;
 }
 /* THEME-TOKENS:END */
 body {
@@ -233,8 +236,8 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 .fdm-amt-sub.is-prepaid { color: rgb(var(--t-sky-300)); }
 
 /* ===== V20：付款管道圖的「金額／占比」切換與截斷說明 ===== */
-.fd-seg { display: inline-flex; flex: none; padding: 2px; background: rgb(var(--c-slate-900)); border: 1px solid rgb(var(--c-slate-700)); border-radius: 0.5rem; }
-.fd-seg button { min-height: 1.75rem; padding: 0.25rem 0.75rem; font-size: 0.75rem; color: rgb(var(--t-slate-400)); border-radius: 0.375rem; border: 0; background: transparent; cursor: pointer; white-space: nowrap; }
+.fd-seg { display: inline-flex; flex: none; padding: 2px; background: rgb(var(--c-slate-900)); border: 1px solid rgb(var(--c-slate-700)); border-radius: 999px; }
+.fd-seg button { min-height: 1.75rem; padding: 0.25rem 0.75rem; font-size: 0.75rem; color: rgb(var(--t-slate-400)); border-radius: 999px; border: 0; background: transparent; cursor: pointer; white-space: nowrap; }
 .fd-seg button.is-on { background: rgb(var(--c-indigo-600)); color: #fff; font-weight: 700; }
 .fd-seg button:focus-visible { outline: 2px solid rgb(var(--c-indigo-400)); outline-offset: 1px; }
 .fd-chart-note { margin-top: 0.5rem; font-size: 0.75rem; line-height: 1.4; color: rgb(var(--t-amber-300)); }
@@ -305,7 +308,7 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 .fd-nav-item { position: relative; display: flex; align-items: center; gap: 0; width: 100%; height: 44px; padding: 0 12px 0 14px; border: 0; border-radius: 10px; background: none; color: rgb(var(--t-slate-400)); font-size: 14px; text-align: left; white-space: nowrap; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
 .fd-nav-item:hover { background: rgb(var(--c-slate-825)); color: rgb(var(--t-slate-200)); }
 .fd-nav-item.is-active { background: rgb(var(--a) / .12); color: rgb(var(--a)); font-weight: 600; }
-.fd-nav-ind { position: absolute; left: -12px; top: 12px; width: 3px; height: 20px; border-radius: 0 3px 3px 0; background: rgb(var(--a)); transition: transform .2s ease; pointer-events: none; }
+.fd-nav-ind { position: absolute; left: -12px; top: calc(12px + var(--ni, 0) * 48px); bottom: calc(100% - 32px - var(--ni, 0) * 48px); width: 3px; border-radius: 0 3px 3px 0; background: rgb(var(--a)); pointer-events: none; transition: top .3s var(--jelly), bottom .3s var(--jelly); }
 .fd-side-scroll { flex: 1; min-height: 0; margin: 8px -6px 0; padding: 0 6px; overflow-y: auto; }
 .fd-side-scroll, .fd-pop-body { scrollbar-width: thin; scrollbar-color: rgb(var(--c-slate-500) / 0.35) transparent; }
 .fd-side-scroll::-webkit-scrollbar, .fd-pop-body::-webkit-scrollbar { width: 6px; }
@@ -388,13 +391,13 @@ body.fd-dragging, body.fd-dragging * { cursor: grabbing !important; }
 .fd-bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; height: calc(var(--fd-bn-h) + env(safe-area-inset-bottom, 0px)); padding: 6px 4px env(safe-area-inset-bottom, 0px); background: rgb(var(--c-slate-900)); border-top: 1px solid rgb(var(--c-slate-800)); transition: transform .2s ease; }
 @media (min-width: 1024px) { .fd-bottom { display: none; } }
 body.fdm-selecting .fd-bottom { transform: translateY(110%); }
-.fd-bn-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 0; background: none; color: rgb(var(--t-slate-400)); font-size: 12px; white-space: nowrap; cursor: pointer; --a: 52 211 153; }
+.fd-bn-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 9px; position: relative; z-index: 1; gap: 2px; border: 0; background: none; color: rgb(var(--t-slate-400)); font-size: 12px; white-space: nowrap; cursor: pointer; --a: 52 211 153; }
 .fd-bn-item[data-tab="investments"] { --a: 129 140 248; }
 .fd-bn-item[data-tab="monthly"] { --a: 251 191 36; }
 .fd-bn-item[data-tab="cards"] { --a: 56 189 248; }
 .fd-bn-pill { display: grid; place-items: center; width: 56px; height: 30px; border-radius: 15px; transition: background-color .2s ease; }
 .fd-bn-item.is-active { color: rgb(var(--a)); font-weight: 600; }
-.fd-bn-item.is-active .fd-bn-pill { background: rgb(var(--a) / .16); }
+.fd-bn-item.is-active .fd-bn-pill { background: none; }
 .fd-bn-plus { position: relative; justify-content: flex-end; padding-bottom: 9px; color: rgb(var(--t-slate-200)); }
 .fd-bn-plus .fd-bn-pill { position: absolute; top: -20px; left: 50%; width: 52px; height: 52px; margin-left: -26px; border-radius: 26px; background: rgb(var(--c-emerald-700)); color: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, .55); transition: transform .28s cubic-bezier(.34, 1.45, .64, 1), background-color .15s ease; }
 .fd-bn-plus:active .fd-bn-pill { background: rgb(var(--c-emerald-800)); }
@@ -488,10 +491,9 @@ body.fdm-selecting .fd-bottom { transform: translateY(110%); }
 }
 
 /* --- V25 切換按鈕：選取塊滑動（--n＝選項數、--i＝目前第幾個，由範本帶入） --- */
-.fd-seg2 { overflow: hidden; --n: 2; --i: 0; --pad: 3px; --seg-accent: rgb(var(--c-indigo-600)); position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); flex: none; padding: var(--pad); background: rgb(var(--c-slate-900)); border: 1px solid rgb(var(--c-slate-700)); border-radius: .5rem; }
-.fd-seg2::before { content: ""; position: absolute; top: var(--pad); bottom: var(--pad); left: var(--pad); width: calc((100% - 2 * var(--pad)) / var(--n)); background: var(--seg-accent); border-radius: .375rem; translate: calc(var(--i) * 100%) 0; transition: translate .28s cubic-bezier(.2, .8, .2, 1), opacity .2s ease; }
+.fd-seg2 { --n: 2; --i: 0; --pad: 3px; --seg-accent: rgb(var(--c-indigo-600)); position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); flex: none; padding: var(--pad); background: rgb(var(--c-slate-900)); border: 1px solid rgb(var(--c-slate-700)); border-radius: 999px; }
 .fd-seg2.is-none::before { opacity: 0; }
-.fd-seg2 > button { position: relative; z-index: 1; min-width: 0; display: flex; align-items: center; justify-content: center; min-height: 1.75rem; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; color: rgb(var(--t-slate-400)); background: transparent; border: 0; border-radius: .375rem; cursor: pointer; white-space: nowrap; transition: color .2s ease; }
+.fd-seg2 > button { position: relative; z-index: 1; min-width: 0; display: flex; align-items: center; justify-content: center; min-height: 1.75rem; padding: .25rem .75rem; font-size: .75rem; font-weight: 600; color: rgb(var(--t-slate-400)); background: transparent; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap; transition: color .2s ease; }
 .fd-seg2 > button.is-on { color: #fff; }
 .fd-seg2 > button:focus-visible { outline: 2px solid rgb(var(--c-indigo-400)); outline-offset: 1px; }
 .fd-seg-lg { height: 2.5rem; }
@@ -591,10 +593,6 @@ input, select, textarea, button { font-variant-numeric: inherit; }
 .fd-hold-price { align-self: baseline; line-height: 1.3; white-space: nowrap; }
 .fd-hold-grid { column-gap: .75rem; row-gap: 1rem; }
 /* --- V26 液態切換：移動時滑塊先往前伸長（約 1.3 倍）再收回原寬；往右滑＝右邊先伸出、往左滑＝左邊先伸出 --- */
-.fd-seg2[data-dir="r"]::before { transform-origin: left center; }
-.fd-seg2[data-dir="l"]::before { transform-origin: right center; }
-.fd-seg2.is-liquid::before { animation: fd-liquid .28s cubic-bezier(.2, .8, .2, 1); }
-@keyframes fd-liquid { 0% { scale: 1 1; } 40% { scale: 1.3 1; } 100% { scale: 1 1; } }
 @media (prefers-reduced-motion: reduce) { .fd-seg2.is-liquid::before { animation: none; } }
 
 /* ===== V26.1：損益色（台股慣例：紅漲綠跌；與收入／支出分開）、白字按鈕底色（對比 ≥4.5:1） ===== */
@@ -617,12 +615,112 @@ input, select, textarea, button { font-variant-numeric: inherit; }
 
 /* ===== V27.1：外觀主題（亮色）專屬調整與外觀切換元件 =====
    色票在最前面的 THEME-TOKENS 區塊；這裡只放「換主題後必須另外處理」的規則。 */
-.fd-theme-seg { display: grid; width: 100%; margin: 2px 0 6px; }
-.fd-theme-seg > button { padding: .25rem .5rem; white-space: nowrap; }
-:root[data-theme="light"] .fd-nav { --a: 5 150 105; }
-:root[data-theme="light"] .fd-nav[data-tab="investments"], :root[data-theme="light"] .fd-bn-item[data-tab="investments"] { --a: 79 70 229; }
-:root[data-theme="light"] .fd-nav[data-tab="monthly"], :root[data-theme="light"] .fd-bn-item[data-tab="monthly"] { --a: 180 83 9; }
-:root[data-theme="light"] .fd-nav[data-tab="cards"], :root[data-theme="light"] .fd-bn-item[data-tab="cards"] { --a: 3 105 161; }
-:root[data-theme="light"] .fd-bn-item { --a: 5 150 105; }
 /* 亮色：彈窗背景遮罩要「壓暗」而不是變白（slate-950 在亮色是奶油白，拿來當遮罩會把畫面洗淡） */
 :root[data-theme="light"] [data-modal][class*="bg-slate-950"], :root[data-theme="light"] [data-dialog][class*="bg-slate-950"] { background-color: rgb(42 31 20 / .5); }
+
+/* ===== V27.2：外觀開關（日／夜）===== */
+.fd-theme-switch { display: flex; align-items: center; justify-content: space-between; gap: .75rem; width: 100%; padding: .375rem .5rem .375rem .75rem; margin: 2px 0 6px; border: 0; border-radius: 999px; background: transparent; cursor: pointer; color: rgb(var(--t-slate-300)); font-size: .8125rem; text-align: left; }
+.fd-theme-switch:hover { background: rgb(var(--c-slate-800) / .6); }
+.fd-theme-switch:focus-visible { outline: 2px solid rgb(var(--c-indigo-400)); outline-offset: 2px; }
+.fd-theme-track { position: relative; flex: none; width: 58px; height: 30px; border-radius: 999px; background: rgb(var(--c-slate-700)); border: 1px solid rgb(var(--c-slate-600)); display: block; transition: background .25s ease; }
+.fd-theme-ic { position: absolute; top: 50%; width: 14px; height: 14px; margin-top: -7px; z-index: 3; transition: color .25s ease; }
+.fd-theme-ic.is-sun { left: 7px; }
+.fd-theme-ic.is-moon { right: 7px; }
+/* 目前模式的圖示落在滑塊上，另一個留在軌道上 */
+.fd-theme-switch[aria-checked="true"] .fd-theme-ic.is-moon { color: rgb(var(--t-slate-900)); }
+.fd-theme-switch[aria-checked="true"] .fd-theme-ic.is-sun { color: rgb(var(--t-amber-300)); }
+.fd-theme-switch[aria-checked="false"] .fd-theme-ic.is-sun { color: #b4532f; }
+.fd-theme-switch[aria-checked="false"] .fd-theme-ic.is-moon { color: #7d6b55; }
+.fd-theme-knob { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: rgb(var(--t-slate-100)); box-shadow: 0 1px 3px rgba(0, 0, 0, .4); z-index: 2; transition: translate .25s cubic-bezier(.4, 0, .2, 1), background .25s ease; }
+.fd-theme-switch[aria-checked="true"] .fd-theme-knob { translate: 28px 0; }
+@media (prefers-reduced-motion: reduce) { .fd-theme-knob, .fd-theme-track, .fd-theme-ic { transition: none; } }
+
+/* ===== V27.2：亮色＝陶土橘暖色（奶油底＋陶土橘強調色＋深棕文字＋大地色資料色）=====
+   主按鈕／手機＋鈕的色（--c-emerald-700/800）與「記股票」鈕（--c-indigo-500/600）已在色票區塊換色。 */
+:root[data-theme="light"] {
+    --accent-solid: #b4532f; --accent-solid-hover: #9a4224; --accent-text: #a9492a;
+}
+:root[data-theme="light"] .fdm, :root[data-theme="light"] .fdm-bar { --fdm-accent: #a9492a !important; --fdm-accent-bg: rgb(180 83 47 / .14) !important; }
+:root[data-theme="light"] .fd-seg2 { --seg-accent: var(--accent-solid) !important; }
+:root[data-theme="light"] .fd-seg button.is-on { background: var(--accent-solid); }
+:root[data-theme="light"] .fd-nav, :root[data-theme="light"] .fd-bn-item { --a: 169 73 42; }
+:root[data-theme="light"] .fd-logo-mark { background: var(--accent-solid); color: #fff; }
+:root[data-theme="light"] .fd-tabs2::after { background: var(--accent-solid); }
+:root[data-theme="light"] .fd-tabs2 > button.is-on { color: var(--accent-text); }
+:root[data-theme="light"] .fd-empty-btn { border-color: rgb(180 83 47 / .5); color: var(--accent-text); }
+:root[data-theme="light"] .fd-empty-btn:hover { background: rgb(180 83 47 / .12); }
+:root[data-theme="light"] .fd-theme-track { background: #ecdcb9; border-color: #dcc9a3; }
+:root[data-theme="light"] .fd-theme-knob { background: #fffdf8; box-shadow: 0 1px 3px rgba(90, 60, 30, .3); }
+/* 亮色的陰影：暖棕、低透明度（深色用的純黑重陰影在奶油底上太髒） */
+:root[data-theme="light"] .glass-card { box-shadow: 0 4px 20px rgba(120, 85, 40, .10); }
+:root[data-theme="light"] .fd-pop { box-shadow: 0 12px 32px rgba(120, 85, 40, .20); }
+:root[data-theme="light"] .fd-fan-ic { box-shadow: 0 6px 14px rgba(120, 85, 40, .28); }
+:root[data-theme="light"] .fd-bn-plus .fd-bn-pill { box-shadow: 0 6px 14px rgba(120, 85, 40, .30); }
+
+/* ===== V27.3：果凍滑塊（先拉長、再收回）===== */
+:root { --jelly: cubic-bezier(.34, 1.3, .64, 1); --jelly-lead: cubic-bezier(.3, .9, .4, 1); }
+/* 切換按鈕：滑塊用 left／right 定位（--i＝第幾個、--n＝共幾個），方向由 data-dir 決定哪一側先動 */
+.fd-seg2::before { content: ""; position: absolute; top: var(--pad); bottom: var(--pad); background: var(--seg-accent); border-radius: 999px;
+    left: calc(var(--pad) + (100% - 2 * var(--pad)) * var(--i) / var(--n));
+    right: calc(var(--pad) + (100% - 2 * var(--pad)) * (var(--n) - 1 - var(--i)) / var(--n));
+    transition: left .3s var(--jelly), right .3s var(--jelly), opacity .2s ease; }
+.fd-seg2[data-dir="r"]::before { transition: right .2s var(--jelly-lead), left .34s .06s var(--jelly), opacity .2s ease; }
+.fd-seg2[data-dir="l"]::before { transition: left .2s var(--jelly-lead), right .34s .06s var(--jelly), opacity .2s ease; }
+/* 手機底部導覽：一顆滑塊在 4 個頁面（5 格，中間是＋）之間果凍式移動 */
+.fd-bn-ind { position: absolute; z-index: 0; top: 15px; height: 30px; border-radius: 15px; background: rgb(var(--a) / .16); pointer-events: none;
+    left: calc(4px + (100% - 8px) * var(--bn-i, 0) / 5 + ((100% - 8px) / 5 - 56px) / 2);
+    right: calc(4px + (100% - 8px) * (4 - var(--bn-i, 0)) / 5 + ((100% - 8px) / 5 - 56px) / 2);
+    transition: left .3s var(--jelly), right .3s var(--jelly), background-color .2s ease; }
+.fd-bottom[data-dir="r"] .fd-bn-ind { transition: right .2s var(--jelly-lead), left .34s .06s var(--jelly), background-color .2s ease; }
+.fd-bottom[data-dir="l"] .fd-bn-ind { transition: left .2s var(--jelly-lead), right .34s .06s var(--jelly), background-color .2s ease; }
+.fd-bottom[data-tab="investments"] { --a: 129 140 248; }
+.fd-bottom[data-tab="monthly"] { --a: 251 191 36; }
+.fd-bottom[data-tab="cards"] { --a: 56 189 248; }
+.fd-bottom { --a: 52 211 153; }
+.fd-bn-plus { padding-top: 0; }
+/* 桌面側欄的頁面指示條：上下兩端先後移動（同樣果凍式） */
+.fd-nav[data-dir="d"] .fd-nav-ind { transition: bottom .2s var(--jelly-lead), top .34s .06s var(--jelly); }
+.fd-nav[data-dir="u"] .fd-nav-ind { transition: top .2s var(--jelly-lead), bottom .34s .06s var(--jelly); }
+@media (prefers-reduced-motion: reduce) { .fd-seg2::before, .fd-bn-ind, .fd-nav-ind { transition-duration: .01ms !important; transition-delay: 0s !important; } }
+
+/* ===== V27.3：日／夜開關也果凍化（滑塊用 left／right，前進側先動）+ 左側圖示 ===== */
+.fd-theme-lead { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; color: rgb(var(--t-slate-400)); }
+.fd-theme-lead svg { width: 18px; height: 18px; }
+.fd-theme-label { flex: 1; min-width: 0; }
+.fd-theme-switch { justify-content: flex-start; padding-left: .75rem; }
+.fd-theme-knob { translate: none !important; width: auto; top: 3px; bottom: 3px; left: 3px; right: 31px; border-radius: 999px; transition: right .3s var(--jelly), left .3s var(--jelly), background .25s ease; }
+.fd-theme-switch[aria-checked="true"] .fd-theme-knob { left: 31px; right: 3px; transition: right .2s var(--jelly-lead), left .34s .06s var(--jelly), background .25s ease; }
+.fd-theme-switch[aria-checked="false"] .fd-theme-knob { left: 3px; right: 31px; transition: left .2s var(--jelly-lead), right .34s .06s var(--jelly), background .25s ease; }
+.fd-theme-switch:active .fd-theme-knob { left: 3px; right: 3px; }
+
+/* ===== V27.3：亮色＝拿鐵奶茶（咖啡字、奶油卡、苔綠／磚紅語意色、松石藍「記股票」）===== */
+:root[data-theme="light"] .glass-card { background: rgb(var(--c-slate-950)); border: 1px solid rgb(var(--c-slate-700) / .75); backdrop-filter: none; -webkit-backdrop-filter: none; }
+:root[data-theme="light"] .glass-modal { background: rgb(var(--c-slate-950) / .98); border-color: rgb(var(--c-slate-700)); }
+:root[data-theme="light"] .fd-bottom { --a: 169 73 42; }
+/* 提示條：文字用咖啡色，嚴重程度只靠左側色條表示 */
+:root[data-theme="light"] [data-toast] { background: rgb(var(--c-slate-950)); color: rgb(var(--t-slate-100)); border-color: rgb(var(--c-slate-700)); border-left-width: 4px; }
+:root[data-theme="light"] [data-toast="error"] { border-left-color: #a4452e; }
+:root[data-theme="light"] [data-toast="success"] { border-left-color: #6b7f3a; }
+:root[data-theme="light"] [data-toast="info"] { border-left-color: #286983; }
+:root[data-theme="light"] [data-toast="warn"], :root[data-theme="light"] [data-toast="warning"] { border-left-color: #c99a3e; }
+:root[data-theme="light"] .fd-theme-track { background: #e8d9bd; border-color: #d6c4a2; }
+
+/* ===== V27.4 ===== */
+/* 篩選下拉清單：ease-out 展開／收合 */
+.fd-dd-enter-active { transition: opacity .16s ease-out, transform .16s ease-out; }
+.fd-dd-leave-active { transition: opacity .1s ease-in, transform .1s ease-in; }
+.fd-dd-enter-from, .fd-dd-leave-to { opacity: 0; transform: translateY(-6px) scale(.98); transform-origin: top center; }
+@media (prefers-reduced-motion: reduce) { .fd-dd-enter-active, .fd-dd-leave-active { transition: none; } }
+/* 切換主題的瞬間：暫停全頁過渡（只留開關自己的動畫），避免整頁顏色同時重算造成卡頓 */
+:root.fd-theme-swap *:not(.fd-theme-switch):not(.fd-theme-switch *) { transition: none !important; }
+/* 果凍節奏再誇張一點：前進側 .18s、後側延遲 .1s 再慢慢收，過衝 */
+:root { --jelly: cubic-bezier(.34, 1.5, .64, 1); }
+.fd-seg2[data-dir="r"]::before { transition: right .18s var(--jelly-lead), left .4s .1s var(--jelly), opacity .2s ease; }
+.fd-seg2[data-dir="l"]::before { transition: left .18s var(--jelly-lead), right .4s .1s var(--jelly), opacity .2s ease; }
+.fd-bottom[data-dir="r"] .fd-bn-ind { transition: right .18s var(--jelly-lead), left .4s .1s var(--jelly), background-color .2s ease; }
+.fd-bottom[data-dir="l"] .fd-bn-ind { transition: left .18s var(--jelly-lead), right .4s .1s var(--jelly), background-color .2s ease; }
+/* 亮色：側欄／工具面板的線條圖示統一成同一個色（不用多色）；hover 才用強調色 */
+:root[data-theme="light"] .fd-tool > svg, :root[data-theme="light"] .fd-tool > i { color: rgb(var(--t-slate-300)) !important; }
+:root[data-theme="light"] .fd-tool:hover > svg, :root[data-theme="light"] .fd-tool:hover > i { color: var(--accent-text) !important; }
+/* 亮色：表格裡的 ＋／－ 金額用半粗體，咖啡字旁邊才分得出來 */
+:root[data-theme="light"] table .text-emerald-300, :root[data-theme="light"] table .text-emerald-400, :root[data-theme="light"] table .text-rose-300, :root[data-theme="light"] table .text-rose-400 { font-weight: 600; }

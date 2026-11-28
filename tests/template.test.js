@@ -29,7 +29,7 @@ test('V25：14 個彈窗（含確認視窗）都包在 <transition name="fd-moda
 });
 test('V25：切換按鈕都用滑塊（--n／--i），內容更新標記與滾動數字元件已註冊', () => {
     assert.ok(!html.includes('class="fd-seg"'), '舊的 .fd-seg 沒換掉');
-    assert.equal((html.match(/class="fd-seg2[^"]*"/g) || []).length, 3 + 2);   // 3 個頁面切換 + 2 個外觀主題切換（V27，側欄與手機面板各一）
+    assert.equal((html.match(/class="fd-seg2[^"]*"/g) || []).length, 3);   // V27.2：外觀改成日／夜開關（fd-theme-switch），不再是 fd-seg2
     assert.equal((html.match(/class="fd-tabs2"/g) || []).length, 2);
     for (const k of ['month', 'invest', 'paymode', 'cattab', 'paytab', 'card']) assert.ok(html.includes('data-fd-refresh="' + k) || html.includes(k + '"') && html.includes('data-fd-refresh'), k);
     assert.match(html, /\.component\('fd-num', FdNum\)/);
@@ -83,8 +83,10 @@ test('V26：自訂類別名稱不可和既有的撞名（.fd-kv 是別處在用�
 test('V26：持股卡標題列是「代碼｜現價／名稱｜價格」的 2×2 網格；液態切換的樣式與重播程式都在', () => {
     assert.match(html, /<div class="fd-hold-head">/);
     assert.match(css, /\.fd-hold-name \{[^}]*align-self: baseline/);
-    assert.match(css, /\.fd-seg2\.is-liquid::before \{ animation: fd-liquid/);
-    assert.match(css, /@keyframes fd-liquid/);
+    // V27.3：果凍切換＝滑塊 left／right 定位，前進側先動；方向由 motion.js 記在 data-dir（切換鈕 r／l、側欄 d／u、底部導覽 r／l）
+    assert.match(css, /\.fd-bottom\[data-dir="r"\] \.fd-bn-ind/);
+    assert.match(css, /\.fd-nav\[data-dir="d"\] \.fd-nav-ind/);
     const m = fs.readFileSync(new URL('../js/features/motion.js', import.meta.url), 'utf8');
-    assert.ok(m.includes("is-liquid") && m.includes("data-dir"));
+    assert.ok(m.includes("data-dir") && m.includes("fd-bn-item") && m.includes("fd-nav-item"));
+    assert.ok(!/watch\((includeInvest|payChartMode|catTab|payTab)/.test(m), '切換按鈕不再重播內容動畫');
 });

@@ -1,3 +1,4 @@
+import { themedHex } from '../logic/palette.js';
 // FinDash 功能模組：圖表（Chart.js）
 // 由 index.html 的 setup() 原文搬出；ctx 是共用環境（其他模組提供的成員）。
 
@@ -165,7 +166,7 @@ if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font) {
                 type: 'doughnut',
                 data: {
                     labels: holdings.map(h => `${h.symbol} ${h.name}`),
-                    datasets: [{ data: holdings.map(h => h.marketValue), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'], borderWidth: 0 }]
+                    datasets: [{ data: holdings.map(h => h.marketValue), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'].map(c => themedHex(c, document.documentElement.getAttribute('data-theme') === 'light')), borderWidth: 0 }]
                 },
                 options: { animation: CHART_ANIM, responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: chartMuted() } } } }
             });

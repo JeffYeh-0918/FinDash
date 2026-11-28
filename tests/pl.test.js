@@ -42,8 +42,8 @@ test('V26.1 名稱統一、表單 inputmode、純圖示按鈕 aria-label', () =>
         if (inner.length <= 1) assert.match(m[0], /aria-label=/, '純圖示／符號按鈕缺 aria-label：' + m[0].slice(0, 80));
     }
 });
-test('V26.1 液態切換 0.28s、圖表字型預設', () => {
-    assert.match(css, /fd-liquid \.28s cubic-bezier\(\.2, \.8, \.2, 1\)/);
+test('V27.3 果凍切換（滑塊 left／right 先後移動）、圖表字型預設', () => {
+    assert.match(css, /\.fd-seg2\[data-dir="r"\]::before \{ transition: right \.2s var\(--jelly-lead\), left \.34s \.06s var\(--jelly\)/);
     const charts = fs.readFileSync(new URL('../js/features/charts.js', import.meta.url), 'utf8');
     assert.match(charts, /Chart\.defaults\.font\.family/);
     assert.match(charts, /Chart\.defaults\.color/);

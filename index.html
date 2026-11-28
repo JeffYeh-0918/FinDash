@@ -19,6 +19,7 @@
     "./js/logic/order.js": "./js/logic/order.js?v=2",
     "./js/logic/trades.js": "./js/logic/trades.js?v=1",
     "./js/logic/ledger.js": "./js/logic/ledger.js?v=3",
+    "./js/logic/palette.js": "./js/logic/palette.js?v=3",
     "./js/logic/importer.js": "./js/logic/importer.js?v=1",
     "./js/data/convert.js": "./js/data/convert.js?v=1",
     "./js/data/api.js": "./js/data/api.js?v=1",
@@ -28,17 +29,17 @@
     "./js/features/ui.js": "./js/features/ui.js?v=1",
     "./js/features/sync-ui.js": "./js/features/sync-ui.js?v=2",
     "./js/features/modals.js": "./js/features/modals.js?v=4",
-    "./js/features/charts.js": "./js/features/charts.js?v=8",
+    "./js/features/charts.js": "./js/features/charts.js?v=9",
     "./js/features/import-export.js": "./js/features/import-export.js?v=4",
     "./js/features/settings-ui.js": "./js/features/settings-ui.js?v=1",
     "./js/features/expenses.js": "./js/features/expenses.js?v=5",
     "./js/features/stocks.js": "./js/features/stocks.js?v=6",
-    "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=6",
-    "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=5",
+    "./js/features/ledger-view.js": "./js/features/ledger-view.js?v=8",
+    "./js/features/mobile-cards.js": "./js/features/mobile-cards.js?v=7",
     "./js/features/card-drag.js": "./js/features/card-drag.js?v=5",
     "./js/features/nav.js": "./js/features/nav.js?v=1",
-    "./js/features/motion.js": "./js/features/motion.js?v=4",
-    "./js/features/theme.js": "./js/features/theme.js?v=1",
+    "./js/features/motion.js": "./js/features/motion.js?v=6",
+    "./js/features/theme.js": "./js/features/theme.js?v=3",
     "./js/logic/nav.js": "./js/logic/nav.js?v=1",
     "./js/logic/money.js": "./js/logic/money.js?v=2",
     "./js/logic/pl.js": "./js/logic/pl.js?v=1"
@@ -49,7 +50,7 @@
     <!-- Tailwind：預先編譯的 CSS（npm run build:css 產生）。若找不到這個檔案，自動退回 CDN，避免頁面壞掉 -->
     <link rel="stylesheet" href="css/tailwind.css?v=2" onerror="(function(){var s=document.createElement('script');s.src='https://cdn.tailwindcss.com/3.4.17';s.onload=function(){window.tailwind.config={darkMode:'class',theme:{extend:{colors:{slate:{850:'#131e32',900:'#0f172a',950:'#020617'}}}}};};document.head.appendChild(s);console.warn('找不到 css/tailwind.css，暫時使用 Tailwind CDN。請執行 npm run build:css 並提交 css/tailwind.css');})()">
     <link rel="stylesheet" href="css/theme-map.css?v=1">
-    <link rel="stylesheet" href="css/app.css?v=27">
+    <link rel="stylesheet" href="css/app.css?v=30">
 
     <!-- Vue 3（正式版，版本固定） -->
     <script src="https://unpkg.com/vue@3.5.44/dist/vue.global.prod.js"></script>
@@ -82,7 +83,7 @@
         <span class="fd-label fd-logo-text">FinDash<small>智慧資產管理</small></span>
     </div>
     <nav class="fd-nav" :data-tab="activeTab" aria-label="分頁">
-        <span class="fd-nav-ind" aria-hidden="true" :style="{ transform: 'translateY(' + (activeTabIndex * 48) + 'px)' }"></span>
+        <span class="fd-nav-ind" aria-hidden="true" :style="{ '--ni': activeTabIndex }"></span>
         <button type="button" class="fd-nav-item" :class="{ 'is-active': activeTab === 'expenses' }" :aria-current="activeTab === 'expenses' ? 'page' : null" title="日常收支" @click="setTab('expenses')"><i data-lucide="receipt" class="w-5 h-5"></i><span class="fd-label">日常收支</span></button>
         <button type="button" class="fd-nav-item" :class="{ 'is-active': activeTab === 'investments' }" :aria-current="activeTab === 'investments' ? 'page' : null" title="ETF 與股票" @click="setTab('investments')"><i data-lucide="line-chart" class="w-5 h-5"></i><span class="fd-label">ETF 與股票</span></button>
         <button type="button" class="fd-nav-item" :class="{ 'is-active': activeTab === 'monthly' }" :aria-current="activeTab === 'monthly' ? 'page' : null" title="月收支表" @click="setTab('monthly')"><i data-lucide="table" class="w-5 h-5"></i><span class="fd-label">月收支表</span></button>
@@ -98,9 +99,18 @@
 <button type="button" class="fd-tool" @click="openCategorySettings('map')"><i data-lucide="list-tree" class="w-4 h-4 text-teal-300"></i><span>類別與項目</span><span v-if="mismatchTotal" class="fd-badge">{{ mismatchTotal }}</span></button>
 <button type="button" class="fd-tool" @click="openPaymentSettings('methods')"><i data-lucide="credit-card" class="w-4 h-4 text-amber-300"></i><span>付款與帳單</span></button>
 <div class="fd-group">外觀</div>
-<div class="fd-seg2 fd-theme-seg" role="group" aria-label="外觀主題" :style="{ '--n': 3, '--i': themeIndex }" @click.stop>
-<button type="button" v-for="o in THEME_OPTIONS" :key="o.v" :class="{ 'is-on': themePref === o.v }" :aria-pressed="themePref === o.v" @click="setThemePref(o.v)">{{ o.label }}</button>
-</div>
+<button type="button" class="fd-theme-switch" role="switch" :aria-checked="themeResolved === 'dark'" :aria-label="themeResolved === 'dark' ? '目前是深色模式，點一下切換為亮色' : '目前是亮色模式，點一下切換為深色'" @click.stop="onThemeClick($event)">
+<span class="fd-theme-lead" aria-hidden="true">
+<svg v-if="themeResolved === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+<svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+</span>
+<span class="fd-theme-label">{{ themeResolved === 'dark' ? '深色模式' : '亮色模式' }}</span>
+<span class="fd-theme-track" aria-hidden="true">
+<svg class="fd-theme-ic is-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+<svg class="fd-theme-ic is-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+<span class="fd-theme-knob"></span>
+</span>
+</button>
 <div class="fd-group">資料</div>
 <button type="button" class="fd-tool" @click="exportToExcel"><i data-lucide="download" class="w-4 h-4 text-emerald-300"></i><span>匯出 Excel</span></button>
 <button type="button" class="fd-tool" @click="fileInputRef && fileInputRef.click()"><i data-lucide="upload" class="w-4 h-4 text-sky-300"></i><span>匯入檔案</span></button>
@@ -787,7 +797,7 @@
                                     @pointerdown="rowDown('stock', t.id, $event)" @contextmenu.prevent
                                     @click="fdmTap('stock', t)" @keydown.enter.self="fdmTap('stock', t)">
                                     <span v-if="fdmIsSel('stock', t.id)" class="fdm-check"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
-                                    <span class="fdm-ic" :style="t.action === '買進' ? { background: 'rgb(var(--c-indigo-400) / 0.18)', borderColor: 'rgb(var(--c-indigo-400) / 0.4)', color: 'rgb(var(--t-indigo-200))' } : { background: 'rgb(var(--c-amber-400) / 0.16)', borderColor: 'rgb(var(--c-amber-400) / 0.4)', color: '#fde68a' }" style="font-size:.8rem;font-weight:700">{{ t.action === '買進' ? '買' : '賣' }}</span>
+                                    <span class="fdm-ic" :style="t.action === '買進' ? { background: 'rgb(var(--c-indigo-400) / 0.18)', borderColor: 'rgb(var(--c-indigo-400) / 0.4)', color: 'rgb(var(--t-indigo-200))' } : { background: 'rgb(var(--c-amber-400) / 0.16)', borderColor: 'rgb(var(--c-amber-400) / 0.4)', color: 'rgb(var(--t-amber-200))' }" style="font-size:.8rem;font-weight:700">{{ t.action === '買進' ? '買' : '賣' }}</span>
                                     <div class="fdm-mid">
                                         <div class="fdm-t1"><b style="color:rgb(var(--t-indigo-300))">{{ t.symbol }}</b> {{ t.name }}</div>
                                         <div class="fdm-t2">$ {{ t.price }} × {{ (t.shares || 0).toLocaleString() }} 股 · 費用 {{ ((t.fee || 0) + (t.tax || 0)).toLocaleString() }}</div>
@@ -826,7 +836,7 @@
                                     @click="openStockModal(trade)" tabindex="0" @keydown.enter.self="openStockModal(trade)"
                                 >
                                     <td class="py-2 px-2 text-center" @click.stop>
-                                        <button type="button" class="fdd-ic" :class="{ 'is-sel': fdmIsSel('stock', trade.id) }" :style="trade.action === '買進' ? { background: 'rgb(var(--c-indigo-400) / 0.18)', borderColor: 'rgb(var(--c-indigo-400) / 0.4)', color: 'rgb(var(--t-indigo-200))' } : { background: 'rgb(var(--c-amber-400) / 0.16)', borderColor: 'rgb(var(--c-amber-400) / 0.4)', color: '#fde68a' }" :aria-pressed="fdmIsSel('stock', trade.id)" :aria-label="'選取：' + (trade.symbol || '')" title="點一下選取／取消" @click.stop="fdmToggleSel('stock', trade.id)">
+                                        <button type="button" class="fdd-ic" :class="{ 'is-sel': fdmIsSel('stock', trade.id) }" :style="trade.action === '買進' ? { background: 'rgb(var(--c-indigo-400) / 0.18)', borderColor: 'rgb(var(--c-indigo-400) / 0.4)', color: 'rgb(var(--t-indigo-200))' } : { background: 'rgb(var(--c-amber-400) / 0.16)', borderColor: 'rgb(var(--c-amber-400) / 0.4)', color: 'rgb(var(--t-amber-200))' }" :aria-pressed="fdmIsSel('stock', trade.id)" :aria-label="'選取：' + (trade.symbol || '')" title="點一下選取／取消" @click.stop="fdmToggleSel('stock', trade.id)">
                                             <span class="fdd-ic-icon" style="font-size:.8rem;font-weight:700">{{ trade.action === '買進' ? '買' : '賣' }}</span>
                                             <span class="fdd-ic-check"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
                                         </button>
@@ -871,7 +881,8 @@
 </div>
 
 <!-- 手機／平板：底部導覽列（中央「＋」＝新增；工具與設定在右上角「⋯」） -->
-<nav class="fd-bottom" aria-label="主要導覽">
+<nav class="fd-bottom" :data-tab="activeTab" aria-label="主要導覽">
+    <span class="fd-bn-ind" aria-hidden="true" :style="{ '--bn-i': activeTabIndex < 2 ? activeTabIndex : activeTabIndex + 1 }"></span>
     <button type="button" class="fd-bn-item" data-tab="expenses" :class="{ 'is-active': activeTab === 'expenses' }" :aria-current="activeTab === 'expenses' ? 'page' : null" @click="setTab('expenses')"><span class="fd-bn-pill"><i data-lucide="receipt" class="w-5 h-5"></i></span>日常收支</button>
     <button type="button" class="fd-bn-item" data-tab="investments" :class="{ 'is-active': activeTab === 'investments' }" :aria-current="activeTab === 'investments' ? 'page' : null" @click="setTab('investments')"><span class="fd-bn-pill"><i data-lucide="line-chart" class="w-5 h-5"></i></span>ETF 股票</button>
     <button type="button" class="fd-bn-item fd-bn-plus" :class="{ 'is-open': activeDropdown === 'add' }" aria-label="新增紀錄" aria-haspopup="true" :aria-expanded="activeDropdown === 'add'" @click.stop="toggleDropdown('add')"><span class="fd-bn-pill"><i data-lucide="plus" class="w-6 h-6"></i></span>新增</button>
@@ -902,9 +913,18 @@
 <button type="button" class="fd-tool" @click="openCategorySettings('map')"><i data-lucide="list-tree" class="w-4 h-4 text-teal-300"></i><span>類別與項目</span><span v-if="mismatchTotal" class="fd-badge">{{ mismatchTotal }}</span></button>
 <button type="button" class="fd-tool" @click="openPaymentSettings('methods')"><i data-lucide="credit-card" class="w-4 h-4 text-amber-300"></i><span>付款與帳單</span></button>
 <div class="fd-group">外觀</div>
-<div class="fd-seg2 fd-theme-seg" role="group" aria-label="外觀主題" :style="{ '--n': 3, '--i': themeIndex }" @click.stop>
-<button type="button" v-for="o in THEME_OPTIONS" :key="o.v" :class="{ 'is-on': themePref === o.v }" :aria-pressed="themePref === o.v" @click="setThemePref(o.v)">{{ o.label }}</button>
-</div>
+<button type="button" class="fd-theme-switch" role="switch" :aria-checked="themeResolved === 'dark'" :aria-label="themeResolved === 'dark' ? '目前是深色模式，點一下切換為亮色' : '目前是亮色模式，點一下切換為深色'" @click.stop="onThemeClick($event)">
+<span class="fd-theme-lead" aria-hidden="true">
+<svg v-if="themeResolved === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+<svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+</span>
+<span class="fd-theme-label">{{ themeResolved === 'dark' ? '深色模式' : '亮色模式' }}</span>
+<span class="fd-theme-track" aria-hidden="true">
+<svg class="fd-theme-ic is-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+<svg class="fd-theme-ic is-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+<span class="fd-theme-knob"></span>
+</span>
+</button>
 <div class="fd-group">資料</div>
 <button type="button" class="fd-tool" @click="exportToExcel"><i data-lucide="download" class="w-4 h-4 text-emerald-300"></i><span>匯出 Excel</span></button>
 <button type="button" class="fd-tool" @click="fileInputRef && fileInputRef.click()"><i data-lucide="upload" class="w-4 h-4 text-sky-300"></i><span>匯入檔案</span></button>
@@ -1057,7 +1077,7 @@
                     <div v-for="cat in catMapKeys" :key="cat" class="bg-slate-900/60 border border-slate-800 rounded-lg p-3 space-y-2">
                         <div class="flex items-center justify-between">
                             <button @click="toggleColorPanel(cat)" :aria-expanded="colorPanelCat === cat" :aria-label="cat + ' 的顏色，點擊更換'" class="flex items-center gap-2 text-left group">
-                                <span class="w-4 h-4 rounded-full border border-slate-500 shrink-0" :style="{ background: catColor(cat) }"></span>
+                                <span class="w-4 h-4 rounded-full border border-slate-500 shrink-0" :style="{ background: swatchColor(catColor(cat)) }"></span>
                                 <span class="text-sm font-bold text-slate-100">{{ cat }}</span>
                                 <span class="text-xs text-slate-400 group-hover:text-slate-200">{{ colorPanelCat === cat ? '收合' : '換色' }}</span>
                             </button>
@@ -1075,7 +1095,7 @@
                             </select>
                         </label>
                         <div v-if="colorPanelCat === cat" class="flex flex-wrap items-center gap-2 bg-slate-950/50 border border-slate-800 rounded-lg p-2.5">
-                            <button v-for="c in COLOR_CHOICES" :key="c" @click="setCategoryColor(cat, c); colorPanelCat = ''" :style="{ background: c }" :aria-label="cat + ' 改用顏色 ' + c" class="w-6 h-6 rounded-full transition" :class="catColor(cat).toLowerCase() === c ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900' : 'hover:scale-110'"></button>
+                            <button v-for="c in COLOR_CHOICES" :key="c" @click="setCategoryColor(cat, c); colorPanelCat = ''" :style="{ background: swatchColor(c) }" :aria-label="cat + ' 改用顏色 ' + c" class="w-6 h-6 rounded-full transition" :class="catColor(cat).toLowerCase() === c ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900' : 'hover:scale-110'"></button>
                             <label class="relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-600 text-xs text-slate-300 hover:text-white cursor-pointer">
                                 <span class="w-3 h-3 rounded-full" :style="{ background: 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }"></span>自訂
                                 <input type="color" :value="catColor(cat)" @input="setCategoryColor(cat, $event.target.value)" :aria-label="cat + ' 自訂顏色'" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
@@ -1386,7 +1406,7 @@
         <!-- 統一提示條 -->
         <div class="fixed top-3 left-1/2 -translate-x-1/2 z-[80] flex flex-col gap-2 w-[min(92vw,26rem)] pointer-events-none" role="status" aria-live="polite" data-keep-live>
             <transition-group name="fd-toast" :duration="220">
-            <div v-for="t in toasts" :key="t.id" class="pointer-events-auto flex items-start gap-3 rounded-xl border bg-slate-800 px-4 py-3 text-sm shadow-2xl" :class="toastClass(t.type)">
+            <div v-for="t in toasts" :key="t.id" class="pointer-events-auto flex items-start gap-3 rounded-xl border bg-slate-800 px-4 py-3 text-sm shadow-2xl" :data-toast="t.type || 'info'" :class="toastClass(t.type)">
                 <span class="flex-1 whitespace-pre-line">{{ t.text }}</span>
                 <button v-if="t.action" @click="runToastAction(t)" class="font-bold underline shrink-0">{{ t.actionLabel }}</button>
                 <button @click="dismissToast(t.id)" aria-label="關閉提示" class="shrink-0 opacity-70 hover:opacity-100">✕</button>
@@ -1715,7 +1735,7 @@
                         <span class="truncate">{{ label }}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-slate-400 ml-1 shrink-0"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
-                    <div v-if="isOpen" :class="wide ? 'min-w-full w-max max-w-[24rem]' : 'right-0'" class="absolute left-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
+                    <Transition name="fd-dd"><div v-if="isOpen" :class="wide ? 'min-w-full w-max max-w-[24rem]' : 'right-0'" class="absolute left-0 top-full mt-1 glass-modal rounded-xl border border-slate-700 shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1 text-xs">
                         <label class="flex items-center space-x-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer text-emerald-400 font-bold border-b border-slate-800 whitespace-nowrap">
                             <input type="checkbox" :checked="modelValue.length === 0" @change="clear" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
                             <span>{{ allLabel }}</span>
@@ -1724,7 +1744,7 @@
                             <input type="checkbox" :checked="isOn(o.value)" @change="flip(o.value)" class="rounded bg-slate-900 border-slate-700 text-emerald-500">
                             <span>{{ o.label }}</span>
                         </label>
-                    </div>
+                    </div></Transition>
                 </div>`
         };
         createApp({
@@ -1787,7 +1807,7 @@
                 });
 
                 // 範本（HTML）會用到的成員。範本新增用到的名稱時，要加在這裡；npm run check 會檢查每一個都存在。
-                const TEMPLATE_MEMBERS = ['THEME_OPTIONS', 'themePref', 'themeIndex', 'setThemePref', 'plClass', 'plArrow', 'plSign', 'deleteEditingExpense', 'deleteEditingStock', 
+                const TEMPLATE_MEMBERS = ['themeResolved', 'toggleTheme', 'onThemeClick', 'swatchColor', 'plClass', 'plArrow', 'plSign', 'deleteEditingExpense', 'deleteEditingStock', 
             // V24 導覽
             'navWide', 'toggleNavPref', 'activeTabIndex', 'activeTabInfo', 'setTab',
                 'COLOR_CHOICES', 'activeDropdown', 'activeTab', 'addFundingRule', 'allKnownItems',
@@ -1844,7 +1864,7 @@
     <div id="app-version" class="fd-version select-none"></div>
     <script>
         (function () {
-            var APP = 'V27.1';
+            var APP = 'V27.4';
             try {
                 var map = JSON.parse(document.querySelector('script[type=importmap]').textContent).imports;
                 var el = document.getElementById('app-version');

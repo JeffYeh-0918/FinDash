@@ -3,6 +3,7 @@
 import { deriveLedger, DEFAULT_CATEGORY_COLORS, aggregateItems, buildItemRows, aggregatePaymentsByCategory, chartCategoryTotals, excludeCategories, clipPlan, calcLedger } from '../logic/ledger.js';
 import { ymd, cardPeriod } from '../logic/trades.js';
 import { cleanSymbol } from '../logic/symbol.js';
+import { themedHex, isLightTheme } from '../logic/palette.js';
 
 const { computed, ref, watch, nextTick } = Vue;
 
@@ -68,7 +69,11 @@ export const useLedgerView = (ctx) => {
         const c = appSettings.value.categoryColors && appSettings.value.categoryColors[cat];
         return /^#[0-9a-fA-F]{6}$/.test(c || '') ? c : (DEFAULT_CATEGORY_COLORS[cat] || '#64748b');
     };
+    // V27.2：亮色改用大地色系對應色（深色不變）
+    const catThemed = (cat) => themedHex(catColor(cat), isLightTheme(ctx));
+    const swatchColor = (hex) => themedHex(hex, isLightTheme(ctx));   // 設定視窗的色票：亮色顯示對應的暖色（存檔色碼不變）
     const catChartColor = (cat) => {
+        if (isLightTheme(ctx)) return catThemed(cat);
         const hex = catColor(cat), n = parseInt(hex.slice(1), 16);
         let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
         const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
@@ -170,7 +175,7 @@ export const useLedgerView = (ctx) => {
 
     return {
         monthlyTotalIncome, monthlyTotalExpense, monthlyInvestNet, monthlySavingsRate, toggleCard, setCardDay,
-        cardOffset, cardDetail, cardStatements, openCardDetail, catColor, catChartColor,
+        cardOffset, cardDetail, cardStatements, openCardDetail, catColor, catThemed, swatchColor, catChartColor,
         lightColor, itemChartData, chartCategoryLegend, chartHiddenCats, toggleChartCat, resetChartCats, paymentChartData, payChartMode, payChartClip, payChartClipNote, itemDetail, openItemDetail,
         monthlyInvestSummary, ledgerMonthRows, ledgerYearRows, showOtherCol, showAdvanceCol, goToMonth
     };

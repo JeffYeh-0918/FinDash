@@ -1,3 +1,4 @@
+import { themedHex, isLightTheme, inkOf } from '../logic/palette.js';
 // FinDash 功能模組：手機與平板的卡片（畫面寬度 < 1024px 才會顯示；電腦版仍是表格）
 // 內容：依日期分組、類別圖示、選取／取消選取、月收支表比例條。（V18：畫面寬度 < 1024px 顯示卡片；長按選取與拖曳排序在 card-drag.js）
 // 卡片的 HTML 在 index.html（class 以 fdm- 開頭），樣式在 css/app.css。
@@ -39,8 +40,11 @@ export const useMobileCards = (ctx) => {
         return e.type === '收入' ? 'wallet' : 'tag';
     };
     // 圖示圓圈的底色＝該類別在設定裡的顏色（換色後手機版跟著換）
+    const T = (hex) => themedHex(hex, isLightTheme(ctx));   // 亮色改大地色（深色原樣）
     const catCircleStyle = (cat) => {
-        const c = /^#[0-9a-fA-F]{6}$/.test(catColor(cat) || '') ? catColor(cat) : '#64748b';
+        const light = isLightTheme(ctx);
+        const c = themedHex(/^#[0-9a-fA-F]{6}$/.test(catColor(cat) || '') ? catColor(cat) : '#64748b', light);
+        if (light) return { background: c + '38', borderColor: c + 'aa', color: inkOf(c) };   // 亮色：色塊更實、圖示比色塊深
         return { background: c + '2b', borderColor: c + '66', color: c };   // 線條圖示用 currentColor，所以也要設文字色
     };
 
@@ -85,9 +89,9 @@ export const useMobileCards = (ctx) => {
         const rest = over || noIncome ? 0 : round(1 - c - i);
         const restAmt = over || noIncome ? 0 : Math.max(0, inc - cAmt - iAmt);
         const segs = [
-            { key: 'c', label: '消費', color: '#818cf8', pct: round(c), amt: cAmt },
-            { key: 'i', label: '淨投入', color: '#fbbf24', pct: round(i), amt: iAmt },
-            { key: 'r', label: '剩餘', color: '#34d399', pct: rest, amt: restAmt }
+            { key: 'c', label: '消費', color: T('#818cf8'), pct: round(c), amt: cAmt },
+            { key: 'i', label: '淨投入', color: T('#fbbf24'), pct: round(i), amt: iAmt },
+            { key: 'r', label: '剩餘', color: T('#34d399'), pct: rest, amt: restAmt }
         ].filter(s => s.amt > 0);
         return { consume: round(c), invest: round(i), rest, over, noIncome, segs };
     };
@@ -96,11 +100,11 @@ export const useMobileCards = (ctx) => {
     const monthFlow = (r) => {
         const bar = monthBar(r), inv = Number(r.invest || 0);
         const left = [{ key: 'in', label: '收入', color: null, amt: Number(r.income || 0) }];
-        if (inv < 0) left.push({ key: 'sell', label: '淨賣出', color: '#fbbf24', amt: -inv });
-        const right = [{ key: 'c', label: '消費', color: '#818cf8', amt: Number(r.consume || 0) }];
-        if (inv > 0) right.push({ key: 'buy', label: '淨投入', color: '#fbbf24', amt: inv });
+        if (inv < 0) left.push({ key: 'sell', label: '淨賣出', color: T('#fbbf24'), amt: -inv });
+        const right = [{ key: 'c', label: '消費', color: T('#818cf8'), amt: Number(r.consume || 0) }];
+        if (inv > 0) right.push({ key: 'buy', label: '淨投入', color: T('#fbbf24'), amt: inv });
         const rest = bar ? bar.segs.find(s => s.key === 'r') : null;
-        if (rest) right.push({ key: 'r', label: '剩餘', color: '#34d399', amt: rest.amt });
+        if (rest) right.push({ key: 'r', label: '剩餘', color: T('#34d399'), amt: rest.amt });
         return { left, right, noIncome: !!(bar && bar.noIncome) };
     };
     const expandedMonths = ref({});

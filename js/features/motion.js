@@ -45,26 +45,22 @@ export const replayIn = (sel, dir) => nextTick(() => {
 });
 
 export const useMotion = (ctx) => {
-    // 液態切換：點膠囊式切換按鈕時，記下移動方向並重播滑塊的伸長動畫（滑塊位置由範本的 --i 控制）
+    // 果凍切換（V27.3）：點切換鈕／導覽時，先記下移動方向（r／l、d／u）。滑塊用 left／right 定位，
+    // CSS 讓「前進那一側」先動、「後面那一側」稍後跟上＝先拉長再收回，滑塊位置由範本的 --i／--ni／--bn-i 決定
     if (typeof document !== 'undefined' && document.addEventListener) {
+        const setDir = (box, from, to, pos, neg) => { if (to < 0 || isNaN(from) || to === from) return; box.setAttribute('data-dir', to > from ? pos : neg); };
         document.addEventListener('click', (ev) => {
-            const btn = ev.target && ev.target.closest ? ev.target.closest('.fd-seg2 > button') : null;
-            if (!btn || prefersReduce()) return;
-            const box = btn.parentElement;
-            const kids = Array.prototype.filter.call(box.children, el => el.tagName === 'BUTTON');
-            const to = kids.indexOf(btn), from = parseFloat(box.style.getPropertyValue('--i'));
-            if (to < 0 || isNaN(from) || to === from) return;
-            box.setAttribute('data-dir', to > from ? 'r' : 'l');
-            box.classList.remove('is-liquid'); void box.offsetWidth; box.classList.add('is-liquid');
-            setTimeout(() => box.classList.remove('is-liquid'), 320);
-        });
+            const t = ev.target && ev.target.closest ? ev.target : null; if (!t) return;
+            const seg = t.closest('.fd-seg2 > button');
+            if (seg) { const box = seg.parentElement, kids = [].filter.call(box.children, el => el.tagName === 'BUTTON'); setDir(box, parseFloat(box.style.getPropertyValue('--i')), kids.indexOf(seg), 'r', 'l'); return; }
+            const bn = t.closest('.fd-bn-item[data-tab]');
+            if (bn) { const box = bn.parentElement, kids = [].filter.call(box.children, el => el.classList.contains('fd-bn-item')); setDir(box, parseFloat(box.style.getPropertyValue('--bn-i')), kids.indexOf(bn), 'r', 'l'); return; }
+            const nv = t.closest('.fd-nav-item');
+            if (nv) { const box = nv.parentElement, kids = [].filter.call(box.children, el => el.classList.contains('fd-nav-item')); const ind = box.querySelector('.fd-nav-ind'); setDir(box, ind ? parseFloat(ind.style.getPropertyValue('--ni')) : NaN, kids.indexOf(nv), 'd', 'u'); }
+        }, true);   // capture：不被其他元件的 @click.stop 擋掉
     }
-    const { selectedYear, selectedMonth, includeInvest, payChartMode, catTab, payTab, cardOffset } = ctx;
+    const { selectedYear, selectedMonth, cardOffset } = ctx;
     watch(() => [selectedYear.value, selectedMonth.value], () => replayIn('[data-fd-refresh~="month"]'));
-    watch(includeInvest, () => replayIn('[data-fd-refresh~="invest"]'));
-    watch(payChartMode, () => replayIn('[data-fd-refresh~="paymode"]'));
-    watch(catTab, () => replayIn('[data-fd-refresh~="cattab"]'));
-    watch(payTab, () => replayIn('[data-fd-refresh~="paytab"]'));
     // 信用卡「更早一期」＝內容從左邊滑入、「較新一期」＝從右邊滑入
     watch(cardOffset, (n, o) => replayIn('[data-fd-refresh~="card"]', n > o ? 'l' : 'r'));
     return {};

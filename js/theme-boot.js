@@ -1,8 +1,7 @@
 // FinDash 主題啟動（經典 script，放在 <head> 最前面、CSS 之前同步執行 → 第一次繪製就是正確主題，不閃白／閃黑）
-// 偏好：'system'（跟隨系統）｜'light'｜'dark'，記在這台裝置的 localStorage（findash.theme）。
-// 亮色各畫面完成實機檢查前，預設先用深色；檢查完把 DEFAULT 改成 'system' 即可（使用者已拍板最終預設＝跟隨系統）。
+// 偏好：'system'（第一次開啟，跟隨系統）｜'light'｜'dark'（手動切換過一次就固定），記在這台裝置的 localStorage（findash.theme）。
 (function () {
-    var KEY = 'findash.theme', DEFAULT = 'dark';
+    var KEY = 'findash.theme', DEFAULT = 'system';
     var COLORS = { dark: '#0f172a', light: '#faf3e6' };     // <meta name="theme-color">（手機網址列／PWA 標題列）
     var mq = (typeof matchMedia === 'function') ? matchMedia('(prefers-color-scheme: light)') : null;
     function valid(v) { return v === 'system' || v === 'light' || v === 'dark'; }

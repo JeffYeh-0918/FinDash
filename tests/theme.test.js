@@ -99,13 +99,14 @@ const boot = (store, prefersLight) => {
     return { win, attrs, meta: () => metaContent, listeners, FdTheme: win.FdTheme };
 };
 test('V27 theme-boot：預設深色；偏好 light／dark／system 正確解析並寫入 data-theme 與 theme-color', () => {
-    let b = boot({}, true);
-    assert.equal(b.FdTheme.DEFAULT, 'dark');                       // 亮色各畫面實機檢查完才改成 'system'
+    let b = boot({}, false);
+    assert.equal(b.FdTheme.DEFAULT, 'system');                     // 第一次開啟＝跟隨系統
     assert.equal(b.attrs['data-theme'], 'dark'); assert.equal(b.meta(), '#0f172a');
+    b = boot({}, true); assert.equal(b.attrs['data-theme'], 'light');
     b = boot({ 'findash.theme': 'light' }, false); assert.equal(b.attrs['data-theme'], 'light'); assert.equal(b.meta(), '#faf3e6'); assert.equal(b.attrs['class:dark'], false);
     b = boot({ 'findash.theme': 'system' }, true); assert.equal(b.attrs['data-theme'], 'light');
     b = boot({ 'findash.theme': 'system' }, false); assert.equal(b.attrs['data-theme'], 'dark');
-    b = boot({ 'findash.theme': '亂寫' }, true); assert.equal(b.attrs['data-theme'], 'dark');          // 壞值退回預設
+    b = boot({ 'findash.theme': '亂寫' }, true); assert.equal(b.attrs['data-theme'], 'light');         // 壞值退回預設（跟隨系統）
 });
 test('V27 theme-boot：set() 會存檔、套用並通知；跟隨系統時系統主題改變會通知', () => {
     const store = {}; const b = boot(store, false);
@@ -120,6 +121,40 @@ test('V27 接線：啟動腳本在 CSS 之前、theme-map 在 tailwind 與 app.c
     assert.ok(i('css/tailwind.css') < i('css/theme-map.css') && i('css/theme-map.css') < i('css/app.css'), '載入順序：tailwind → theme-map → app');
     assert.match(html, /"\.\/js\/features\/theme\.js": "\.\/js\/features\/theme\.js\?v=\d+"/);
     assert.match(html, /Object\.assign\(ctx, useTheme\(ctx\)\)/);
-    for (const m of ['THEME_OPTIONS', 'themePref', 'themeIndex', 'setThemePref']) assert.ok(html.includes(`'${m}'`), m + ' 不在 TEMPLATE_MEMBERS');
-    assert.equal((html.match(/aria-label="外觀主題"/g) || []).length, 2);
+    for (const m of ['themeResolved', 'toggleTheme']) assert.ok(html.includes(`'${m}'`), m + ' 不在 TEMPLATE_MEMBERS');
+    assert.equal((html.match(/class="fd-theme-switch"/g) || []).length, 2);           // 側欄與手機面板各一個日／夜開關
+    assert.equal((html.match(/role="switch"/g) || []).length >= 2, true);
+});
+
+test('V27.2 亮色資料色：類別色票全部有大地色對應；自訂色往暖褐靠；深色原樣', async () => {
+    const { themedHex, LIGHT_HEX } = await import('../js/logic/palette.js');
+    const led = await import('../js/logic/ledger.js');
+    const all = new Set([...Object.values(led.DEFAULT_CATEGORY_COLORS), ...led.EXTRA_PALETTE, ...led.COLOR_CHOICES]);
+    const miss = [...all].filter(h => !LIGHT_HEX[h.toLowerCase()]);
+    assert.deepEqual(miss, [], '這些色票沒有亮色對應');
+    assert.equal(themedHex('#6366f1', false), '#6366f1');
+    assert.equal(themedHex('#6366f1', true), '#5b8db8');
+    const c = themedHex('#123456', true); assert.match(c, /^#[0-9a-f]{6}$/); assert.notEqual(c, '#123456');
+    assert.equal(themedHex('bad', true), 'bad');
+});
+test('V27.2 切換按鈕全部是膠囊型（fd-seg／fd-seg2）；亮色主按鈕是陶土橘', () => {
+    for (const re of [/\.fd-seg \{[^}]*border-radius: 999px/, /\.fd-seg button \{[^}]*border-radius: 999px/, /\.fd-seg2 \{[^}]*border-radius: 999px/, /\.fd-seg2::before \{[^}]*border-radius: 999px/]) assert.match(app, re);
+    const light = app.match(/:root\[data-theme="light"\] \{([\s\S]*?)\n\}/)[1];
+    assert.match(light, /--c-emerald-700: 180 83 47;/);           // 主按鈕（記收支）＝陶土橘
+    assert.match(light, /--c-indigo-600: 40 105 131;/);           // 記股票＝松石藍（Rosé Pine Dawn 的 pine）
+    assert.ok(!/#fde68a/i.test(html), '賣出圖示的淺黃字色要走色票，亮色才看得到');
+});
+
+test('V27.4 接線：日／夜開關依點擊位置切換、設定色票亮色顯示暖色、篩選下拉有 ease-out 轉場、側欄圖示亮色統一', async () => {
+    assert.equal((html.match(/@click\.stop="onThemeClick\(\$event\)"/g) || []).length, 2);
+    for (const m of ['onThemeClick', 'swatchColor']) assert.ok(html.includes(`'${m}'`), m + ' 不在 TEMPLATE_MEMBERS');
+    assert.match(html, /<Transition name="fd-dd"><div v-if="isOpen"/);
+    assert.match(app, /\.fd-dd-enter-active \{ transition: opacity \.16s ease-out/);
+    assert.match(app, /:root\[data-theme="light"\] \.fd-tool > svg/);
+    const th = read('js/features/theme.js');
+    assert.match(th, /if \(mode === themeResolved\.value\) return;/);            // 已經是該模式：不動作
+    assert.match(th, /ev\.clientX < r\.left \+ r\.width \/ 2 \? 'light' : 'dark'/);   // 左半＝亮色、右半＝深色
+    const { inkOf } = await import('../js/logic/palette.js');
+    assert.notEqual(inkOf('#5b8db8'), '#5b8db8');                                  // 色塊上的圖示比色塊深
+    assert.match(read('js/features/motion.js'), /\}, true\);\s+\/\/ capture/);        // 果凍方向不被 @click.stop 擋掉
 });
